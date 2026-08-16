@@ -14,7 +14,7 @@ export class LatexToolboxSettingTab extends SettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'LaTeX Toolbox' });
+    containerEl.createEl('h2', { text: 'LaTeX toolbox' });
     containerEl.createEl('p', { text: 'Configure the scientific equation workspace and conversion behavior.' });
 
     new Setting(containerEl)
@@ -24,7 +24,7 @@ export class LatexToolboxSettingTab extends SettingTab {
         const domains: Record<ScienceDomain, string> = {
           general: 'General science', math: 'Mathematics', physics: 'Physics', chemistry: 'Chemistry', electronics: 'Electrical & electronics',
         };
-        Object.entries(domains).forEach(([key, label]) => dropdown.addOption(key, label));
+        Object.entries(domains).forEach(([key, label]) => { dropdown.addOption(key, label); });
         dropdown.setValue(this.latexPlugin.settings.defaultDomain);
         dropdown.onChange((value) => {
           this.latexPlugin.settings.defaultDomain = value as ScienceDomain;
