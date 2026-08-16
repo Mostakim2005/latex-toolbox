@@ -16,16 +16,12 @@ const EXAMPLES: Record<ScienceDomain, string> = {
 };
 
 export class EquationModal extends Modal {
-  private eventComponent = new Component();
-
-  private registerModalDomEvent<K extends keyof HTMLElementEventMap>(el: HTMLElement, type: K, callback: (this: HTMLElement, ev: HTMLElementEventMap[K]) => void): void {
-    this.eventComponent.registerDomEvent(el, type, callback);
-  }
   private domain: ScienceDomain;
   private inputEl!: HTMLTextAreaElement;
   private latexEl!: HTMLElement;
   private previewEl!: HTMLElement;
   private statusEl!: HTMLElement;
+  private readonly eventComponent = new Component();
   private sourceComponent = new Component();
   private currentLatex = '';
   private currentCandidates: SemanticCandidate[] = [];
@@ -45,7 +41,6 @@ export class EquationModal extends Modal {
   }
 
   onOpen(): void {
-    this.eventComponent = new Component();
     this.modalEl.addClass('latex-toolbox-equation-modal');
     const { contentEl } = this;
     contentEl.empty();
@@ -64,7 +59,7 @@ export class EquationModal extends Modal {
       button.type = 'button';
       button.setAttr('aria-pressed', String(domain === this.domain));
       button.createSpan({ text: DOMAIN_LABELS[domain] });
-      this.registerModalDomEvent(button, 'click', () => {
+      this.eventComponent.registerDomEvent(button, 'click', () => {
         this.domain = domain;
         this.renderDomainButtons(domainGrid);
         this.updateConversion();
@@ -77,7 +72,7 @@ export class EquationModal extends Modal {
     inputHeader.createDiv({ text: 'Describe it', cls: 'lt-panel-title' });
     const example = inputHeader.createEl('button', { text: 'Use example', cls: 'lt-text-button' });
     example.type = 'button';
-    this.registerModalDomEvent(example, 'click', () => {
+    this.eventComponent.registerDomEvent(example, 'click', () => {
       this.inputEl.value = EXAMPLES[this.domain];
       this.updateConversion();
       this.inputEl.focus();
@@ -85,7 +80,7 @@ export class EquationModal extends Modal {
 
     this.inputEl = inputPanel.createEl('textarea', { cls: 'lt-input', attr: { rows: '7', maxlength: String(Math.min(MAX_SCIENTIFIC_INPUT_LENGTH, this.settings.maxInputLength)), 'aria-label': 'Natural language or LaTeX equation input' } });
     this.inputEl.value = this.selectionText;
-    this.registerModalDomEvent(this.inputEl, 'input', () => this.scheduleConversion());
+    this.eventComponent.registerDomEvent(this.inputEl, 'input', () => this.scheduleConversion());
 
     const hint = inputPanel.createDiv('lt-input-hint');
     hint.setText('Natural language, symbols, formulas, or existing LaTeX are all valid inputs.');
@@ -105,21 +100,21 @@ export class EquationModal extends Modal {
     const footer = contentEl.createDiv('lt-footer');
     const insertButton = footer.createEl('button', { text: this.selectionText ? 'Replace selection' : 'Insert into note', cls: 'mod-cta' });
     insertButton.type = 'button';
-    this.registerModalDomEvent(insertButton, 'click', () => void this.insertResult());
-    const favoriteButton = footer.createEl('button', { text: '☆ Favorite' });
+    this.eventComponent.registerDomEvent(insertButton, 'click', () => void this.insertResult());
+    const favoriteButton = footer.createEl('button', { text: '☆ favorite' });
     favoriteButton.type = 'button';
-    this.registerModalDomEvent(favoriteButton, 'click', () => void this.favoriteCurrent());
+    this.eventComponent.registerDomEvent(favoriteButton, 'click', () => void this.favoriteCurrent());
 
     const copyButton = footer.createEl('button', { text: 'Copy LaTeX' });
     copyButton.type = 'button';
-    this.registerModalDomEvent(copyButton, 'click', () => {
+    this.eventComponent.registerDomEvent(copyButton, 'click', () => {
       void navigator.clipboard.writeText(this.currentLatex)
         .then(() => new Notice('LaTeX copied.'))
         .catch(() => new Notice('Could not copy LaTeX to the clipboard.'));
     });
     const cancelButton = footer.createEl('button', { text: 'Cancel' });
     cancelButton.type = 'button';
-    this.registerModalDomEvent(cancelButton, 'click', () => this.close());
+    this.eventComponent.registerDomEvent(cancelButton, 'click', () => this.close());
 
     this.renderDomainButtons(domainGrid);
     this.updateConversion();
@@ -169,7 +164,7 @@ export class EquationModal extends Modal {
       head.createSpan({ text: candidate.confidence, cls: `lt-confidence is-${candidate.confidence}` });
       button.createEl('code', { text: candidate.latex });
       button.createDiv({ text: candidate.explanation, cls: 'lt-candidate-explanation' });
-      this.registerModalDomEvent(button, 'click', () => {
+      this.eventComponent.registerDomEvent(button, 'click', () => {
         this.currentLatex = candidate.latex;
         this.latexEl.setText(candidate.latex || '—');
         this.statusEl.setText(`${candidate.confidence === 'high' ? 'High confidence' : candidate.confidence === 'medium' ? 'Review suggested' : 'Low confidence'} · ${candidate.explanation}`);
@@ -234,11 +229,11 @@ export class EquationModal extends Modal {
   }
 
   onClose(): void {
-    this.eventComponent.unload();
     if (this.updateTimer !== null) window.clearTimeout(this.updateTimer);
     this.updateTimer = null;
     this.previewRequest += 1;
     this.sourceComponent.unload();
+    this.eventComponent.unload();
     this.contentEl.empty();
   }
 }
@@ -268,9 +263,6 @@ export function openSnippetModal(plugin: LatexToolboxPlugin, editor: Editor, sni
       });
     });
   };
-  modal.onClose = () => {
-    eventComponent.unload();
-    modal.contentEl.empty();
-  };
+  modal.onClose = () => { eventComponent.unload(); modal.contentEl.empty(); };
   modal.open();
 }
