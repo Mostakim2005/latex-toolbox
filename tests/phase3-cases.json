@@ -1,0 +1,152 @@
+[
+  {
+    "domain": "physics",
+    "input": "Newton's first law",
+    "expected": "\\sum\\mathbf{F}=0\\;\\Rightarrow\\;\\mathbf{a}=0"
+  },
+  {
+    "domain": "physics",
+    "input": "Newton's second law",
+    "expected": "\\mathbf{F}=m\\mathbf{a}"
+  },
+  {
+    "domain": "physics",
+    "input": "kinetic energy",
+    "expected": "K=\\frac{1}{2}mv^2"
+  },
+  {
+    "domain": "physics",
+    "input": "gravitational potential energy",
+    "expected": "U=mgh"
+  },
+  {
+    "domain": "physics",
+    "input": "momentum",
+    "expected": "\\mathbf{p}=m\\mathbf{v}"
+  },
+  {
+    "domain": "physics",
+    "input": "first kinematic equation",
+    "expected": "v=u+at"
+  },
+  {
+    "domain": "physics",
+    "input": "second kinematic equation",
+    "expected": "s=ut+\\frac{1}{2}at^2"
+  },
+  {
+    "domain": "physics",
+    "input": "third kinematic equation",
+    "expected": "v^2=u^2+2as"
+  },
+  {
+    "domain": "physics",
+    "input": "Newton's law of universal gravitation",
+    "expected": "F=G\\frac{m_1m_2}{r^2}"
+  },
+  {
+    "domain": "physics",
+    "input": "ideal gas law",
+    "expected": "PV=nRT"
+  },
+  {
+    "domain": "physics",
+    "input": "wave speed equals frequency times wavelength",
+    "expected": "v=f\\lambda"
+  },
+  {
+    "domain": "physics",
+    "input": "Snell's law",
+    "expected": "n_1\\sin\\theta_1=n_2\\sin\\theta_2"
+  },
+  {
+    "domain": "physics",
+    "input": "Coulomb's law",
+    "expected": "F=k_e\\frac{|q_1q_2|}{r^2}"
+  },
+  {
+    "domain": "physics",
+    "input": "electric field",
+    "expected": "\\mathbf{E}=\\frac{\\mathbf{F}}{q}"
+  },
+  {
+    "domain": "physics",
+    "input": "Lorentz force",
+    "expected": "\\mathbf{F}=q(\\mathbf{E}+\\mathbf{v}\\times\\mathbf{B})"
+  },
+  {
+    "domain": "physics",
+    "input": "Faraday's law",
+    "expected": "\\mathcal{E}=-\\frac{d\\Phi_B}{dt}"
+  },
+  {
+    "domain": "physics",
+    "input": "Gauss's law",
+    "expected": "\\oint\\mathbf{E}\\cdot d\\mathbf{A}=\\frac{Q_{\\mathrm{enc}}}{\\varepsilon_0}"
+  },
+  {
+    "domain": "physics",
+    "input": "Maxwell's equations",
+    "expected": "\\nabla\\cdot\\mathbf{E}=\\frac{\\rho}{\\varepsilon_0},\\quad\\nabla\\cdot\\mathbf{B}=0,\\quad\\nabla\\times\\mathbf{E}=-\\frac{\\partial\\mathbf{B}}{\\partial t},\\quad\\nabla\\times\\mathbf{B}=\\mu_0\\mathbf{J}+\\mu_0\\varepsilon_0\\frac{\\partial\\mathbf{E}}{\\partial t}"
+  },
+  {
+    "domain": "physics",
+    "input": "photon energy",
+    "expected": "E=hf=\\frac{hc}{\\lambda}"
+  },
+  {
+    "domain": "physics",
+    "input": "uncertainty principle",
+    "expected": "\\Delta x\\,\\Delta p\\ge\\frac{\\hbar}{2}"
+  },
+  {
+    "domain": "physics",
+    "input": "Schrodinger's equation",
+    "expected": "i\\hbar\\frac{\\partial\\Psi}{\\partial t}=\\hat{H}\\Psi"
+  },
+  {
+    "domain": "physics",
+    "input": "speed of light",
+    "expected": "c"
+  },
+  {
+    "domain": "physics",
+    "input": "newton",
+    "expected": "\\mathrm{N}"
+  },
+  {
+    "domain": "physics",
+    "input": "velocity equals displacement divided by time",
+    "expected": "v=\\frac{s}{t}"
+  },
+  {
+    "domain": "physics",
+    "input": "force equals mass times acceleration",
+    "expected": "F=ma"
+  },
+  {
+    "domain": "physics",
+    "input": "speed equals distance divided by time",
+    "expected": "v=\\frac{s}{t}"
+  },
+  {
+    "domain": "physics",
+    "input": "electric potential equals work divided by charge",
+    "expected": "V=\\frac{W}{q}"
+  },
+  {
+    "domain": "physics",
+    "input": "kilometer",
+    "expected": "\\mathrm{km}"
+  },
+  {
+    "domain": "physics",
+    "input": "millisecond",
+    "expected": "\\mathrm{ms}"
+  },
+  {
+    "domain": "physics",
+    "input": "microampere",
+    "expected": "\\mathrm{\\mu A}"
+  }
+]

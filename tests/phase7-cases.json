@@ -1,0 +1,123 @@
+[
+  {
+    "name": "newton intent",
+    "input": "Newton's second law",
+    "domain": "physics",
+    "latex": "\\mathbf{F}=m\\mathbf{a}",
+    "confidence": "high"
+  },
+  {
+    "name": "kinetic energy intent",
+    "input": "formula for kinetic energy",
+    "domain": "physics",
+    "latex": "K=\\frac{1}{2}mv^2",
+    "confidence": "high"
+  },
+  {
+    "name": "ideal gas intent",
+    "input": "ideal gas law",
+    "domain": "physics",
+    "latex": "PV=nRT",
+    "confidence": "high"
+  },
+  {
+    "name": "coulomb intent",
+    "input": "Coulomb's law",
+    "domain": "physics",
+    "latex": "F=k_e\\frac{|q_1q_2|}{r^2}",
+    "confidence": "high"
+  },
+  {
+    "name": "photon intent",
+    "input": "energy of a photon",
+    "domain": "physics",
+    "latex": "E=hf=\\frac{hc}{\\lambda}",
+    "confidence": "high"
+  },
+  {
+    "name": "ohm intent",
+    "input": "Ohm's law",
+    "domain": "electronics",
+    "latex": "V = IR",
+    "confidence": "high"
+  },
+  {
+    "name": "capacitor impedance",
+    "input": "impedance of a capacitor",
+    "domain": "electronics",
+    "latex": "Z_C = \\frac{1}{j\\omega C}",
+    "confidence": "high"
+  },
+  {
+    "name": "resonance",
+    "input": "RLC resonant frequency",
+    "domain": "electronics",
+    "latex": "f_0 = \\frac{1}{2\\pi\\sqrt{LC}}",
+    "confidence": "high"
+  },
+  {
+    "name": "water formula",
+    "input": "chemical formula of water",
+    "domain": "chemistry",
+    "latex": "\\mathrm{H_2O}",
+    "confidence": "high"
+  },
+  {
+    "name": "water formation",
+    "input": "formation of water",
+    "domain": "chemistry",
+    "latex": "2\\,\\mathrm{H_2} + \\mathrm{O_2} \\rightarrow 2\\,\\mathrm{H_2O}",
+    "confidence": "high"
+  },
+  {
+    "name": "hcl formula",
+    "input": "formula for hydrochloric acid",
+    "domain": "chemistry",
+    "latex": "\\mathrm{HCl}",
+    "confidence": "high"
+  },
+  {
+    "name": "euler identity",
+    "input": "Euler's identity",
+    "domain": "math",
+    "latex": "e^{i\\pi}+1=0",
+    "confidence": "high"
+  },
+  {
+    "name": "quadratic formula",
+    "input": "formula for solving a quadratic",
+    "domain": "math",
+    "latex": "x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}",
+    "confidence": "high"
+  },
+  {
+    "name": "pythagorean theorem",
+    "input": "Pythagorean theorem",
+    "domain": "math",
+    "latex": "a^2+b^2=c^2",
+    "confidence": "high"
+  },
+  {
+    "name": "shortcut exact match",
+    "input": "alpha",
+    "domain": "math",
+    "latex": "\\alpha",
+    "confidence": "high"
+  },
+  {
+    "name": "domain inference electronics",
+    "input": "voltage across a capacitor in a circuit",
+    "domain": "general",
+    "inferredDomain": "electronics"
+  },
+  {
+    "name": "semantic detector",
+    "input": "formula for kinetic energy",
+    "semantic": true
+  },
+  {
+    "name": "normal prose detector",
+    "input": "this is a normal sentence",
+    "semantic": false
+  }
+]

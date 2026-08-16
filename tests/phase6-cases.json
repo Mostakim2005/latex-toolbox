@@ -1,0 +1,29 @@
+[
+  [
+    "shortcut-prefix",
+    "alp",
+    "shortcut"
+  ],
+  [
+    "snippet-prefix",
+    "fra",
+    "snippet"
+  ],
+  [
+    "template-prefix",
+    "max",
+    "template"
+  ],
+  [
+    "domain-filter",
+    "ohm",
+    "math",
+    0
+  ],
+  [
+    "favorite-first",
+    "",
+    "electronics",
+    "favorite"
+  ]
+]

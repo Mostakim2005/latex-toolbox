@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ES2021",
+    "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "moduleResolution": "node",
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./.dist",
+    "lib": ["ES2021"]
+  },
+  "include": [
+    "../src/types.ts",
+    "../src/domains/**/*.ts",
+    "../src/core/**/*.ts",
+    "../src/settings/defaults.ts",
+    "../src/settings/normalize.ts"
+  ]
+}

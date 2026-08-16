@@ -1,1 +1,57 @@
-
+[
+  {
+    "domain": "math",
+    "input": "2 x squared plus 3 x equals 5",
+    "expected": "2x^{2} + 3x = 5"
+  },
+  {
+    "domain": "math",
+    "input": "sine of x plus cosine of x",
+    "expected": "\\sin\\left(x\\right) + \\cos\\left(x\\right)"
+  },
+  {
+    "domain": "math",
+    "input": "integral from 0 to infinity of e to the minus x squared dx",
+    "expected": "\\int_{0}^{\\infty} e^{-x^{2}}\\,dx"
+  },
+  {
+    "domain": "math",
+    "input": "the derivative of x squared plus 1 with respect to x",
+    "expected": "\\frac{d}{dx}\\left(x^{2} + 1\\right)"
+  },
+  {
+    "domain": "math",
+    "input": "x choose r",
+    "expected": "\\binom{x}{r}"
+  },
+  {
+    "domain": "math",
+    "input": "x belongs to real numbers",
+    "expected": "x\\in\\mathbb{R}"
+  },
+  {
+    "domain": "math",
+    "input": "matrix 1 2; 3 4",
+    "expected": "\\begin{bmatrix}1 & 2 \\\\ 3 & 4\\end{bmatrix}"
+  },
+  {
+    "domain": "math",
+    "input": "vector v",
+    "expected": "\\vec{v}"
+  },
+  {
+    "domain": "physics",
+    "input": "force equals mass times acceleration",
+    "expected": "F=ma"
+  },
+  {
+    "domain": "electronics",
+    "input": "voltage equals current times resistance",
+    "expected": "V = I\\,R"
+  },
+  {
+    "domain": "chemistry",
+    "input": "2 H2 + O2 -> 2 H2O",
+    "expected": "2\\mathrm{H_2} + \\mathrm{O_2} \\rightarrow 2\\mathrm{H_2O}"
+  }
+]

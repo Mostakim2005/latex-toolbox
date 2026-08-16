@@ -1,0 +1,117 @@
+[
+  {
+    "domain": "chemistry",
+    "input": "H2O",
+    "expected": "\\mathrm{H_2O}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "CO2",
+    "expected": "\\mathrm{CO_2}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "Na+",
+    "expected": "\\mathrm{Na}^{+}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "SO4^2-",
+    "expected": "\\mathrm{SO_4}^{2-}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "NH4+",
+    "expected": "\\mathrm{NH_4}^{+}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "Fe3+",
+    "expected": "\\mathrm{Fe}^{3+}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "Ca(OH)2",
+    "expected": "\\mathrm{Ca(OH)_2}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "Al2(SO4)3",
+    "expected": "\\mathrm{Al_2(SO_4)_3}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "14C",
+    "expected": "^{14}\\mathrm{C}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "CuSO4\u00b75H2O",
+    "expected": "\\mathrm{CuSO_4}\\cdot5\\mathrm{H_2O}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "water",
+    "expected": "\\mathrm{H_2O}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "sulfate ion",
+    "expected": "\\mathrm{SO_4}^{2-}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "2 H2 + O2 -> 2 H2O",
+    "expected": "2\\mathrm{H_2} + \\mathrm{O_2} \\rightarrow 2\\mathrm{H_2O}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "H2 + Cl2 \u21cc 2 HCl",
+    "expected": "\\mathrm{H_2} + \\mathrm{Cl_2} \\rightleftharpoons 2\\mathrm{HCl}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "CaCO3(s) -> CaO(s) + CO2(g)",
+    "expected": "\\mathrm{CaCO_3}_{\\mathrm{(s)}} \\rightarrow \\mathrm{CaO}_{\\mathrm{(s)}} + \\mathrm{CO_2}_{\\mathrm{(g)}}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "H2 + O2 ->[heat] H2O",
+    "expected": "\\mathrm{H_2} + \\mathrm{O_2} \\xrightarrow{\\Delta} \\mathrm{H_2O}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "NaOH + HCl -> NaCl + H2O",
+    "expected": "\\mathrm{NaOH} + \\mathrm{HCl} \\rightarrow \\mathrm{NaCl} + \\mathrm{H_2O}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "silver ion",
+    "expected": "\\mathrm{Ag}^{+}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "permanganate ion",
+    "expected": "\\mathrm{MnO_4}^{-}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "Na\u207a",
+    "expected": "\\mathrm{Na}^{+}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "SO\u2084\u00b2\u207b",
+    "expected": "\\mathrm{SO_4}^{2-}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "CaCO3(l)",
+    "expected": "\\mathrm{CaCO_3}_{\\mathrm{(l)}}"
+  },
+  {
+    "domain": "chemistry",
+    "input": "H2 + O2 --heat--> H2O",
+    "expected": "\\mathrm{H_2} + \\mathrm{O_2} \\xrightarrow{\\Delta} \\mathrm{H_2O}"
+  }
+]

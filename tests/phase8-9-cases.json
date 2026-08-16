@@ -1,0 +1,74 @@
+[
+  {
+    "name": "Taylor series",
+    "input": "Taylor series",
+    "domain": "math",
+    "latex": "f(x)=\\sum_{n=0}^{\\infty}\\frac{f^{(n)}(a)}{n!}(x-a)^n"
+  },
+  {
+    "name": "Fourier transform",
+    "input": "Fourier transform",
+    "domain": "math",
+    "latex": "\\mathcal{F}\\{f(t)\\}(\\omega)=\\int_{-\\infty}^{\\infty}f(t)e^{-i\\omega t}\\,dt"
+  },
+  {
+    "name": "Bayes theorem",
+    "input": "Bayes' theorem",
+    "domain": "math",
+    "latex": "P(A\\mid B)=\\frac{P(B\\mid A)P(A)}{P(B)}"
+  },
+  {
+    "name": "De Broglie",
+    "input": "de Broglie wavelength",
+    "domain": "physics",
+    "latex": "\\lambda=\\frac{h}{p}"
+  },
+  {
+    "name": "Uncertainty principle",
+    "input": "Heisenberg uncertainty principle",
+    "domain": "physics",
+    "latex": "\\Delta x\\,\\Delta p\\ge\\frac{\\hbar}{2}"
+  },
+  {
+    "name": "pH",
+    "input": "pH",
+    "domain": "chemistry",
+    "latex": "pH=-\\log_{10}[\\mathrm{H^+}]"
+  },
+  {
+    "name": "Molarity",
+    "input": "molarity",
+    "domain": "chemistry",
+    "latex": "M=\\frac{n}{V}"
+  },
+  {
+    "name": "RC charging",
+    "input": "RC charging equation",
+    "domain": "electronics",
+    "latex": "V_C(t)=V_0\\left(1-e^{-t/(RC)}\\right)"
+  },
+  {
+    "name": "Newton",
+    "input": "Newton's second law",
+    "domain": "physics",
+    "latex": "\\mathbf{F}=m\\mathbf{a}"
+  },
+  {
+    "name": "Numeric unit",
+    "input": "5 newtons",
+    "domain": "physics",
+    "latex": "5\\,\\mathrm{N}"
+  },
+  {
+    "name": "Unit rate",
+    "input": "meters per second",
+    "domain": "physics",
+    "latex": "\\frac{\\mathrm{m}}{\\mathrm{s}}"
+  },
+  {
+    "name": "Chemistry charge unicode",
+    "input": "SO\u2084\u00b2\u207b",
+    "domain": "chemistry",
+    "latex": "\\mathrm{SO_4}^{2-}"
+  }
+]
