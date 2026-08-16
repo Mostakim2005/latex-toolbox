@@ -181,31 +181,47 @@ export class AuthoringLibraryModal extends Modal {
   }
 
   private editItem(item: Shortcut | Snippet | Template, isNew = false): void {
-    const modal = new EditAuthoringItemModal(this.app, item, async (updated) => {
-      if (this.activeTab === 'shortcuts') {
+    if (this.activeTab === 'shortcuts' && 'latex' in item && !('name' in item)) {
+      const modal = new EditAuthoringItemModal<Shortcut>(this.app, item, async (updated) => {
         const list = this.plugin.settings.customShortcuts;
         this.plugin.settings.customShortcuts = isNew ? [...list, updated] : list.map((entry) => entry.id === updated.id ? updated : entry);
-      } else if (this.activeTab === 'snippets') {
+        await this.plugin.saveSettings();
+        this.render();
+      });
+      modal.open();
+      return;
+    }
+
+    if (this.activeTab === 'snippets' && 'name' in item && !('description' in item)) {
+      const modal = new EditAuthoringItemModal<Snippet>(this.app, item, async (updated) => {
         const list = this.plugin.settings.customSnippets;
         this.plugin.settings.customSnippets = isNew ? [...list, updated] : list.map((entry) => entry.id === updated.id ? updated : entry);
-      } else {
+        await this.plugin.saveSettings();
+        this.render();
+      });
+      modal.open();
+      return;
+    }
+
+    if (this.activeTab === 'templates' && 'name' in item && 'description' in item) {
+      const modal = new EditAuthoringItemModal<Template>(this.app, item, async (updated) => {
         const list = this.plugin.settings.customTemplates;
         this.plugin.settings.customTemplates = isNew ? [...list, updated] : list.map((entry) => entry.id === updated.id ? updated : entry);
-      }
-      await this.plugin.saveSettings();
-      this.render();
-    });
-    modal.open();
+        await this.plugin.saveSettings();
+        this.render();
+      });
+      modal.open();
+    }
   }
 }
 
-class EditAuthoringItemModal extends Modal {
+class EditAuthoringItemModal<T extends Shortcut | Snippet | Template> extends Modal {
   private eventComponent = new Component();
 
   private registerModalDomEvent<K extends keyof HTMLElementEventMap>(el: HTMLElement, type: K, callback: (this: HTMLElement, ev: HTMLElementEventMap[K]) => void): void {
     this.eventComponent.registerDomEvent(el, type, callback);
   }
-  constructor(app: App, private readonly item: Shortcut | Snippet | Template, private readonly onSave: (item: Shortcut | Snippet | Template) => Promise<void>) { super(app); }
+  constructor(app: App, private readonly item: T, private readonly onSave: (item: T) => Promise<void>) { super(app); }
 
   onOpen(): void {
     this.eventComponent = new Component();
