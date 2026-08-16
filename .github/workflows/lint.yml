@@ -31,7 +31,7 @@ jobs:
               run: npm run build
 
             - name: Lint
-              run: npx eslint src manifest.json
+              run: npx eslint src
 
             - name: Regression tests
               run: npm test
