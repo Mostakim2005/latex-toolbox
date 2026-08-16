@@ -45,7 +45,7 @@ export class QuickInsertModal extends Modal {
       });
     });
 
-    this.queryEl = contentEl.createEl('input', { cls: 'lt-quick-search', attr: { type: 'search', placeholder: 'Search e.g. frac, Maxwell, Ohm, alpha…', autocomplete: 'off' } }) as HTMLInputElement;
+    this.queryEl = contentEl.createEl('input', { cls: 'lt-quick-search', attr: { type: 'search', placeholder: 'Search e.g. frac, Maxwell, Ohm, alpha…', autocomplete: 'off' } });
     this.registerModalDomEvent(this.queryEl, 'input', () => this.render());
     this.listEl = contentEl.createDiv('lt-quick-list');
     this.render();
@@ -184,13 +184,13 @@ export class AuthoringLibraryModal extends Modal {
     const modal = new EditAuthoringItemModal(this.app, item, async (updated) => {
       if (this.activeTab === 'shortcuts') {
         const list = this.plugin.settings.customShortcuts;
-        this.plugin.settings.customShortcuts = isNew ? [...list, updated as Shortcut] : list.map((entry) => entry.id === updated.id ? updated as Shortcut : entry);
+        this.plugin.settings.customShortcuts = isNew ? [...list, updated] : list.map((entry) => entry.id === updated.id ? updated : entry);
       } else if (this.activeTab === 'snippets') {
         const list = this.plugin.settings.customSnippets;
-        this.plugin.settings.customSnippets = isNew ? [...list, updated as Snippet] : list.map((entry) => entry.id === updated.id ? updated as Snippet : entry);
+        this.plugin.settings.customSnippets = isNew ? [...list, updated] : list.map((entry) => entry.id === updated.id ? updated : entry);
       } else {
         const list = this.plugin.settings.customTemplates;
-        this.plugin.settings.customTemplates = isNew ? [...list, updated as Template] : list.map((entry) => entry.id === updated.id ? updated as Template : entry);
+        this.plugin.settings.customTemplates = isNew ? [...list, updated] : list.map((entry) => entry.id === updated.id ? updated : entry);
       }
       await this.plugin.saveSettings();
       this.render();
@@ -217,7 +217,7 @@ class EditAuthoringItemModal extends Modal {
     const makeField = (label: string, key: string, value: string): void => {
       const wrap = contentEl.createDiv('lt-field');
       wrap.createDiv({ text: label, cls: 'lt-field-label' });
-      const input = wrap.createEl('input', { attr: { type: 'text' } }) as HTMLInputElement;
+      const input = wrap.createEl('input', { attr: { type: 'text' } });
       input.value = value;
       fields.set(key, input);
     };
@@ -234,7 +234,7 @@ class EditAuthoringItemModal extends Modal {
   private async save(fields: Map<string, HTMLInputElement>): Promise<void> {
     const get = (key: string): string => fields.get(key)?.value.trim() ?? '';
     const domain = (get('domain') || 'all') as ScienceDomain | 'all';
-    const updated = { ...this.item, trigger: get('trigger'), latex: get('latex'), domain } as Shortcut | Snippet | Template;
+    const updated = { ...this.item, trigger: get('trigger'), latex: get('latex'), domain };
     if ('name' in this.item) (updated as Snippet | Template).name = get('name');
     if ('description' in this.item) (updated as Template).description = get('description');
     if (!updated.trigger || !updated.latex || ('name' in updated && !updated.name)) {
