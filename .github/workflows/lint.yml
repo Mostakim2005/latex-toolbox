@@ -45,7 +45,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                obsidian: ['1.5.0', 'latest']
+                obsidian: ['1.5.7', 'latest']
 
         steps:
             - uses: actions/checkout@v6
