@@ -1,10 +1,15 @@
-import { Modal, Notice, type App, type Editor } from 'obsidian';
+import { Component, Modal, Notice, type App, type Editor } from 'obsidian';
 import { DOMAIN_LABELS } from '../domains/dictionaries';
 import { expandSnippetWithSelection, filterAuthoringItems, type AuthoringItem } from '../core/authoring';
-import type { EquationHistoryItem, LatexToolboxSettings, ScienceDomain, Shortcut, Snippet, Template } from '../types';
+import type { LatexToolboxSettings, ScienceDomain, Shortcut, Snippet, Template } from '../types';
 import type LatexToolboxPlugin from '../main';
 
 export class QuickInsertModal extends Modal {
+  private eventComponent = new Component();
+
+  private registerModalDomEvent<K extends keyof HTMLElementEventMap>(el: HTMLElement, type: K, callback: (this: HTMLElement, ev: HTMLElementEventMap[K]) => void): void {
+    this.eventComponent.registerDomEvent(el, type, callback);
+  }
   private queryEl!: HTMLInputElement;
   private listEl!: HTMLElement;
   private domain: ScienceDomain;
@@ -20,6 +25,7 @@ export class QuickInsertModal extends Modal {
   }
 
   onOpen(): void {
+    this.eventComponent = new Component();
     this.modalEl.addClass('latex-toolbox-quick-modal');
     const { contentEl } = this;
     contentEl.empty();
@@ -32,7 +38,7 @@ export class QuickInsertModal extends Modal {
       const button = domainRow.createEl('button', { text: DOMAIN_LABELS[domain], cls: 'lt-domain-button' });
       button.type = 'button';
       button.setAttr('aria-pressed', String(domain === this.domain));
-      this.registerDomEvent(button, 'click', () => {
+      this.registerModalDomEvent(button, 'click', () => {
         this.domain = domain;
         (Array.from(domainRow.children) as HTMLElement[]).forEach((child, index) => child.setAttr('aria-pressed', String((Object.keys(DOMAIN_LABELS) as ScienceDomain[])[index] === domain)));
         this.render();
@@ -40,7 +46,7 @@ export class QuickInsertModal extends Modal {
     });
 
     this.queryEl = contentEl.createEl('input', { cls: 'lt-quick-search', attr: { type: 'search', placeholder: 'Search e.g. frac, Maxwell, Ohm, alpha…', autocomplete: 'off' } }) as HTMLInputElement;
-    this.registerDomEvent(this.queryEl, 'input', () => this.render());
+    this.registerModalDomEvent(this.queryEl, 'input', () => this.render());
     this.listEl = contentEl.createDiv('lt-quick-list');
     this.render();
     window.setTimeout(() => this.queryEl.focus(), 0);
@@ -72,12 +78,12 @@ export class QuickInsertModal extends Modal {
     const body = row.createDiv('lt-quick-body');
     body.createDiv({ text: item.label, cls: 'lt-quick-title' });
     body.createDiv({ text: item.detail, cls: 'lt-quick-detail' });
-    this.registerDomEvent(row, 'click', () => this.insert(item));
+    this.registerModalDomEvent(row, 'click', () => this.insert(item));
     if (item.kind === 'history' || item.kind === 'favorite') {
       const star = row.createEl('button', { text: item.kind === 'favorite' ? '★' : '☆', cls: 'lt-star-button' });
       star.type = 'button';
       star.setAttr('aria-label', item.kind === 'favorite' ? 'Remove favorite' : 'Add favorite');
-      this.registerDomEvent(star, 'click', (event: MouseEvent) => {
+      this.registerModalDomEvent(star, 'click', (event: MouseEvent) => {
         event.stopPropagation();
         const source = [...this.settings.favoriteEquations, ...this.settings.recentEquations].find((entry) => entry.id === item.id);
         if (source) void this.plugin.toggleEquationFavorite(source).then(() => this.render());
@@ -98,14 +104,25 @@ export class QuickInsertModal extends Modal {
     }
     this.close();
   }
+
+  onClose(): void {
+    this.eventComponent.unload();
+    this.contentEl.empty();
+  }
 }
 
 export class AuthoringLibraryModal extends Modal {
+  private eventComponent = new Component();
+
+  private registerModalDomEvent<K extends keyof HTMLElementEventMap>(el: HTMLElement, type: K, callback: (this: HTMLElement, ev: HTMLElementEventMap[K]) => void): void {
+    this.eventComponent.registerDomEvent(el, type, callback);
+  }
   private activeTab: 'shortcuts' | 'snippets' | 'templates' = 'shortcuts';
 
   constructor(app: App, private readonly plugin: LatexToolboxPlugin) { super(app); }
 
   onOpen(): void {
+    this.eventComponent = new Component();
     this.modalEl.addClass('latex-toolbox-library-modal');
     this.render();
   }
@@ -120,16 +137,21 @@ export class AuthoringLibraryModal extends Modal {
       const button = tabs.createEl('button', { text: tab.charAt(0).toUpperCase() + tab.slice(1), cls: 'lt-library-tab' });
       button.type = 'button';
       button.setAttr('aria-pressed', String(tab === this.activeTab));
-      this.registerDomEvent(button, 'click', () => { this.activeTab = tab; this.render(); });
+      this.registerModalDomEvent(button, 'click', () => { this.activeTab = tab; this.render(); });
     }
     const toolbar = contentEl.createDiv('lt-library-toolbar');
     const add = toolbar.createEl('button', { text: `Add ${this.activeTab.slice(0, -1)}` });
     add.type = 'button';
-    this.registerDomEvent(add, 'click', () => this.addItem());
+    this.registerModalDomEvent(add, 'click', () => this.addItem());
     const list = contentEl.createDiv('lt-library-list');
     const items = this.activeTab === 'shortcuts' ? this.plugin.settings.customShortcuts : this.activeTab === 'snippets' ? this.plugin.settings.customSnippets : this.plugin.settings.customTemplates;
     items.forEach((item) => this.renderRow(list, item));
     if (items.length === 0) list.createDiv({ text: 'Nothing added yet.', cls: 'lt-empty' });
+  }
+
+  onClose(): void {
+    this.eventComponent.unload();
+    this.contentEl.empty();
   }
 
   private renderRow(list: HTMLElement, item: Shortcut | Snippet | Template): void {
@@ -141,10 +163,10 @@ export class AuthoringLibraryModal extends Modal {
     row.createEl('code', { text: item.trigger });
     const edit = row.createEl('button', { text: 'Edit' });
     edit.type = 'button';
-    this.registerDomEvent(edit, 'click', () => this.editItem(item));
+    this.registerModalDomEvent(edit, 'click', () => this.editItem(item));
     const remove = row.createEl('button', { text: 'Delete' });
     remove.type = 'button';
-    this.registerDomEvent(remove, 'click', () => {
+    this.registerModalDomEvent(remove, 'click', () => {
       if (this.activeTab === 'shortcuts') this.plugin.settings.customShortcuts = this.plugin.settings.customShortcuts.filter((entry) => entry.id !== item.id);
       else if (this.activeTab === 'snippets') this.plugin.settings.customSnippets = this.plugin.settings.customSnippets.filter((entry) => entry.id !== item.id);
       else this.plugin.settings.customTemplates = this.plugin.settings.customTemplates.filter((entry) => entry.id !== item.id);
@@ -178,9 +200,15 @@ export class AuthoringLibraryModal extends Modal {
 }
 
 class EditAuthoringItemModal extends Modal {
+  private eventComponent = new Component();
+
+  private registerModalDomEvent<K extends keyof HTMLElementEventMap>(el: HTMLElement, type: K, callback: (this: HTMLElement, ev: HTMLElementEventMap[K]) => void): void {
+    this.eventComponent.registerDomEvent(el, type, callback);
+  }
   constructor(app: App, private readonly item: Shortcut | Snippet | Template, private readonly onSave: (item: Shortcut | Snippet | Template) => Promise<void>) { super(app); }
 
   onOpen(): void {
+    this.eventComponent = new Component();
     this.modalEl.addClass('latex-toolbox-editor-modal');
     const { contentEl } = this;
     contentEl.empty();
@@ -200,7 +228,7 @@ class EditAuthoringItemModal extends Modal {
     makeField('Domain (all, math, physics, chemistry, electronics)', 'domain', this.item.domain);
     const save = contentEl.createEl('button', { text: 'Save', cls: 'mod-cta' });
     save.type = 'button';
-    this.registerDomEvent(save, 'click', () => void this.save(fields));
+    this.registerModalDomEvent(save, 'click', () => void this.save(fields));
   }
 
   private async save(fields: Map<string, HTMLInputElement>): Promise<void> {
@@ -219,5 +247,10 @@ class EditAuthoringItemModal extends Modal {
     } catch {
       new Notice('Could not save the authoring item.');
     }
+  }
+
+  onClose(): void {
+    this.eventComponent.unload();
+    this.contentEl.empty();
   }
 }
