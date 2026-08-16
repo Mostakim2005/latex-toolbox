@@ -139,7 +139,7 @@ export default class LatexToolboxPlugin extends Plugin {
       this.settings = normalizeSettings(await this.loadData());
     } catch {
       this.settings = normalizeSettings(DEFAULT_SETTINGS);
-      new Notice('Could not load saved LaTeX Toolbox settings; defaults were restored.');
+      new Notice('Could not load saved LaTeX toolbox settings; defaults were restored.');
     }
   }
 
