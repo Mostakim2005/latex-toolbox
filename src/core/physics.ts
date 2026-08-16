@@ -15,7 +15,7 @@ const PHYSICS_PATTERNS: PhysicsPattern[] = [
   { pattern: /^kinetic\s+energy$/i, latex: 'K=\\frac{1}{2}mv^2', explanation: 'Recognized kinetic energy.' },
   { pattern: /^(?:gravitational\s+)?potential\s+energy$/i, latex: 'U=mgh', explanation: 'Recognized gravitational potential energy near Earth.' },
   { pattern: /^momentum$/i, latex: '\\mathbf{p}=m\\mathbf{v}', explanation: 'Recognized linear momentum.' },
-  { pattern: /^impulse$/i, latex: '\\mathbf{J}=\\Delta\\mathbf{p}=\\int\\mathbf{F}\,dt', explanation: 'Recognized impulse as change in momentum.' },
+  { pattern: /^impulse$/i, latex: '\\mathbf{J}=\\Delta\\mathbf{p}=\\int\\mathbf{F}\\,dt', explanation: 'Recognized impulse as change in momentum.' },
   { pattern: /^work$/i, latex: 'W=\\int\\mathbf{F}\\cdot d\\mathbf{r}', explanation: 'Recognized mechanical work.' },
   { pattern: /^power$/i, latex: 'P=\\frac{dW}{dt}=\\mathbf{F}\\cdot\\mathbf{v}', explanation: 'Recognized mechanical power.' },
   { pattern: /^centripetal\s+force$/i, latex: 'F_c=\\frac{mv^2}{r}=m\\omega^2r', explanation: 'Recognized centripetal force.' },

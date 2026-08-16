@@ -106,7 +106,7 @@ function resolveNamedChemistry(input: string): ConversionResult | null {
 }
 
 function hasReactionArrow(input: string): boolean {
-  return ARROWS.some(({ token }) => input.includes(token)) || /--?\s*[^>\-]+\s*-+>/.test(input);
+  return ARROWS.some(({ token }) => input.includes(token)) || /--?\s*[^>-]+\s*-+>/.test(input);
 }
 
 function convertReaction(input: string): ConversionResult {
@@ -165,7 +165,7 @@ function convertReaction(input: string): ConversionResult {
 }
 
 function extractReactionParts(input: string): { parts: ReactionPart[]; arrowLatex: string; condition?: string } | null {
-  const conditional = input.match(/^(.*?)\s*--\s*([^>\-]+?)\s*-->\s*(.*)$/);
+  const conditional = input.match(/^(.*?)\s*--\s*([^>-]+?)\s*-->\s*(.*)$/);
   if (conditional) {
     const condition = conditional[2]?.trim();
     const left = conditional[1]?.trim() ?? '';
@@ -214,7 +214,7 @@ function parseReactionTerm(raw: string): { latex: string; issues: string[]; elem
   let value = raw.trim();
   const issues: string[] = [];
 
-  const coefficient = value.match(/^(\d+(?:\.\d+)?)(?:\s+|(?=[A-Z(\[]))(.+)$/);
+  const coefficient = value.match(/^(\d+(?:\.\d+)?)(?:\s+|(?=[A-Z([]))(.+)$/);
   const prefix = coefficient?.[1] ?? '';
   value = coefficient?.[2]?.trim() ?? value;
 
@@ -279,7 +279,7 @@ export function parseChemicalFormula(input: string): ParsedFormula {
   const elements: Record<string, number> = {};
 
   hydrateParts.forEach((part, index) => {
-    const componentPrefix = index > 0 ? part.match(/^(\d+)(?=[A-Z(\[])/)?.[1] ?? '' : '';
+    const componentPrefix = index > 0 ? part.match(/^(\d+)(?=[A-Z([])/)?.[1] ?? '' : '';
     const componentFormula = componentPrefix ? part.slice(componentPrefix.length) : part;
     const parsed = parseFormulaPart(componentFormula);
     issues.push(...parsed.issues);
@@ -427,14 +427,14 @@ function normalizeCondition(value: string): string | null {
   if (/^high\s+pressure$/.test(text)) return '\\text{high pressure}';
   if (/^aqueous$/.test(text)) return '\\mathrm{aq}';
   if (/^([0-9]+(?:\.[0-9]+)?)\s*(?:°?c|celsius)$/.test(text)) return `\\mathrm{${text.replace(/\s+/g, '')}}`;
-  if (/^[A-Za-z0-9.+\-\s]+$/.test(value.trim())) return `\\mathrm{${value.trim().replace(/\s+/g, '\\,')}}`;
+  if (/^[A-Za-z0-9.+\s-]+$/.test(value.trim())) return `\\mathrm{${value.trim().replace(/\s+/g, '\\,')}}`;
   return null;
 }
 
 function looksLikeFormula(input: string): boolean {
   const normalized = input.trim();
-  if (/^(?:\d{1,3})?\^?\{?\d{0,3}\}?[A-Z][a-z]?(?:\d+|\(|\)|\[|\]|\^|[+\-])*[A-Za-z0-9()[\]^+\-·•]*$/.test(normalized)) return true;
-  return /^[A-Z][A-Za-z0-9()[\]^+\-·•]*\s*(?:\((?:aq|s|l|g)\))?$/i.test(normalized) && /[A-Z]/.test(normalized);
+  if (/^(?:\d{1,3})?\^?\{?\d{0,3}\}?[A-Z][a-z]?(?:\d+|\(|\)|\[|\]|\^|[+-])*[A-Za-z0-9()[\]^+-·•]*$/.test(normalized)) return true;
+  return /^[A-Z][A-Za-z0-9()[\]^+-·•]*\s*(?:\((?:aq|s|l|g)\))?$/i.test(normalized) && /[A-Z]/.test(normalized);
 }
 
 function mergeElementCounts(target: Record<string, number>, source: Record<string, number>): void {

@@ -179,7 +179,7 @@ function convertQuantityWithUnit(input: string): ConversionResult | null {
   const unitKey = (match[2] ?? '').toLowerCase();
   let unit = UNITS[unitKey];
   if (!unit && /^(k|m|micro|n)ohms?$/.test(unitKey)) {
-    const prefix: keyof typeof PREFIXES | 'micro' = unitKey.startsWith('micro') ? 'micro' : (unitKey[0] as keyof typeof PREFIXES);
+    const prefix: keyof typeof PREFIXES = unitKey.startsWith('micro') ? 'micro' : (unitKey[0] as keyof typeof PREFIXES);
     const prefixLatex = prefix === 'micro' ? '\\mu' : `\\mathrm{${PREFIXES[prefix] ?? prefix}}`;
     unit = `${prefixLatex}\\Omega`;
   }

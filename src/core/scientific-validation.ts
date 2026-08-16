@@ -49,7 +49,7 @@ const DIMENSIONS: Record<string, string> = {
 
 export function sanitizeScientificInput(input: string): { value: string; issues: string[] } {
   const issues: string[] = [];
-  const normalized = input.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ').trim();
+  const normalized = Array.from(input, (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127 ? ' ' : char).join('').trim();
   if (normalized.length > MAX_SCIENTIFIC_INPUT_LENGTH) {
     issues.push(`Input is too long; the limit is ${MAX_SCIENTIFIC_INPUT_LENGTH} characters.`);
     return { value: normalized.slice(0, MAX_SCIENTIFIC_INPUT_LENGTH), issues };
