@@ -1,9 +1,10 @@
 {
-  "id": "latex-toolbox",
-  "name": "LaTeX Toolbox",
-  "version": "1.8.0",
-  "minAppVersion": "1.5.0",
-  "description": "A modular scientific LaTeX assistant for mathematics, physics, chemistry, electronics, shortcuts, snippets, templates, autocomplete, and equation authoring.",
-  "author": "Mostakim DeepSeek",
-  "isDesktopOnly": false
+	"id": "latex-toolbox",
+	"name": "LaTeX Toolbox",
+	"version": "4.6.0",
+	"minAppVersion": "0.15.0",
+	"description": "STEM LaTeX Companion with visual builder, presets, shortcuts, and AI delimiter fixer.",
+	"author": "Mostakim 4 Argon",
+	"authorUrl": "https://github.com/Mostakim2005",
+	"isDesktopOnly": false
 }
