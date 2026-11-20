@@ -23,11 +23,13 @@ export default class LatexToolboxPlugin extends Plugin {
     this.addSettingTab(new LatexSettingPlaceholder(this.app, this));
   }
 
-  onunload() {}
+  onunload() {
+    if (typeof document !== "undefined") document.body.removeClass("lt-glassmorphic");
+  }
 
   applyThemePreferences() {
     if (typeof document !== "undefined") {
-      document.body.toggleClass("latex-glassmorphic", Boolean((this.settings as any).glassmorphism ?? true));
+      document.body.toggleClass("lt-glassmorphic", Boolean((this.settings as any).glassmorphism ?? true));
     }
   }
 

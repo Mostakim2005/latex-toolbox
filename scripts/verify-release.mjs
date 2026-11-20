@@ -7,7 +7,7 @@ const pkg = readJson('package.json');
 const versions = readJson('versions.json');
 const errors = [];
 
-if (manifest.version !== '1.8.0') errors.push(`manifest.json version must be 1.8.0 (got ${manifest.version}).`);
+if (!/^\d+\.\d+\.\d+$/.test(manifest.version)) errors.push(`manifest.json version must be valid semver (got ${manifest.version}).`);
 if (pkg.version !== manifest.version) errors.push(`package.json (${pkg.version}) and manifest.json (${manifest.version}) versions differ.`);
 if (!versions[manifest.version]) errors.push(`versions.json is missing ${manifest.version}.`);
 if (versions[manifest.version] !== manifest.minAppVersion) errors.push(`versions.json ${manifest.version} floor does not match manifest.minAppVersion.`);

@@ -1,4 +1,4 @@
-﻿// LaTeX Toolbox from live Nihon 4.6.0 bundle (4826 lines)
+// LaTeX Toolbox from live Nihon 4.6.0 bundle (4826 lines)
 export interface LaTeXSettings {
   enableSuggest: boolean;
   enableKbd: boolean;

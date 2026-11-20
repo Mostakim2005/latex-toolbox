@@ -762,7 +762,7 @@ function normalizeChemicalFormulaInput(raw) {
         num += plain[i];
         i++;
       }
-      out += "_" + num;
+      out += num.length > 1 ? "_{" + num + "}" : "_" + num;
       continue;
     }
     if (/[a-zA-Z]/.test(ch)) {
@@ -1295,10 +1295,18 @@ function normalizeDelimiters(content, wrapStyle) {
       continue;
     }
     if (content.charAt(i) === "`") {
-      var endCode = content.indexOf("`", i + 1);
-      if (endCode === -1) { result += content.slice(i); break; }
-      result += content.slice(i, endCode + 1);
-      i = endCode + 1;
+      var tickCount = 0;
+      while (i + tickCount < content.length && content.charAt(i + tickCount) === "`") tickCount++;
+      var tickSeq = "`".repeat(tickCount);
+      var lineEnd = content.indexOf("\n", i + tickCount);
+      var endCode = content.indexOf(tickSeq, i + tickCount);
+      if (endCode !== -1 && (lineEnd === -1 || endCode < lineEnd)) {
+        result += content.slice(i, endCode + tickCount);
+        i = endCode + tickCount;
+        continue;
+      }
+      result += tickSeq;
+      i += tickCount;
       continue;
     }
     if (content.indexOf("\\[", i) === i) {
@@ -1312,8 +1320,7 @@ function normalizeDelimiters(content, wrapStyle) {
     if (content.indexOf("\\(", i) === i) {
       var endInline = content.indexOf("\\)", i + 2);
       if (endInline !== -1) {
-        var delim = wrapStyle === "inline" ? "$" : "$$";
-        result += delim + content.slice(i + 2, endInline).trim() + delim;
+        result += "$" + content.slice(i + 2, endInline).trim() + "$";
         i = endInline + 2;
         continue;
       }
@@ -1491,6 +1498,7 @@ class FloatingSolverWindow {
     this.plugin = plugin;
     this.builderRef = builderRef || null;
     this.comp = new obsidian.Component();
+    this.stepsComp = new obsidian.Component();
     this.renderComp = new obsidian.Component();
     this.previewTimer = null;
     this.steps = [
@@ -1539,7 +1547,7 @@ class FloatingSolverWindow {
     var isDragging = false;
     var dragOffsetX = 0;
     var dragOffsetY = 0;
-    this.comp.registerDomEvent(titleBar, "mousedown", function(e) {
+    this.comp.registerDomEvent(titleBar, "pointerdown", function(e) {
       if (e.target === closeBtn) return;
       isDragging = true;
       var rect = win.getBoundingClientRect();
@@ -1549,14 +1557,14 @@ class FloatingSolverWindow {
       win.style.left = rect.left + "px";
       win.style.top = rect.top + "px";
     });
-    this.comp.registerDomEvent(window, "mousemove", function(e) {
+    this.comp.registerDomEvent(window, "pointermove", function(e) {
       if (!isDragging) return;
       var nx = Math.max(8, Math.min(window.innerWidth - 120, e.clientX - dragOffsetX));
       var ny = Math.max(8, Math.min(window.innerHeight - 80, e.clientY - dragOffsetY));
       win.style.left = nx + "px";
       win.style.top = ny + "px";
     });
-    this.comp.registerDomEvent(window, "mouseup", function() { isDragging = false; });
+    this.comp.registerDomEvent(window, "pointerup", function() { isDragging = false; });
 
     var body = win.createDiv("lt-floating-body");
 
@@ -1772,8 +1780,8 @@ class FloatingSolverWindow {
         step.expr = exprInput.value;
         self.updatePreview();
       });
-      self.comp.registerDomEvent(noteInput, "input", function() { step.note = noteInput.value; self.scheduleUpdatePreview(); });
-      self.comp.registerDomEvent(delBtn, "click", function() {
+      self.stepsComp.registerDomEvent(noteInput, "input", function() { step.note = noteInput.value; self.scheduleUpdatePreview(); });
+      self.stepsComp.registerDomEvent(delBtn, "click", function() {
         if (self.steps.length <= 1) return;
         self.steps.splice(idx, 1);
         self.renderSteps(Math.max(0, idx - 1));
@@ -1804,6 +1812,7 @@ class FloatingSolverWindow {
       window.clearTimeout(this.previewTimer);
       this.previewTimer = null;
     }
+    this.stepsComp.unload();
     this.comp.unload();
     this.renderComp.unload();
     if (this.containerEl && this.containerEl.parentNode) {
@@ -4458,6 +4467,32 @@ class LatexToolboxPlugin extends obsidian.Plugin {
       callback: function() { self.api.openLibraryManager(); }
     });
 
+    this.addCommand({
+      id: "fix-ai-latex-delimiters",
+      name: "Fix AI LaTeX delimiters in selection or active note",
+      editorCallback: function(editor) {
+        var selected = editor.getSelection();
+        if (selected) {
+          var fixedSel = normalizeDelimiters(selected, self.settings.wrapStyle);
+          if (fixedSel !== selected) {
+            editor.replaceSelection(fixedSel);
+            new obsidian.Notice("Normalized LaTeX delimiters in selection.");
+          } else {
+            new obsidian.Notice("No AI LaTeX delimiters found in selection.");
+          }
+          return;
+        }
+        var full = editor.getValue();
+        var fixedFull = normalizeDelimiters(full, self.settings.wrapStyle);
+        if (fixedFull !== full) {
+          editor.setValue(fixedFull);
+          new obsidian.Notice("Normalized LaTeX delimiters across active note.");
+        } else {
+          new obsidian.Notice("No AI LaTeX delimiters found in active note.");
+        }
+      }
+    });
+
     this.addRibbonIcon("calculator", "STEM LaTeX Builder", function() {
       self.api.openBuilder();
     });
@@ -4475,7 +4510,7 @@ class LatexToolboxPlugin extends obsidian.Plugin {
   createPublicAPI() {
     var self = this;
     return {
-      version: "4.5.0",
+      version: "4.6.0",
       openBuilder: function(initialText, initialItem) {
         var view = self.app.workspace.getActiveViewOfType(obsidian.MarkdownView);
         var editor = view ? view.editor : null;

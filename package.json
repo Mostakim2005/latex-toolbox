@@ -1,6 +1,6 @@
-﻿{
+{
 	"name": "obsidian-latex-toolbox",
-	"version": "1.8.0",
+	"version": "4.6.0",
 	"description": "A modular scientific LaTeX assistant for Obsidian.",
 	"main": "main.js",
 	"type": "module",
