@@ -1,10 +1,10 @@
-// LaTeX Toolbox ported from Nihon 4.6.0 (L15-750)
+// LaTeX Toolbox taxonomy & chemical formula normalizer
 import type { SolverPreset } from "./types";
 
 export const TAXONOMY: Record<string, { label: string; icon: string; topics: Record<string, { label: string; subtopics: string[] }> }> = {
   math: {
     label: "Mathematics",
-    icon: "âˆ‘",
+    icon: "∑",
     topics: {
       algebra: { label: "Algebra & Functions", subtopics: ["Quadratics & Polynomials", "Logarithms & Exponentials", "Sequences & Series", "Complex Numbers", "Binomial Theorem"] },
       trigonometry: { label: "Trigonometry", subtopics: ["Basic Ratios", "Pythagorean & Angle Identities", "Double & Half Angle", "Sum-to-Product", "Inverse Trig", "Law of Sines & Cosines"] },
@@ -12,14 +12,14 @@ export const TAXONOMY: Record<string, { label: string; icon: string; topics: Rec
   },
   physics: {
     label: "Physics",
-    icon: "âš›",
+    icon: "⚛",
     topics: {
       mechanics: { label: "Mechanics & Gravitation", subtopics: ["Kinematics", "Newton's Laws & Friction", "Work, Energy & Power"] },
     },
   },
   chemistry: {
     label: "Chemistry",
-    icon: "âš—",
+    icon: "⚗",
     topics: {
       stoichiometry: { label: "Stoichiometry", subtopics: ["Balancing Equations", "Mole Calculations", "Concentration"] },
     },
@@ -27,7 +27,13 @@ export const TAXONOMY: Record<string, { label: string; icon: string; topics: Rec
 };
 
 const ELEMENTS_LIST = [
-  "He", "Li", "Be", "Ne", "Na", "Mg", "Al", "Si", "Cl", "Ar", "Ca", "Sc", "Ti", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "H", "B", "C", "N", "O", "F", "P", "S", "K", "V", "Y", "I", "W", "U",
+  "He","Li","Be","Ne","Na","Mg","Al","Si","Cl","Ar","Ca","Sc","Ti","Cr","Mn","Fe","Co","Ni","Cu","Zn",
+  "Ga","Ge","As","Se","Br","Kr","Rb","Sr","Zr","Nb","Mo","Tc","Ru","Rh","Pd","Ag","Cd","In","Sn","Sb",
+  "Te","Xe","Cs","Ba","La","Ce","Pr","Nd","Pm","Sm","Eu","Gd","Tb","Dy","Ho","Er","Tm","Yb","Lu","Hf",
+  "Ta","Re","Os","Ir","Pt","Au","Hg","Tl","Pb","Bi","Po","At","Rn","Fr","Ra","Ac","Th","Pa","Np","Pu",
+  "Am","Cm","Bk","Cf","Es","Fm","Md","No","Lr","Rf","Db","Sg","Bh","Hs","Mt","Ds","Rg","Cn","Nh","Fl",
+  "Mc","Lv","Ts","Og",
+  "H","B","C","N","O","F","P","S","K","V","Y","I","W","U","e",
 ];
 const VALID_ELEMENTS = new Set(ELEMENTS_LIST);
 
@@ -40,7 +46,7 @@ export function normalizeChemicalFormulaInput(raw: string): string {
   let i = 0;
   while (i < plain.length) {
     const ch = plain[i]!;
-    if ("()[]+.*".includes(ch)) {
+    if ("()[]+.*·".includes(ch)) {
       out += ch;
       i++;
       continue;
@@ -51,7 +57,7 @@ export function normalizeChemicalFormulaInput(raw: string): string {
         num += plain[i];
         i++;
       }
-      out += "_" + num;
+      out += num.length > 1 ? `_{${num}}` : `_${num}`;
       continue;
     }
     if (/[a-zA-Z]/.test(ch)) {
@@ -86,4 +92,3 @@ export const SOLVER_PRESETS: SolverPreset[] = [
     ],
   },
 ];
-

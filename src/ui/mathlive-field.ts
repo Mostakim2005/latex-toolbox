@@ -1,5 +1,13 @@
 import "mathlive";
-import type { MathfieldElement } from "mathlive";
+import { MathfieldElement } from "mathlive";
+
+let mathLiveConfigured = false;
+function configureMathLiveForObsidian(): void {
+  if (mathLiveConfigured) return;
+  mathLiveConfigured = true;
+  MathfieldElement.fontsDirectory = null;
+  MathfieldElement.soundsDirectory = null;
+}
 
 /**
  * Converts template slot syntax (e.g. ${1:numerator} or {#slot}) into
@@ -31,6 +39,7 @@ export function mountMathLiveField(
   container: HTMLElement,
   opts: MathLiveSlotHostOptions = {}
 ): MathfieldElement {
+  configureMathLiveForObsidian();
   const mf = document.createElement("math-field") as MathfieldElement;
   mf.classList.add("lt-mathlive-field");
   if (opts.enableSlotHighlighting !== false) {
