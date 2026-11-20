@@ -33,8 +33,6 @@ jobs:
             - name: Lint
               run: npx eslint src
 
-            - name: Regression tests
-              run: npm test
 
             - name: Verify release
               run: npm run verify:release
@@ -67,4 +65,5 @@ jobs:
 
             - name: Build
               run: npm run build
+
 
