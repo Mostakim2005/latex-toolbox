@@ -1,0 +1,22 @@
+# Architectural Decisions, Pivots & Landmines (`DECISIONS_AND_TRAPS.md`)
+> **1-Line Summary:** Architectural decisions and regex safety traps for LaTeX Toolbox.
+
+## 1. Architectural Decisions & Pivot History
+
+### [DECISION: Ship-Preset-Data-Json-With-App] | Aliases: built in presets, data.json bundling
+> **1-Line Summary:** `data.json` shipped directly inside the repository and package as a required product deliverable.
+* **Decision Maker:** `[DECIDED BY: HUMAN]`
+* **Original User Intention:** The 480+ KB curriculum formulas are essential out-of-the-box knowledge and must never be stripped or left to empty user initialization.
+
+## 2. Do-Not-Touch Engineering Landmines (Traps)
+
+### [TRAP: Greedy-Dollar-Delimiter-Capture] | Aliases: currency collision, inline math corruption
+> **1-Line Summary:** Matching `$[^$]+$` greedily turns sentences like `"I paid $50 and he paid $60"` into corrupted math.
+* **Strict Rule:** **NEVER** match dollar delimiters without asserting word boundaries or non-digit lookaheads.
+* **Protected Code Anchors (Grep Targets):**
+  * `src/main.ts` -> `INLINE_MATH_REGEX_GUARD`
+
+### [TRAP: Data-Json-Preset-Corruption] | Aliases: blank settings wipe, presets lost
+> **1-Line Summary:** Overwriting settings via `saveData()` without merging against default presets destroys user formula libraries.
+* **Protected Code Anchors (Grep Targets):**
+  * `src/settings.ts` -> `safeSaveSettings`

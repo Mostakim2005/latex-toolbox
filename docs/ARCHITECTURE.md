@@ -1,0 +1,49 @@
+# System Architecture (`ARCHITECTURE.md`)
+> **1-Line Summary:** Zero-dependency modular TypeScript architecture with pre-bundled curriculum taxonomy data.
+
+## 1. High-Level Visual System Map
+
+```mermaid
+flowchart TB
+    %% Color Definitions (Obsidian & GitHub compatible)
+    classDef startNode fill:#1d4ed8,stroke:#1e3a8a,color:#ffffff
+    classDef processNode fill:#0f766e,stroke:#115e59,color:#ffffff
+    classDef outputNode fill:#15803d,stroke:#14532d,color:#ffffff
+
+    Editor([Obsidian Active Note Editor]):::startNode -->|triggers command| Controller[LaTeX Toolbox Controller]:::processNode
+    Taxonomy[(Bundled data.json: 480KB Taxonomy)]:::processNode -->|supplies presets| Controller
+    Controller -->|repairs delimiters| Normalizer[MathJax Regex Normalizer]:::processNode
+    Normalizer -->|inserts / updates LaTeX| Editor
+    Controller -->|opens visual palette| Modal[(Interactive Builder Modal)]:::outputNode
+
+    subgraph Legend["Legend (Color Guide)"]
+        L1([Blue = Editor Context / Action]):::startNode
+        L2[Teal = Taxonomy & Normalization Engine]:::processNode
+        L3[(Green = User Interface / Modal)]:::outputNode
+    end
+```
+
+## 2. Tech Stack & Why We Chose It
+
+| Layer | Tool / Library | Plain-English Reason Why |
+| --- | --- | --- |
+| Host / UI | Obsidian Plugin API | Deep cursor and selection insertion into active Markdown editor. |
+| Language | TypeScript 5+ | Strict typings for AST and taxonomy structures. |
+| Presets | `data.json` (480KB JSON) | Shipped directly inside the app to eliminate external network requirements. |
+
+## 3. Core Subsystems & Engineering Tricks
+
+### [SUBSYSTEM: Equation-Parser-And-Fixer] | Aliases: delimiter regex engine, mathjax parser
+> **1-Line Summary:** Non-backtracking regex engine that identifies unbalanced LaTeX math blocks.
+* **Code Anchors (Grep Targets):**
+  * `src/main.ts` -> `fixEquationDelimiters`
+
+### [SUBSYSTEM: Preset-Taxonomy-Engine] | Aliases: data.json loader, category tree
+> **1-Line Summary:** Hierarchical STEM taxonomy loader categorizing formulas by subject and tier.
+* **Code Anchors (Grep Targets):**
+  * `src/taxonomy.ts` -> `getCategoryTree`
+
+## 4. Recipes: How to Add New Things Safely
+* **To add a new formula category:**
+  1. Add category enum in `src/types.ts` -> `StemCategory`.
+  2. Append formula JSON entries to root `data.json`.
