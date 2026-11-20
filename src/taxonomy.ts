@@ -1,4 +1,4 @@
-﻿// LaTeX Toolbox ported from Nihon 4.6.0 (L15-750)
+// LaTeX Toolbox ported from Nihon 4.6.0 (L15-750)
 import type { SolverPreset } from "./types";
 
 export const TAXONOMY: Record<string, { label: string; icon: string; topics: Record<string, { label: string; subtopics: string[] }> }> = {

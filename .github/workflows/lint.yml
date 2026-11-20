@@ -25,7 +25,7 @@ jobs:
                   cache: 'npm'
 
             - name: Install dependencies
-              run: npm ci
+              run: npm install
 
             - name: Build
               run: npm run build
@@ -57,7 +57,7 @@ jobs:
                   cache: 'npm'
 
             - name: Install dependencies
-              run: npm ci
+              run: npm install
 
             - name: Select Obsidian API version
               run: npm install --no-save --no-audit --no-fund obsidian@${{ matrix.obsidian }}
@@ -67,3 +67,4 @@ jobs:
 
             - name: Build
               run: npm run build
+

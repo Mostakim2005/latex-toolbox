@@ -738,7 +738,7 @@ body:not(.lt-glassmorphic) {
   border: 1.5px solid var(--interactive-accent);
   border-radius: var(--lt-radius-sm);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-  z-index: 10005;
+  z-index: calc(var(--layer-modal, 50) + 5);
 }
 
 .lt-builder-ac-dropdown {
@@ -772,7 +772,7 @@ body:not(.lt-glassmorphic) {
   transform: translateX(-50%);
   width: min(940px, 95vw);
   height: min(720px, 86vh);
-  min-width: 500px;
+  min-width: min(500px, calc(100vw - 16px));
   min-height: 380px;
   resize: both;
   overflow: hidden;
@@ -784,7 +784,7 @@ body:not(.lt-glassmorphic) {
   border: 1px solid var(--lt-glass-border);
   border-radius: var(--lt-radius-lg);
   box-shadow: var(--lt-glass-shadow);
-  z-index: 10000;
+  z-index: calc(var(--layer-modal, 50) - 5);
 }
 
 .lt-floating-titlebar {
@@ -1000,4 +1000,32 @@ body:not(.lt-glassmorphic) {
   .lt-chem-arrow-cond-row {
     grid-template-columns: 1fr 1fr;
   }
+}
+/* MathLive slot-highlighting & CAS toolbar */
+.lt-mathlive-field {
+  width: 100%;
+  font-size: 1.25rem;
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+.lt-slot-highlighting-enabled::part(placeholder) {
+  background: rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.18);
+  border-bottom: 2px solid var(--interactive-accent);
+  border-radius: 3px;
+  padding: 0 3px;
+}
+.lt-cas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.lt-cas-output {
+  margin-top: 8px;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
 }
