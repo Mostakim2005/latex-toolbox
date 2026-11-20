@@ -31,9 +31,9 @@ export function getBundledPresets(): {
   templates: PresetItem[];
 } {
   return {
-    shortcuts: (defaultPresets.shortcuts ?? []) as PresetItem[],
-    snippets: (defaultPresets.snippets ?? []) as PresetItem[],
-    templates: (defaultPresets.templates ?? []) as PresetItem[],
+    shortcuts: defaultPresets.shortcuts ?? [],
+    snippets: defaultPresets.snippets ?? [],
+    templates: defaultPresets.templates ?? [],
   };
 }
 

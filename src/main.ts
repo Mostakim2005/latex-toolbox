@@ -64,7 +64,7 @@ class MathLiveBuilderModal extends Modal {
         const zone = isCursorInMathZone(this.editor);
         this.editor.replaceSelection(zone.inMath ? clean : wrapMath(clean, this.plugin.settings.wrapStyle));
       } else {
-        navigator.clipboard?.writeText(clean);
+        void navigator.clipboard?.writeText(clean);
         new Notice("Copied LaTeX to clipboard.");
       }
       this.close();
@@ -171,7 +171,7 @@ class LatexToolboxSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "LaTeX Toolbox v5 Settings" });
+    new Setting(containerEl).setName("LaTeX Toolbox v5 Settings").setHeading();
 
     const companions = detectCompanionLatexPlugins(this.app);
     containerEl.createEl("p", {
