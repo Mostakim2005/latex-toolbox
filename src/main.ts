@@ -171,7 +171,7 @@ class LatexToolboxSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    new Setting(containerEl).setName("LaTeX Toolbox v5 Settings").setHeading();
+    new Setting(containerEl).setName("Mathematical tools & builder configuration").setHeading();
 
     const companions = detectCompanionLatexPlugins(this.app);
     containerEl.createEl("p", {
