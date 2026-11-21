@@ -1,10 +1,139 @@
+import { ComputeEngine } from "@cortex-js/compute-engine";
 import * as math from "mathjs";
-import type { FormulaEntry } from "../types";
+import type { FormulaEntry, FormulaVariable } from "../types";
 import rawDb from "../data/stem-formula-db.json";
+import defaultPresets from "../presets/default-presets.json";
 
-const READONLY_DB: readonly FormulaEntry[] = Object.freeze(
-  (rawDb as FormulaEntry[]).map((entry) => Object.freeze(entry))
-);
+export interface ExtendedFormulaEntry extends FormulaEntry {
+  wolfram?: string;
+  matlab?: string;
+  source?: "curated" | "presets";
+  originalLevel?: string;
+}
+
+interface RawPresetSnippet {
+  id?: string;
+  name?: string;
+  label?: string;
+  trigger?: string;
+  aliases?: string[];
+  latex?: string;
+  domain?: string;
+  topic?: string;
+  subtopic?: string;
+  level?: string;
+  wolfram?: string;
+  matlab?: string;
+  description?: string;
+}
+
+function mapPresetBranch(domain?: string): FormulaEntry["branch"] | null {
+  const d = (domain ?? "").toLowerCase();
+  if (d === "math") return "math";
+  if (d === "physics") return "physics";
+  if (d === "chemistry") return "chemistry";
+  if (d === "electronics" || d === "eee" || d === "electrical") return "eee";
+  return null;
+}
+
+function mapPresetLevel(level?: string, branch?: FormulaEntry["branch"]): FormulaEntry["level"] {
+  if (branch === "eee") return "eee-basics";
+  const l = (level ?? "").toLowerCase();
+  if (l.includes("o-level") || l.includes("grade 9") || l.includes("grade 10")) return "o-level";
+  if (l.includes("basic ee") || l.includes("eng yr") || l.includes("uni")) return "eee-basics";
+  return "a-level-ib";
+}
+
+function extractAutoVariables(latex: string): { outputSymbol: string; rhsLatex: string; vars: FormulaVariable[] } {
+  const clean = latex.replace(/\$\{\d+:([^}]+)\}/g, "$1").replace(/\$\{\d+\}/g, "x");
+  const eqParts = clean.split("=");
+  const outputSymbol = eqParts.length >= 2 && eqParts[0]!.trim().length <= 16 ? eqParts[0]!.trim() : "y";
+  const rhsLatex = eqParts.length >= 2 ? eqParts.slice(1).join("=").trim() : clean.trim();
+
+  // Extract single-letter or simple subscript variable tokens from RHS
+  const stripped = rhsLatex
+    .replace(/\\(?:sin|cos|tan|cot|sec|csc|arcsin|arccos|arctan|log|ln|exp|sqrt|frac|left|right|text|mathrm|mathbf|operatorname|cdot|times|pm|mp|pi|infty|int|sum|prod|lim|partial|ce|quad|qquad|begin|end|aligned|pmatrix|bmatrix)\b/g, " ")
+    .replace(/\\(?:alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|lambda|mu|nu|xi|rho|sigma|tau|phi|psi|omega)\b/g, (m) => ` ${m.slice(1)} `);
+
+  const seen = new Set<string>();
+  const vars: FormulaVariable[] = [];
+  const matches = stripped.match(/\b[a-zA-Z]\b/g) ?? [];
+  for (const m of matches) {
+    if (["e", "i", "j", "d"].includes(m) || seen.has(m)) continue;
+    seen.add(m);
+    vars.push({ key: m, symbol: m, meaning: `Variable ${m}`, defaultValue: 1 });
+    if (vars.length >= 6) break;
+  }
+  return { outputSymbol, rhsLatex, vars };
+}
+
+function buildUnifiedDatabase(): readonly ExtendedFormulaEntry[] {
+  const curated: ExtendedFormulaEntry[] = (rawDb as FormulaEntry[]).map((e) => ({
+    ...e,
+    source: "curated",
+  }));
+
+  const seenNames = new Set(curated.map((c) => c.name.toLowerCase()));
+  const seenIds = new Set(curated.map((c) => c.id.toLowerCase()));
+
+  const rawSnippets = (defaultPresets as { snippets?: RawPresetSnippet[]; templates?: RawPresetSnippet[] }).snippets ?? [];
+  const rawTemplates = (defaultPresets as { snippets?: RawPresetSnippet[]; templates?: RawPresetSnippet[] }).templates ?? [];
+  const allPresets = [...rawSnippets, ...rawTemplates];
+
+  const merged: ExtendedFormulaEntry[] = [...curated];
+
+  for (const item of allPresets) {
+    const branch = mapPresetBranch(item.domain);
+    if (!branch) continue; // Skip non-STEM (e.g. english)
+    const name = (item.name || item.label || item.trigger || "").trim();
+    const latex = (item.latex || "").trim();
+    if (!name || !latex) continue;
+
+    const id = `preset-${item.id || name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+    if (seenIds.has(id) || seenNames.has(name.toLowerCase())) continue;
+    seenIds.add(id);
+    seenNames.add(name.toLowerCase());
+
+    const auto = extractAutoVariables(latex);
+    const topic = item.subtopic || item.topic || branch.toUpperCase();
+    const defParts: string[] = [];
+    if (item.description) defParts.push(item.description);
+    else if (item.label && item.label !== name) defParts.push(item.label);
+    else defParts.push(`${topic} formula (${item.level || "STEM"}).`);
+    if (item.wolfram) defParts.push(`Wolfram: ${item.wolfram}`);
+
+    const tags = [
+      ...(item.aliases ?? []),
+      item.trigger ?? "",
+      item.topic ?? "",
+      item.subtopic ?? "",
+      item.wolfram ?? "",
+      item.matlab ?? "",
+    ].filter(Boolean);
+
+    merged.push({
+      id,
+      name,
+      branch,
+      level: mapPresetLevel(item.level, branch),
+      originalLevel: item.level,
+      topic,
+      latex,
+      definition: defParts.join(" — "),
+      outputSymbol: auto.outputSymbol,
+      calcExpr: "", // Evaluated dynamically via Compute Engine when empty
+      variables: auto.vars,
+      tags,
+      wolfram: item.wolfram,
+      matlab: item.matlab,
+      source: "presets",
+    });
+  }
+
+  return Object.freeze(merged.map((entry) => Object.freeze(entry)));
+}
+
+const READONLY_DB: readonly ExtendedFormulaEntry[] = buildUnifiedDatabase();
 
 export type FormulaVisualShape =
   | "all"
@@ -22,16 +151,16 @@ export type FormulaSortMode =
   | "name"
   | "visual";
 
-export function getAllFormulas(): readonly FormulaEntry[] {
+export function getAllFormulas(): readonly ExtendedFormulaEntry[] {
   return READONLY_DB;
 }
 
 /**
  * Classifies a formula by its visual mathematical structure ("picture" patterns).
  */
-export function classifyFormulaShapes(entry: FormulaEntry): FormulaVisualShape[] {
+export function classifyFormulaShapes(entry: ExtendedFormulaEntry): FormulaVisualShape[] {
   const shapes: FormulaVisualShape[] = [];
-  const src = `${entry.latex} ${entry.calcExpr}`;
+  const src = `${entry.latex} ${entry.calcExpr} ${entry.wolfram ?? ""}`;
   if (/\\frac|\//.test(src)) shapes.push("fraction");
   if (/\\sqrt|sqrt\(/.test(src)) shapes.push("sqrt");
   if (/\\ln|\\log|\\exp|exp\(|log10|log2|e\^|\^\{/.test(src)) shapes.push("exp-log");
@@ -43,10 +172,6 @@ export function classifyFormulaShapes(entry: FormulaEntry): FormulaVisualShape[]
   return shapes;
 }
 
-/**
- * Normalizes natural-language, WolframAlpha, and SymPy expressions into comparable tokens.
- * e.g. "1/2*m*v**2" -> ["0.5", "m", "v^2", "1/2", "mv2"]
- */
 function normalizeMathQuery(raw: string): string[] {
   const s = (raw || "")
     .trim()
@@ -59,8 +184,6 @@ function normalizeMathQuery(raw: string): string[] {
 
   const rawTokens = s.split(/[\s,;]+/).filter(Boolean);
   const expanded = new Set<string>(rawTokens);
-
-  // Add Wolfram / SymPy / natural math aliases
   const compact = s.replace(/\s+/g, "");
   if (compact) expanded.add(compact);
   if (compact.includes("1/2") || compact.includes("0.5")) {
@@ -71,11 +194,6 @@ function normalizeMathQuery(raw: string): string[] {
   if (/integrate|integral|∫/.test(s)) expanded.add("integral");
   if (/log|ln|ph/.test(s)) expanded.add("log");
   if (/sin|cos|tan/.test(s)) expanded.add("trig");
-  if (/ohm|v=ir|ir/.test(compact)) expanded.add("ohm");
-  if (/pv=nrt|nrt/.test(compact)) expanded.add("ideal");
-  if (/mc|dt|heat/.test(compact)) expanded.add("heat");
-  if (/lc|2pi|f0|resonan/.test(compact)) expanded.add("resonance");
-
   return Array.from(expanded);
 }
 
@@ -98,9 +216,10 @@ export interface FormulaSearchFilter {
   level?: string;
   visualShape?: FormulaVisualShape;
   sortBy?: FormulaSortMode;
+  curatedOnly?: boolean;
 }
 
-export function searchFormulaDatabase(filter: FormulaSearchFilter = {}): FormulaEntry[] {
+export function searchFormulaDatabase(filter: FormulaSearchFilter = {}): ExtendedFormulaEntry[] {
   const q = (filter.query ?? "").trim();
   const branch = (filter.branch ?? "all").toLowerCase();
   const level = (filter.level ?? "all").toLowerCase();
@@ -111,15 +230,16 @@ export function searchFormulaDatabase(filter: FormulaSearchFilter = {}): Formula
   const qCompact = qLower.replace(/\s+/g, "").replace(/\*\*/g, "^");
 
   const scored = READONLY_DB.filter((item) => {
+    if (filter.curatedOnly && item.source !== "curated") return false;
     if (branch !== "all" && item.branch !== branch) return false;
     if (level !== "all" && item.level !== level) return false;
     if (visualShape !== "all" && !classifyFormulaShapes(item).includes(visualShape)) return false;
     return true;
   })
     .map((item) => {
-      if (!q) return { item, score: 1 };
+      if (!q) return { item, score: item.source === "curated" ? 2 : 1 };
 
-      const exprCompact = item.calcExpr.toLowerCase().replace(/\s+/g, "");
+      const exprCompact = `${item.calcExpr} ${item.wolfram ?? ""} ${item.matlab ?? ""}`.toLowerCase().replace(/\s+/g, "");
       const latexCompact = item.latex.toLowerCase().replace(/\$\{\d+:|\}|\s+/g, "");
       const hay = [
         item.name,
@@ -127,6 +247,9 @@ export function searchFormulaDatabase(filter: FormulaSearchFilter = {}): Formula
         item.definition,
         item.latex,
         item.calcExpr,
+        item.wolfram ?? "",
+        item.matlab ?? "",
+        item.originalLevel ?? "",
         item.outputSymbol,
         item.outputUnit ?? "",
         ...(item.tags ?? []),
@@ -137,7 +260,9 @@ export function searchFormulaDatabase(filter: FormulaSearchFilter = {}): Formula
 
       let score = 0;
       if (item.name.toLowerCase().includes(qLower)) score += 12;
-      if (qCompact && (exprCompact.includes(qCompact) || latexCompact.includes(qCompact))) score += 15;
+      if (qCompact && (exprCompact.includes(qCompact) || latexCompact.includes(qCompact))) score += 16;
+      if (item.wolfram && item.wolfram.toLowerCase().includes(qLower)) score += 14;
+      if (item.matlab && item.matlab.toLowerCase().includes(qLower)) score += 12;
       if (item.topic.toLowerCase().includes(qLower)) score += 6;
       if ((item.tags ?? []).some((t) => t.toLowerCase() === qLower)) score += 10;
 
@@ -147,6 +272,7 @@ export function searchFormulaDatabase(filter: FormulaSearchFilter = {}): Formula
         else if (hay.includes(tok)) score += 2;
       }
 
+      if (score > 0 && item.source === "curated") score += 1;
       return { item, score };
     })
     .filter((x) => x.score > 0);
@@ -186,11 +312,18 @@ export interface FormulaCalcResult {
   error?: string;
 }
 
+let ceEvalSingleton: ComputeEngine | null = null;
+function getCe(): ComputeEngine {
+  if (!ceEvalSingleton) ceEvalSingleton = new ComputeEngine();
+  return ceEvalSingleton;
+}
+
 /**
- * Evaluates a formula entry numerically using Math.js with user-supplied variable values.
+ * Evaluates both curated formulas (via Math.js calcExpr) and merged preset formulas
+ * (dynamically via CortexJS Compute Engine substitution on the RHS LaTeX).
  */
 export function evaluateFormulaEntry(
-  entry: FormulaEntry,
+  entry: ExtendedFormulaEntry,
   values: Record<string, number>
 ): FormulaCalcResult {
   try {
@@ -208,11 +341,25 @@ export function evaluateFormulaEntry(
       scope[v.key] = val;
     }
 
-    const rawVal: unknown = math.evaluate(entry.calcExpr, scope);
-    const formatted = math.format(rawVal, { precision: 6 });
-    const unitPart = entry.outputUnit ? `\\text{ ${entry.outputUnit}}` : "";
-    const latexResult = `${entry.outputSymbol} = ${formatted}${unitPart}`;
-    return { ok: true, formatted, latexResult };
+    if (entry.calcExpr) {
+      const rawVal: unknown = math.evaluate(entry.calcExpr, scope);
+      const formatted = math.format(rawVal, { precision: 6 });
+      const unitPart = entry.outputUnit ? `\\text{ ${entry.outputUnit}}` : "";
+      const latexResult = `${entry.outputSymbol} = ${formatted}${unitPart}`;
+      return { ok: true, formatted, latexResult };
+    }
+
+    // Dynamic symbolic evaluation for merged preset formulas via Compute Engine
+    const { rhsLatex } = extractAutoVariables(entry.latex);
+    const ce = getCe();
+    const parsed = ce.parse(rhsLatex);
+    const substituted = parsed.subs(scope).N();
+    const formatted = substituted.latex;
+    return {
+      ok: true,
+      formatted,
+      latexResult: `${entry.outputSymbol} = ${formatted}`,
+    };
   } catch (err) {
     return {
       ok: false,

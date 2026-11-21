@@ -622,35 +622,55 @@ class MathLiveBuilderModal extends Modal {
         visualShape: activeShape,
         sortBy: sortSel.value as FormulaSortMode,
       });
-      countBadge.setText(`${results.length} / ${getAllFormulas().length} formulas`);
-      for (const item of results) {
-        const card = listEl.createDiv({ cls: "lt-formula-card" });
-        card.createDiv({ text: item.name, cls: "lt-formula-title" });
-        card.createDiv({ text: `${item.branch.toUpperCase()} • ${item.topic} • ${item.level}`, cls: "lt-formula-meta" });
+      let visibleLimit = 48;
+      const renderSlice = () => {
+        listEl.empty();
+        const slice = results.slice(0, visibleLimit);
+        countBadge.setText(`Showing ${slice.length} of ${results.length} (${getAllFormulas().length} total)`);
+        for (const item of slice) {
+          const card = listEl.createDiv({ cls: "lt-formula-card" });
+          card.createDiv({ text: item.name, cls: "lt-formula-title" });
+          card.createDiv({
+            text: `${item.branch.toUpperCase()} • ${item.topic} • ${item.originalLevel || item.level}`,
+            cls: "lt-formula-meta",
+          });
 
-        // Live rendered visual MathJax picture of the formula
-        const previewEl = card.createDiv({ cls: "lt-formula-preview" });
-        const cleanMath = stripMathLivePlaceholders(templateToMathLivePlaceholders(item.latex));
-        void MarkdownRenderer.render(this.app, `$${cleanMath}$`, previewEl, "", this.previewComp);
+          // Live rendered visual MathJax picture of the formula
+          const previewEl = card.createDiv({ cls: "lt-formula-preview" });
+          const cleanMath = stripMathLivePlaceholders(templateToMathLivePlaceholders(item.latex));
+          void MarkdownRenderer.render(this.app, `$${cleanMath}$`, previewEl, "", this.previewComp);
 
-        card.createDiv({ text: item.definition, cls: "lt-formula-def" });
+          card.createDiv({ text: item.definition, cls: "lt-formula-def" });
 
-        const cardActions = card.createDiv({ cls: "lt-cas-preview-actions" });
-        const insBtn = cardActions.createEl("button", { text: "Insert template" });
-        insBtn.onclick = (ev) => {
-          ev.stopPropagation();
-          const withSlots = templateToMathLivePlaceholders(item.latex);
-          this.insertIntoActiveLine(withSlots, true);
-          this.switchTab("builder");
-          new Notice(`Inserted: ${item.name}`);
-        };
-        const calcBtn = cardActions.createEl("button", { text: "Calculate", cls: "mod-cta" });
-        calcBtn.onclick = (ev) => {
-          ev.stopPropagation();
-          this.selectedCalcFormula = item;
-          renderCalcDrawer(item);
-        };
-      }
+          const cardActions = card.createDiv({ cls: "lt-cas-preview-actions" });
+          const insBtn = cardActions.createEl("button", { text: "Insert template" });
+          insBtn.onclick = (ev) => {
+            ev.stopPropagation();
+            const withSlots = templateToMathLivePlaceholders(item.latex);
+            this.insertIntoActiveLine(withSlots, true);
+            this.switchTab("builder");
+            new Notice(`Inserted: ${item.name}`);
+          };
+          if (item.variables.length > 0) {
+            const calcBtn = cardActions.createEl("button", { text: "Calculate", cls: "mod-cta" });
+            calcBtn.onclick = (ev) => {
+              ev.stopPropagation();
+              this.selectedCalcFormula = item;
+              renderCalcDrawer(item);
+            };
+          }
+        }
+        if (results.length > visibleLimit) {
+          const moreBtn = listEl.createEl("button", {
+            text: `Load more (${results.length - visibleLimit} remaining)`,
+          });
+          moreBtn.onclick = () => {
+            visibleLimit += 48;
+            renderSlice();
+          };
+        }
+      };
+      renderSlice();
     };
 
     searchIn.addEventListener("input", refresh);
