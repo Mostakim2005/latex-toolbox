@@ -1,0 +1,258 @@
+diff --git a/src/core/cas-engine.ts b/src/core/cas-engine.ts
+index 9dd3493..5d0fb81 100644
+--- a/src/core/cas-engine.ts
++++ b/src/core/cas-engine.ts
+@@ -34,13 +34,13 @@ function getEngine(): ComputeEngine {
+ function getNerdamer(): NerdamerLib | null {
+   if (nerdamerSingleton) return nerdamerSingleton;
+   try {
+-    // eslint-disable-next-line @typescript-eslint/no-require-imports
++    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Nerdamer exposes CommonJS entry point for lazy loading
+     const nerdamer = require("nerdamer") as NerdamerLib;
+-    // eslint-disable-next-line @typescript-eslint/no-require-imports
++    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Nerdamer Algebra submodule registers via CommonJS side effect
+     require("nerdamer/Algebra");
+-    // eslint-disable-next-line @typescript-eslint/no-require-imports
++    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Nerdamer Calculus submodule registers via CommonJS side effect
+     require("nerdamer/Calculus");
+-    // eslint-disable-next-line @typescript-eslint/no-require-imports
++    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Nerdamer Solve submodule registers via CommonJS side effect
+     require("nerdamer/Solve");
+     nerdamerSingleton = nerdamer;
+     return nerdamerSingleton;
+@@ -277,7 +277,7 @@ export function casNumeric(latex: string): CASResult {
+     return { ok: true, latex: num.latex, numeric: num.latex, engine: "CortexJS Compute Engine" };
+   } catch {
+     try {
+-      const val = math.evaluate(latexToNerdamerText(latex));
++      const val: unknown = math.evaluate(latexToNerdamerText(latex));
+       const str = math.format(val, { precision: 10 });
+       return { ok: true, latex: str, numeric: str, engine: "Math.js" };
+     } catch (err) {
+@@ -327,7 +327,7 @@ export function casPhasorConvert(input: string, imagUnit: "j" | "i" = "j"): CASR
+  */
+ export function casUnitConvert(input: string): CASResult {
+   try {
+-    const res = math.evaluate(input);
++    const res: unknown = math.evaluate(input);
+     const formatted = math.format(res, { precision: 6 });
+     return { ok: true, latex: `\\text{${formatted}}`, numeric: formatted, engine: "Math.js Units" };
+   } catch (err) {
+@@ -352,7 +352,7 @@ export function casMatrixOp(input: string, op: "matrix_det" | "matrix_inv"): CAS
+       const d = math.det(rows);
+       return { ok: true, latex: String(Number(d.toFixed(6))), engine: "Math.js Matrix" };
+     }
+-    const inv = math.inv(rows) as number[][];
++    const inv = math.inv(rows);
+     const latexRows = inv.map((r) => r.map((v) => Number(v.toFixed(4))).join(" & ")).join(" \\\\ ");
+     return { ok: true, latex: `\\begin{pmatrix} ${latexRows} \\end{pmatrix}`, engine: "Math.js Matrix" };
+   } catch (err) {
+diff --git a/src/core/sympy-bridge.ts b/src/core/sympy-bridge.ts
+index 0b0264d..fcb7b6f 100644
+--- a/src/core/sympy-bridge.ts
++++ b/src/core/sympy-bridge.ts
+@@ -96,19 +96,21 @@ print(json.dumps({
+ }))
+ `;
+ 
+-function getChildProcess(): {
++interface ChildProcessModule {
+   spawn?: (cmd: string, args: string[], opts?: Record<string, unknown>) => {
+     stdin: { write: (d: string) => void; end: () => void };
+-    stdout: { on: (ev: string, cb: (chunk: Buffer | string) => void) => void };
+-    stderr: { on: (ev: string, cb: (chunk: Buffer | string) => void) => void };
++    stdout: { on: (ev: string, cb: (chunk: Uint8Array | string) => void) => void };
++    stderr: { on: (ev: string, cb: (chunk: Uint8Array | string) => void) => void };
+     on: (ev: string, cb: (arg: unknown) => void) => void;
+     kill: () => void;
+   };
+-} | null {
++}
++
++function getChildProcess(): ChildProcessModule | null {
+   if (!Platform.isDesktopApp) return null;
+   try {
+-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+-    return require("child_process");
++    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Desktop-only dynamic require guarded by Platform.isDesktopApp
++    return require("child_process") as ChildProcessModule;
+   } catch {
+     return null;
+   }
+@@ -127,7 +129,7 @@ export async function checkSymPyStatus(pythonExecutable = "python"): Promise<Sym
+     ]);
+     let out = "";
+     let err = "";
+-    const timer = setTimeout(() => {
++    const timer = window.setTimeout(() => {
+       proc.kill();
+       resolve({ available: false, error: "Timed out checking Python/SymPy." });
+     }, 6000);
+@@ -135,11 +137,11 @@ export async function checkSymPyStatus(pythonExecutable = "python"): Promise<Sym
+     proc.stdout.on("data", (d) => (out += String(d)));
+     proc.stderr.on("data", (d) => (err += String(d)));
+     proc.on("error", (e) => {
+-      clearTimeout(timer);
++      window.clearTimeout(timer);
+       resolve({ available: false, error: String(e) });
+     });
+     proc.on("close", (code) => {
+-      clearTimeout(timer);
++      window.clearTimeout(timer);
+       if (code !== 0) {
+         resolve({ available: false, error: err.trim() || `Exit code ${String(code)}` });
+         return;
+@@ -180,7 +182,7 @@ export async function runSymPyOperation(
+     const proc = cp.spawn!(py, ["-c", SYMPY_RUNNER_SCRIPT]);
+     let out = "";
+     let err = "";
+-    const timer = setTimeout(() => {
++    const timer = window.setTimeout(() => {
+       proc.kill();
+       resolve({ ok: false, latex: expr, error: "SymPy computation timed out (15s)." });
+     }, 15000);
+@@ -188,11 +190,11 @@ export async function runSymPyOperation(
+     proc.stdout.on("data", (d) => (out += String(d)));
+     proc.stderr.on("data", (d) => (err += String(d)));
+     proc.on("error", (e) => {
+-      clearTimeout(timer);
++      window.clearTimeout(timer);
+       resolve({ ok: false, latex: expr, error: `Could not launch '${py}': ${String(e)}` });
+     });
+     proc.on("close", (code) => {
+-      clearTimeout(timer);
++      window.clearTimeout(timer);
+       if (code !== 0) {
+         resolve({ ok: false, latex: expr, error: err.trim() || `SymPy exited with code ${String(code)}` });
+         return;
+diff --git a/src/main.ts b/src/main.ts
+index afd49ad..8a9a420 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -71,7 +71,7 @@ class MathLiveBuilderModal extends Modal {
+     const dbToggleBtn = headerActions.createEl("button", { text: "Formula DB" });
+     dbToggleBtn.onclick = () => {
+       this.showFormulaBrowser = !this.showFormulaBrowser;
+-      this.formulaBrowserEl.style.display = this.showFormulaBrowser ? "block" : "none";
++      this.formulaBrowserEl.toggleClass("lt-hidden", !this.showFormulaBrowser);
+     };
+     const calcBtn = headerActions.createEl("button", { text: "Calculator" });
+     calcBtn.onclick = () => {
+@@ -108,8 +108,7 @@ class MathLiveBuilderModal extends Modal {
+     }
+ 
+     // 4. Collapsible Read-Only STEM Formula Database Browser
+-    this.formulaBrowserEl = contentEl.createDiv({ cls: "lt-formula-browser" });
+-    this.formulaBrowserEl.style.display = "none";
++    this.formulaBrowserEl = contentEl.createDiv({ cls: "lt-formula-browser lt-hidden" });
+     this.renderFormulaBrowser(this.formulaBrowserEl);
+ 
+     // 5. Footer Insert Actions (Pure LaTeX vs Interactive Rationale Block)
+@@ -246,14 +245,14 @@ class MathLiveBuilderModal extends Modal {
+         value: line.rationale?.label ?? "",
+         placeholder: "Optional display label (for link/app/audio)",
+       });
+-      labelInput.style.display = typeSel.value === "text" ? "none" : "block";
++      labelInput.toggleClass("lt-hidden", typeSel.value === "text");
+ 
+       // Quick helper bar for Audio recording or App scheme presets
+       const helperBar = ratBox.createDiv({ cls: "lt-rationale-controls" });
+       const renderRationaleHelpers = () => {
+         helperBar.empty();
+         const curType = typeSel.value as RationaleType;
+-        labelInput.style.display = curType === "text" ? "none" : "block";
++        labelInput.toggleClass("lt-hidden", curType === "text");
+         valInput.placeholder = this.getRationalePlaceholder(curType);
+ 
+         if (curType === "app") {
+@@ -291,7 +290,7 @@ class MathLiveBuilderModal extends Modal {
+                 const buf = await blob.arrayBuffer();
+                 const folder = this.plugin.settings.audioNoteFolder || "Attachments/MathAudio";
+                 if (!(await this.app.vault.adapter.exists(folder))) {
+-                  await this.app.vault.createFolder(folder);
++                  await this.app.vault.adapter.mkdir(folder);
+                 }
+                 const path = `${folder}/rationale-${Date.now()}.webm`;
+                 await this.app.vault.createBinary(path, buf);
+@@ -612,7 +611,7 @@ export default class LatexToolboxPlugin extends Plugin {
+     // Auto-fix pasted AI LaTeX delimiters (\(...\), \[...\])
+     this.registerEvent(
+       this.app.workspace.on("editor-paste", (evt, editor) => {
+-        if (!this.settings.autoFixOnPaste) return;
++        if (evt.defaultPrevented || !this.settings.autoFixOnPaste) return;
+         const text = evt.clipboardData?.getData("text/plain") ?? "";
+         if (text && (text.includes("\\(") || text.includes("\\["))) {
+           evt.preventDefault();
+@@ -682,7 +681,7 @@ class LatexToolboxSettingTab extends PluginSettingTab {
+   display(): void {
+     const { containerEl } = this;
+     containerEl.empty();
+-    new Setting(containerEl).setName("LaTeX Toolbox v5.5.0 — Virtual Keyboard & Editor").setHeading();
++    new Setting(containerEl).setName("Virtual keyboard & editor").setHeading();
+ 
+     const companions = detectCompanionLatexPlugins(this.app);
+     containerEl.createEl("p", {
+diff --git a/src/ui/scientific-calculator-modal.ts b/src/ui/scientific-calculator-modal.ts
+index dd7d2c8..04be2f1 100644
+--- a/src/ui/scientific-calculator-modal.ts
++++ b/src/ui/scientific-calculator-modal.ts
+@@ -69,8 +69,8 @@ export class ScientificCalculatorModal extends Modal {
+       type: "text",
+       value: this.expr,
+       placeholder: "e.g. sin(30 deg)^2 + log10(1000) or 5 kOhm * 2 mA to V",
++      cls: "lt-calc-input",
+     });
+-    input.style.width = "100%";
+     const resultEl = display.createDiv({ cls: "lt-calc-result", text: `= ${this.lastAns}` });
+ 
+     const modeBar = container.createDiv({ cls: "lt-cas-toolbar" });
+@@ -88,7 +88,7 @@ export class ScientificCalculatorModal extends Modal {
+         if (this.angleMode === "DEG") {
+           evalSrc = evalSrc.replace(/\b(sin|cos|tan)\(([^)]+)\)/g, "$1(($2) deg)");
+         }
+-        const val = math.evaluate(evalSrc);
++        const val: unknown = math.evaluate(evalSrc);
+         const formatted = math.format(val, { precision: 10 });
+         this.lastAns = formatted;
+         resultEl.setText(`= ${formatted}`);
+@@ -132,7 +132,6 @@ export class ScientificCalculatorModal extends Modal {
+     ];
+ 
+     const keypad = container.createDiv({ cls: "lt-calc-keypad" });
+-    keypad.style.marginTop = "8px";
+     for (const k of keys) {
+       const b = keypad.createEl("button", { text: k });
+       b.onclick = () => {
+@@ -175,7 +174,7 @@ export class ScientificCalculatorModal extends Modal {
+       try {
+         const a = z1In.value.replace(/j/g, "i");
+         const b = z2In.value.replace(/j/g, "i");
+-        const val = math.evaluate(`((${a}) * (${b})) / ((${a}) + (${b}))`);
++        const val: unknown = math.evaluate(`((${a}) * (${b})) / ((${a}) + (${b}))`);
+         parOut.setText(`Z_eq = ${math.format(val, { precision: 6 })}`);
+       } catch (e) {
+         parOut.setText(`Error: ${String(e)}`);
+diff --git a/styles.css b/styles.css
+index b518d55..fa9dc39 100644
+--- a/styles.css
++++ b/styles.css
+@@ -1382,10 +1382,19 @@ body:not(.lt-glassmorphic) {
+   margin-top: 4px;
+ }
+ 
++.lt-hidden {
++  display: none !important;
++}
++
++.lt-calc-input {
++  width: 100%;
++}
++
+ .lt-calc-keypad {
+   display: grid;
+   grid-template-columns: repeat(6, 1fr);
+   gap: 6px;
++  margin-top: 8px;
+ }
+ 
+ .lt-calc-canvas {

@@ -71,7 +71,7 @@ class MathLiveBuilderModal extends Modal {
     const dbToggleBtn = headerActions.createEl("button", { text: "Formula DB" });
     dbToggleBtn.onclick = () => {
       this.showFormulaBrowser = !this.showFormulaBrowser;
-      this.formulaBrowserEl.style.display = this.showFormulaBrowser ? "block" : "none";
+      this.formulaBrowserEl.toggleClass("lt-hidden", !this.showFormulaBrowser);
     };
     const calcBtn = headerActions.createEl("button", { text: "Calculator" });
     calcBtn.onclick = () => {
@@ -108,8 +108,7 @@ class MathLiveBuilderModal extends Modal {
     }
 
     // 4. Collapsible Read-Only STEM Formula Database Browser
-    this.formulaBrowserEl = contentEl.createDiv({ cls: "lt-formula-browser" });
-    this.formulaBrowserEl.style.display = "none";
+    this.formulaBrowserEl = contentEl.createDiv({ cls: "lt-formula-browser lt-hidden" });
     this.renderFormulaBrowser(this.formulaBrowserEl);
 
     // 5. Footer Insert Actions (Pure LaTeX vs Interactive Rationale Block)
@@ -246,14 +245,14 @@ class MathLiveBuilderModal extends Modal {
         value: line.rationale?.label ?? "",
         placeholder: "Optional display label (for link/app/audio)",
       });
-      labelInput.style.display = typeSel.value === "text" ? "none" : "block";
+      labelInput.toggleClass("lt-hidden", typeSel.value === "text");
 
       // Quick helper bar for Audio recording or App scheme presets
       const helperBar = ratBox.createDiv({ cls: "lt-rationale-controls" });
       const renderRationaleHelpers = () => {
         helperBar.empty();
         const curType = typeSel.value as RationaleType;
-        labelInput.style.display = curType === "text" ? "none" : "block";
+        labelInput.toggleClass("lt-hidden", curType === "text");
         valInput.placeholder = this.getRationalePlaceholder(curType);
 
         if (curType === "app") {
@@ -291,7 +290,7 @@ class MathLiveBuilderModal extends Modal {
                 const buf = await blob.arrayBuffer();
                 const folder = this.plugin.settings.audioNoteFolder || "Attachments/MathAudio";
                 if (!(await this.app.vault.adapter.exists(folder))) {
-                  await this.app.vault.createFolder(folder);
+                  await this.app.vault.adapter.mkdir(folder);
                 }
                 const path = `${folder}/rationale-${Date.now()}.webm`;
                 await this.app.vault.createBinary(path, buf);
@@ -612,7 +611,7 @@ export default class LatexToolboxPlugin extends Plugin {
     // Auto-fix pasted AI LaTeX delimiters (\(...\), \[...\])
     this.registerEvent(
       this.app.workspace.on("editor-paste", (evt, editor) => {
-        if (!this.settings.autoFixOnPaste) return;
+        if (evt.defaultPrevented || !this.settings.autoFixOnPaste) return;
         const text = evt.clipboardData?.getData("text/plain") ?? "";
         if (text && (text.includes("\\(") || text.includes("\\["))) {
           evt.preventDefault();
@@ -682,7 +681,7 @@ class LatexToolboxSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    new Setting(containerEl).setName("LaTeX Toolbox v5.5.0 — Virtual Keyboard & Editor").setHeading();
+    new Setting(containerEl).setName("Virtual keyboard & editor").setHeading();
 
     const companions = detectCompanionLatexPlugins(this.app);
     containerEl.createEl("p", {

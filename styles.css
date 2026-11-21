@@ -1382,10 +1382,19 @@ body:not(.lt-glassmorphic) {
   margin-top: 4px;
 }
 
+.lt-hidden {
+  display: none !important;
+}
+
+.lt-calc-input {
+  width: 100%;
+}
+
 .lt-calc-keypad {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 6px;
+  margin-top: 8px;
 }
 
 .lt-calc-canvas {

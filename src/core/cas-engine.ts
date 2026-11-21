@@ -34,13 +34,13 @@ function getEngine(): ComputeEngine {
 function getNerdamer(): NerdamerLib | null {
   if (nerdamerSingleton) return nerdamerSingleton;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Nerdamer exposes CommonJS entry point for lazy loading
     const nerdamer = require("nerdamer") as NerdamerLib;
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Nerdamer Algebra submodule registers via CommonJS side effect
     require("nerdamer/Algebra");
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Nerdamer Calculus submodule registers via CommonJS side effect
     require("nerdamer/Calculus");
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Nerdamer Solve submodule registers via CommonJS side effect
     require("nerdamer/Solve");
     nerdamerSingleton = nerdamer;
     return nerdamerSingleton;
@@ -277,7 +277,7 @@ export function casNumeric(latex: string): CASResult {
     return { ok: true, latex: num.latex, numeric: num.latex, engine: "CortexJS Compute Engine" };
   } catch {
     try {
-      const val = math.evaluate(latexToNerdamerText(latex));
+      const val: unknown = math.evaluate(latexToNerdamerText(latex));
       const str = math.format(val, { precision: 10 });
       return { ok: true, latex: str, numeric: str, engine: "Math.js" };
     } catch (err) {
@@ -327,7 +327,7 @@ export function casPhasorConvert(input: string, imagUnit: "j" | "i" = "j"): CASR
  */
 export function casUnitConvert(input: string): CASResult {
   try {
-    const res = math.evaluate(input);
+    const res: unknown = math.evaluate(input);
     const formatted = math.format(res, { precision: 6 });
     return { ok: true, latex: `\\text{${formatted}}`, numeric: formatted, engine: "Math.js Units" };
   } catch (err) {
@@ -352,7 +352,7 @@ export function casMatrixOp(input: string, op: "matrix_det" | "matrix_inv"): CAS
       const d = math.det(rows);
       return { ok: true, latex: String(Number(d.toFixed(6))), engine: "Math.js Matrix" };
     }
-    const inv = math.inv(rows) as number[][];
+    const inv = math.inv(rows);
     const latexRows = inv.map((r) => r.map((v) => Number(v.toFixed(4))).join(" & ")).join(" \\\\ ");
     return { ok: true, latex: `\\begin{pmatrix} ${latexRows} \\end{pmatrix}`, engine: "Math.js Matrix" };
   } catch (err) {

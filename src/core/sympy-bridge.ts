@@ -96,19 +96,21 @@ print(json.dumps({
 }))
 `;
 
-function getChildProcess(): {
+interface ChildProcessModule {
   spawn?: (cmd: string, args: string[], opts?: Record<string, unknown>) => {
     stdin: { write: (d: string) => void; end: () => void };
-    stdout: { on: (ev: string, cb: (chunk: Buffer | string) => void) => void };
-    stderr: { on: (ev: string, cb: (chunk: Buffer | string) => void) => void };
+    stdout: { on: (ev: string, cb: (chunk: Uint8Array | string) => void) => void };
+    stderr: { on: (ev: string, cb: (chunk: Uint8Array | string) => void) => void };
     on: (ev: string, cb: (arg: unknown) => void) => void;
     kill: () => void;
   };
-} | null {
+}
+
+function getChildProcess(): ChildProcessModule | null {
   if (!Platform.isDesktopApp) return null;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require("child_process");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Desktop-only dynamic require guarded by Platform.isDesktopApp
+    return require("child_process") as ChildProcessModule;
   } catch {
     return null;
   }
@@ -127,7 +129,7 @@ export async function checkSymPyStatus(pythonExecutable = "python"): Promise<Sym
     ]);
     let out = "";
     let err = "";
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       proc.kill();
       resolve({ available: false, error: "Timed out checking Python/SymPy." });
     }, 6000);
@@ -135,11 +137,11 @@ export async function checkSymPyStatus(pythonExecutable = "python"): Promise<Sym
     proc.stdout.on("data", (d) => (out += String(d)));
     proc.stderr.on("data", (d) => (err += String(d)));
     proc.on("error", (e) => {
-      clearTimeout(timer);
+      window.clearTimeout(timer);
       resolve({ available: false, error: String(e) });
     });
     proc.on("close", (code) => {
-      clearTimeout(timer);
+      window.clearTimeout(timer);
       if (code !== 0) {
         resolve({ available: false, error: err.trim() || `Exit code ${String(code)}` });
         return;
@@ -180,7 +182,7 @@ export async function runSymPyOperation(
     const proc = cp.spawn!(py, ["-c", SYMPY_RUNNER_SCRIPT]);
     let out = "";
     let err = "";
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       proc.kill();
       resolve({ ok: false, latex: expr, error: "SymPy computation timed out (15s)." });
     }, 15000);
@@ -188,11 +190,11 @@ export async function runSymPyOperation(
     proc.stdout.on("data", (d) => (out += String(d)));
     proc.stderr.on("data", (d) => (err += String(d)));
     proc.on("error", (e) => {
-      clearTimeout(timer);
+      window.clearTimeout(timer);
       resolve({ ok: false, latex: expr, error: `Could not launch '${py}': ${String(e)}` });
     });
     proc.on("close", (code) => {
-      clearTimeout(timer);
+      window.clearTimeout(timer);
       if (code !== 0) {
         resolve({ ok: false, latex: expr, error: err.trim() || `SymPy exited with code ${String(code)}` });
         return;

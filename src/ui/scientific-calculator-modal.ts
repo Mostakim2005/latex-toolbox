@@ -69,8 +69,8 @@ export class ScientificCalculatorModal extends Modal {
       type: "text",
       value: this.expr,
       placeholder: "e.g. sin(30 deg)^2 + log10(1000) or 5 kOhm * 2 mA to V",
+      cls: "lt-calc-input",
     });
-    input.style.width = "100%";
     const resultEl = display.createDiv({ cls: "lt-calc-result", text: `= ${this.lastAns}` });
 
     const modeBar = container.createDiv({ cls: "lt-cas-toolbar" });
@@ -88,7 +88,7 @@ export class ScientificCalculatorModal extends Modal {
         if (this.angleMode === "DEG") {
           evalSrc = evalSrc.replace(/\b(sin|cos|tan)\(([^)]+)\)/g, "$1(($2) deg)");
         }
-        const val = math.evaluate(evalSrc);
+        const val: unknown = math.evaluate(evalSrc);
         const formatted = math.format(val, { precision: 10 });
         this.lastAns = formatted;
         resultEl.setText(`= ${formatted}`);
@@ -132,7 +132,6 @@ export class ScientificCalculatorModal extends Modal {
     ];
 
     const keypad = container.createDiv({ cls: "lt-calc-keypad" });
-    keypad.style.marginTop = "8px";
     for (const k of keys) {
       const b = keypad.createEl("button", { text: k });
       b.onclick = () => {
@@ -175,7 +174,7 @@ export class ScientificCalculatorModal extends Modal {
       try {
         const a = z1In.value.replace(/j/g, "i");
         const b = z2In.value.replace(/j/g, "i");
-        const val = math.evaluate(`((${a}) * (${b})) / ((${a}) + (${b}))`);
+        const val: unknown = math.evaluate(`((${a}) * (${b})) / ((${a}) + (${b}))`);
         parOut.setText(`Z_eq = ${math.format(val, { precision: 6 })}`);
       } catch (e) {
         parOut.setText(`Error: ${String(e)}`);
