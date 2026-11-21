@@ -1471,3 +1471,32 @@ body:not(.lt-glassmorphic) {
   width: 100%;
   font-family: var(--font-monospace);
 }
+
+.lt-formula-visual-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.lt-formula-count {
+  margin-left: auto;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.lt-formula-preview {
+  padding: 4px 6px;
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  overflow-x: auto;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.lt-formula-preview p {
+  margin: 0;
+}

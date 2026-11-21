@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
+import { App, Component, Editor, MarkdownRenderer, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
 import type { MathfieldElement } from "mathlive";
 import { DEFAULT_SETTINGS, getMergedLibrary, safeSaveSettings } from "./settings";
 import type { CASOperation, CASResult, DerivationLine, FormulaEntry, LaTeXSettings, RationaleType } from "./types";
@@ -22,7 +22,7 @@ import {
   hasRichRationales,
   registerDerivationBlockProcessor,
 } from "./core/derivation-renderer";
-import { evaluateFormulaEntry, searchFormulaDatabase } from "./core/formula-db";
+import { evaluateFormulaEntry, getAllFormulas, searchFormulaDatabase, type FormulaSortMode, type FormulaVisualShape } from "./core/formula-db";
 import { detectCompanionLatexPlugins, isCursorInMathZone } from "./core/editor-interop";
 import { mountMathLiveField, stripMathLivePlaceholders, templateToMathLivePlaceholders } from "./ui/mathlive-field";
 import { applyMathLiveKeyboardConfig } from "./ui/stem-keyboards";
@@ -485,12 +485,15 @@ class MathLiveBuilderModal extends Modal {
     };
   }
 
+  private previewComp = new Component();
+
   private renderFormulaBrowser(container: HTMLElement): void {
     container.empty();
+    this.previewComp.load();
     const filters = container.createDiv({ cls: "lt-formula-filters" });
     const searchIn = filters.createEl("input", {
       type: "text",
-      placeholder: "Search O-Level / A-Level / IB Physics, Chemistry, Math & basic EEE formulas...",
+      placeholder: "Search by Wolfram/SymPy (e.g. 1/2*m*v^2, sqrt(L*C), PV=nRT), English, or symbol...",
       cls: "lt-nl-input",
     });
 
@@ -512,6 +515,44 @@ class MathLiveBuilderModal extends Modal {
       ["eee-basics", "EEE basics (all branches)"],
     ];
     for (const [val, lbl] of levels) levelSel.createEl("option", { value: val, text: lbl });
+
+    const sortSel = filters.createEl("select", { cls: "dropdown" });
+    const sortModes: Array<[FormulaSortMode, string]> = [
+      ["relevance", "Sort: Smart Wolfram/SymPy"],
+      ["syllabus", "Sort: Syllabus order"],
+      ["topic", "Sort: Topic (A–Z)"],
+      ["name", "Sort: Name (A–Z)"],
+      ["visual", "Sort: Visual structure"],
+    ];
+    for (const [val, lbl] of sortModes) sortSel.createEl("option", { value: val, text: lbl });
+
+    let activeShape: FormulaVisualShape = "all";
+    const visualBar = container.createDiv({ cls: "lt-formula-visual-bar" });
+    const shapeDefs: Array<[FormulaVisualShape, string]> = [
+      ["all", "All visuals"],
+      ["fraction", "a/b Fractions"],
+      ["sqrt", "√ Roots"],
+      ["exp-log", "eˣ / log"],
+      ["trig", "sin/cos Trig"],
+      ["greek", "λ ω θ Greek"],
+      ["integral-sum", "∫ / Σ Calculus"],
+    ];
+    const shapeBtns = new Map<FormulaVisualShape, HTMLButtonElement>();
+    for (const [id, lbl] of shapeDefs) {
+      const b = visualBar.createEl("button", {
+        text: lbl,
+        cls: id === "all" ? "lt-nl-chip lt-calc-tab-active" : "lt-nl-chip",
+      });
+      b.onclick = () => {
+        activeShape = id;
+        for (const [sid, sbtn] of shapeBtns.entries()) {
+          sbtn.toggleClass("lt-calc-tab-active", sid === id);
+        }
+        refresh();
+      };
+      shapeBtns.set(id, b);
+    }
+    const countBadge = visualBar.createSpan({ cls: "lt-formula-count" });
 
     // Inline Formula Calculator Panel (shown when user clicks "Calculate" on any formula card)
     const calcDrawer = container.createDiv({ cls: "lt-formula-calc-drawer lt-hidden" });
@@ -578,11 +619,20 @@ class MathLiveBuilderModal extends Modal {
         query: searchIn.value,
         branch: branchSel.value,
         level: levelSel.value,
+        visualShape: activeShape,
+        sortBy: sortSel.value as FormulaSortMode,
       });
+      countBadge.setText(`${results.length} / ${getAllFormulas().length} formulas`);
       for (const item of results) {
         const card = listEl.createDiv({ cls: "lt-formula-card" });
         card.createDiv({ text: item.name, cls: "lt-formula-title" });
         card.createDiv({ text: `${item.branch.toUpperCase()} • ${item.topic} • ${item.level}`, cls: "lt-formula-meta" });
+
+        // Live rendered visual MathJax picture of the formula
+        const previewEl = card.createDiv({ cls: "lt-formula-preview" });
+        const cleanMath = stripMathLivePlaceholders(templateToMathLivePlaceholders(item.latex));
+        void MarkdownRenderer.render(this.app, `$${cleanMath}$`, previewEl, "", this.previewComp);
+
         card.createDiv({ text: item.definition, cls: "lt-formula-def" });
 
         const cardActions = card.createDiv({ cls: "lt-cas-preview-actions" });
@@ -606,6 +656,7 @@ class MathLiveBuilderModal extends Modal {
     searchIn.addEventListener("input", refresh);
     branchSel.onchange = refresh;
     levelSel.onchange = refresh;
+    sortSel.onchange = refresh;
     refresh();
   }
 
@@ -666,6 +717,7 @@ class MathLiveBuilderModal extends Modal {
   }
 
   onClose(): void {
+    this.previewComp.unload();
     this.contentEl.empty();
   }
 }
