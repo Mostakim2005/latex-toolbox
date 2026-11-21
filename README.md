@@ -1,18 +1,33 @@
 # LaTeX Toolbox
 
-> [!NOTE]
-> **Live Plug-and-Play Runtime Available**: The `runtime/` directory contains the production-tested JavaScript bundle (`main.js`, `manifest.json`, and `styles.css`) running directly in the live Obsidian vault. While the TypeScript codebase (`src/`) is undergoing reverse-engineering for official Obsidian community plugin standards, the files in `runtime/` can be copied directly into your vault's `.obsidian/plugins/latex-toolbox/` for immediate plug-and-play use.
+Interactive STEM equation builder, MathLive editor, multi-tier CAS/SymPy bridge, scientific calculator, and AI LaTeX delimiter normalizer.
 
-STEM LaTeX Companion with visual builder, presets, shortcuts, and AI delimiter fixer.
+## UI/UX Surface Inventory
 
-Target version: `v4.6.0`. This repo is being reverse-engineered from the live bundled JS back to Obsidian-standard TypeScript.
+| Surface | Implementation |
+| :--- | :--- |
+| **Ribbon Icon** | Calculator icon (`STEM LaTeX builder`) opening `MathLiveBuilderModal`. |
+| **Modals** | `MathLiveBuilderModal` (Builder, Formulas, Calculator tabs) and `ScientificCalculatorModal`. |
+| **Context Menu** | `editor-menu` entries to open selection in STEM Builder or normalize AI LaTeX delimiters. |
+| **Status Bar** | Clickable `LaTeX: CAS` pill launching the interactive STEM Builder. |
+| **Inline Renderer** | Interactive derivation `CodeBlockProcessor`. |
+| **Settings Tab** | `LatexToolboxSettingTab`. |
+
+## Documentation
+
+- `docs/PRODUCT.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DECISIONS_AND_TRAPS.md`
+- `docs/VISUAL_LOG.md`
+- `AGENTS.md`
 
 ## Develop
 
-- `npm i` (Node 18+), `npm run dev`, `npm run build` -> `main.js`
-
-Manual install: copy `main.js`, `manifest.json`, `styles.css` to `<Vault>/.obsidian/plugins/latex-toolbox/`.
+```bash
+npm install
+npm run build
+```
 
 ## License
 
-Code: PolyForm Noncommercial 1.0.0 (see `LICENSE`). Docs: CC BY-NC 4.0. Copyright (c) Mostakim2005. Source-available: free non-commercial use with credit, no commercial use.
+See `LICENSE`.

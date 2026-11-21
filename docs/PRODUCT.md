@@ -42,3 +42,9 @@
   * `src/core/natural-language.ts` -> `parseNaturalLanguage`
   * `src/core/chem-engine.ts` -> `balanceChemicalEquation`
   * `src/core/derivation-renderer.ts` -> `DerivationRenderer`
+
+### [FEATURE: UI-UX-Parity-And-Accessibility] | Aliases: editor context menu, cas status bar, focus visible, reduced motion
+> **1-Line Summary:** Adds editor context menu entries for STEM Builder and delimiter fixing, clickable LaTeX CAS Status Bar pill, and WCAG accessibility compliance.
+* **User Intention (Non-Negotiable):** Allow instant access to STEM builders from text selections and quick CAS status monitoring from the Obsidian status bar.
+* **Visual / UI Behavior:** Right-click editor menu displays STEM options; status bar pill shows CAS readiness and toggles calculator on click.
+* **Code Anchors (Grep Targets):** `src/main.ts`, `styles.css`

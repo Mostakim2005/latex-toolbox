@@ -834,7 +834,47 @@ export default class LatexToolboxPlugin extends Plugin {
       },
     });
 
-    this.addRibbonIcon("calculator", "STEM LaTeX builder", () => (this.api.openBuilder as () => void)());
+    const ribbonEl = this.addRibbonIcon("calculator", "STEM LaTeX builder", () => (this.api.openBuilder as () => void)());
+    ribbonEl.setAttribute("aria-label", "Open STEM LaTeX builder");
+
+    const statusEl = this.addStatusBarItem();
+    statusEl.addClass("ltx-status-pill");
+    statusEl.setText("LaTeX: CAS");
+    statusEl.setAttribute("role", "button");
+    statusEl.setAttribute("tabindex", "0");
+    statusEl.setAttribute("aria-label", "Open STEM LaTeX builder");
+    statusEl.addEventListener("click", () => (this.api.openBuilder as () => void)());
+    statusEl.addEventListener("keydown", (evt: KeyboardEvent) => {
+      if (evt.key === "Enter" || evt.key === " ") {
+        evt.preventDefault();
+        (this.api.openBuilder as () => void)();
+      }
+    });
+
+    this.registerEvent(
+      this.app.workspace.on("editor-menu", (menu, editor) => {
+        const sel = editor.getSelection();
+        menu.addItem((item) =>
+          item
+            .setTitle(sel ? "LaTeX Toolbox: Open selection in STEM Builder" : "LaTeX Toolbox: Open STEM Builder")
+            .setIcon("calculator")
+            .onClick(() => (this.api.openBuilder as (t?: string) => void)(sel))
+        );
+        menu.addItem((item) =>
+          item
+            .setTitle("LaTeX Toolbox: Fix AI LaTeX delimiters")
+            .setIcon("wand")
+            .onClick(() => {
+              const target = sel || editor.getValue();
+              const fixed = normalizeDelimiters(target);
+              if (sel) editor.replaceSelection(fixed);
+              else editor.setValue(fixed);
+              new Notice("Normalized LaTeX delimiters.");
+            })
+        );
+      })
+    );
+
     this.addSettingTab(new LatexToolboxSettingTab(this.app, this));
   }
 
