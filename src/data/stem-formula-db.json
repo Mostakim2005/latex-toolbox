@@ -1,452 +1,644 @@
 [
   {
-    "id": "phy-kin-1",
-    "name": "Uniform Acceleration (Displacement)",
+    "id": "phy-suvat-s",
+    "name": "Uniform Acceleration — Displacement (SUVAT)",
     "branch": "physics",
-    "level": "grade-11-12",
+    "level": "o-level",
     "topic": "Kinematics",
-    "latex": "s = ${1:u}t + \\frac{1}{2}${2:a}t^2",
-    "definition": "Displacement of an object moving with constant acceleration a from initial velocity u over time t.",
+    "latex": "s = ${1:u}\\,t + \\frac{1}{2}\\,${2:a}\\,t^2",
+    "definition": "Displacement under constant acceleration a from initial velocity u over time t (O-Level / A-Level / IB).",
+    "outputSymbol": "s",
+    "outputUnit": "m",
+    "calcExpr": "u * t + 0.5 * a * t^2",
     "variables": [
-      { "symbol": "s", "meaning": "Displacement", "unit": "m" },
-      { "symbol": "u", "meaning": "Initial velocity", "unit": "m/s" },
-      { "symbol": "a", "meaning": "Constant acceleration", "unit": "m/s^2" },
-      { "symbol": "t", "meaning": "Time elapsed", "unit": "s" }
+      { "key": "u", "symbol": "u", "meaning": "Initial velocity", "unit": "m/s", "defaultValue": 0 },
+      { "key": "a", "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2", "defaultValue": 9.81 },
+      { "key": "t", "symbol": "t", "meaning": "Time", "unit": "s", "defaultValue": 3 }
     ],
-    "tags": ["kinematics", "motion", "suvat"]
+    "tags": ["suvat", "kinematics", "o-level", "a-level", "ib"]
   },
   {
-    "id": "phy-kin-2",
+    "id": "phy-suvat-v",
     "name": "Velocity-Displacement Equation",
     "branch": "physics",
-    "level": "grade-11-12",
+    "level": "o-level",
     "topic": "Kinematics",
-    "latex": "v^2 = ${1:u}^2 + 2${2:a}${3:s}",
-    "definition": "Relates final velocity, initial velocity, acceleration, and displacement without time.",
+    "latex": "v = \\sqrt{${1:u}^2 + 2\\,${2:a}\\,${3:s}}",
+    "definition": "Final velocity from initial velocity, acceleration, and displacement.",
+    "outputSymbol": "v",
+    "outputUnit": "m/s",
+    "calcExpr": "sqrt(u^2 + 2 * a * s)",
     "variables": [
-      { "symbol": "v", "meaning": "Final velocity", "unit": "m/s" },
-      { "symbol": "u", "meaning": "Initial velocity", "unit": "m/s" },
-      { "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2" },
-      { "symbol": "s", "meaning": "Displacement", "unit": "m" }
+      { "key": "u", "symbol": "u", "meaning": "Initial velocity", "unit": "m/s", "defaultValue": 5 },
+      { "key": "a", "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2", "defaultValue": 2 },
+      { "key": "s", "symbol": "s", "meaning": "Displacement", "unit": "m", "defaultValue": 10 }
     ],
-    "tags": ["kinematics", "suvat"]
+    "tags": ["suvat", "velocity", "kinematics"]
   },
   {
-    "id": "phy-dyn-1",
+    "id": "phy-newton-2",
     "name": "Newton's Second Law",
     "branch": "physics",
-    "level": "grade-11-12",
+    "level": "o-level",
     "topic": "Dynamics",
-    "latex": "\\sum \\vec{F} = ${1:m}\\vec{a} = \\frac{d\\vec{p}}{dt}",
-    "definition": "Net force equals mass times acceleration, or the time rate of change of linear momentum.",
+    "latex": "F = ${1:m}\\,${2:a}",
+    "definition": "Resultant force equals mass multiplied by acceleration.",
+    "outputSymbol": "F",
+    "outputUnit": "N",
+    "calcExpr": "m * a",
     "variables": [
-      { "symbol": "F", "meaning": "Net force", "unit": "N" },
-      { "symbol": "m", "meaning": "Mass", "unit": "kg" },
-      { "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2" },
-      { "symbol": "p", "meaning": "Momentum", "unit": "kg·m/s" }
+      { "key": "m", "symbol": "m", "meaning": "Mass", "unit": "kg", "defaultValue": 10 },
+      { "key": "a", "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2", "defaultValue": 9.81 }
     ],
-    "tags": ["newton", "force", "momentum"]
+    "tags": ["newton", "force", "dynamics"]
   },
   {
-    "id": "phy-grav-1",
-    "name": "Universal Law of Gravitation",
+    "id": "phy-ke",
+    "name": "Kinetic Energy",
     "branch": "physics",
-    "level": "grade-11-12",
-    "topic": "Gravitation",
-    "latex": "F = G\\frac{${1:m_1}${2:m_2}}{${3:r}^2}",
-    "definition": "Gravitational attraction between two point masses separated by distance r.",
+    "level": "o-level",
+    "topic": "Work, Energy & Power",
+    "latex": "E_k = \\frac{1}{2}\\,${1:m}\\,${2:v}^2",
+    "definition": "Translational kinetic energy of a body of mass m moving at speed v.",
+    "outputSymbol": "E_k",
+    "outputUnit": "J",
+    "calcExpr": "0.5 * m * v^2",
     "variables": [
-      { "symbol": "G", "meaning": "Gravitational constant (6.674e-11)", "unit": "N·m^2/kg^2" },
-      { "symbol": "m_1, m_2", "meaning": "Masses", "unit": "kg" },
-      { "symbol": "r", "meaning": "Center-to-center distance", "unit": "m" }
+      { "key": "m", "symbol": "m", "meaning": "Mass", "unit": "kg", "defaultValue": 2 },
+      { "key": "v", "symbol": "v", "meaning": "Speed", "unit": "m/s", "defaultValue": 10 }
     ],
-    "tags": ["gravity", "newton"]
+    "tags": ["energy", "kinetic", "o-level"]
   },
   {
-    "id": "phy-shm-1",
-    "name": "Simple Harmonic Motion (SHM)",
+    "id": "phy-centripetal",
+    "name": "Centripetal Force",
     "branch": "physics",
-    "level": "grade-11-12",
-    "topic": "Oscillations & Waves",
-    "latex": "x(t) = ${1:A}\\cos(${2:\\omega} t + ${3:\\phi}), \\quad \\omega = \\sqrt{\\frac{k}{m}}",
-    "definition": "Sinusoidal displacement of a harmonic oscillator with amplitude A, angular frequency ω, and phase φ.",
+    "level": "a-level-ib",
+    "topic": "Circular Motion",
+    "latex": "F_c = \\frac{${1:m}\\,${2:v}^2}{${3:r}}",
+    "definition": "Inward force required to keep an object of mass m moving in a circle of radius r at speed v.",
+    "outputSymbol": "F_c",
+    "outputUnit": "N",
+    "calcExpr": "(m * v^2) / r",
     "variables": [
-      { "symbol": "A", "meaning": "Amplitude", "unit": "m" },
-      { "symbol": "\\omega", "meaning": "Angular frequency", "unit": "rad/s" },
-      { "symbol": "\\phi", "meaning": "Phase constant", "unit": "rad" }
+      { "key": "m", "symbol": "m", "meaning": "Mass", "unit": "kg", "defaultValue": 1.5 },
+      { "key": "v", "symbol": "v", "meaning": "Tangential speed", "unit": "m/s", "defaultValue": 6 },
+      { "key": "r", "symbol": "r", "meaning": "Radius", "unit": "m", "defaultValue": 2 }
     ],
-    "tags": ["shm", "oscillation", "spring"]
+    "tags": ["circular", "centripetal", "a-level", "ib"]
   },
   {
-    "id": "phy-thermo-1",
-    "name": "First Law of Thermodynamics",
+    "id": "phy-grav",
+    "name": "Newton's Law of Universal Gravitation",
     "branch": "physics",
-    "level": "grade-11-12",
-    "topic": "Thermodynamics",
-    "latex": "\\Delta U = ${1:Q} - ${2:W}",
-    "definition": "Change in internal energy equals heat added to the system minus work done by the system.",
+    "level": "a-level-ib",
+    "topic": "Gravitational Fields",
+    "latex": "F = G\\,\\frac{${1:m_1}\\,${2:m_2}}{${3:r}^2}",
+    "definition": "Gravitational attraction between two point masses separated by distance r (G = 6.674e-11).",
+    "outputSymbol": "F",
+    "outputUnit": "N",
+    "calcExpr": "6.6743e-11 * m1 * m2 / (r^2)",
     "variables": [
-      { "symbol": "\\Delta U", "meaning": "Internal energy change", "unit": "J" },
-      { "symbol": "Q", "meaning": "Heat added", "unit": "J" },
-      { "symbol": "W", "meaning": "Work done by system", "unit": "J" }
+      { "key": "m1", "symbol": "m_1", "meaning": "Mass 1", "unit": "kg", "defaultValue": 5.972e24 },
+      { "key": "m2", "symbol": "m_2", "meaning": "Mass 2", "unit": "kg", "defaultValue": 1000 },
+      { "key": "r", "symbol": "r", "meaning": "Distance", "unit": "m", "defaultValue": 6.371e6 }
     ],
-    "tags": ["thermodynamics", "energy", "heat"]
+    "tags": ["gravity", "fields", "a-level", "ib"]
   },
   {
-    "id": "phy-em-1",
+    "id": "phy-shm-period",
+    "name": "Simple Pendulum Period",
+    "branch": "physics",
+    "level": "a-level-ib",
+    "topic": "Oscillations (SHM)",
+    "latex": "T = 2\\pi\\sqrt{\\frac{${1:L}}{${2:g}}}",
+    "definition": "Oscillation period of a simple pendulum of length L under gravitational field strength g.",
+    "outputSymbol": "T",
+    "outputUnit": "s",
+    "calcExpr": "2 * pi * sqrt(L / g)",
+    "variables": [
+      { "key": "L", "symbol": "L", "meaning": "Pendulum length", "unit": "m", "defaultValue": 1 },
+      { "key": "g", "symbol": "g", "meaning": "Gravity", "unit": "m/s^2", "defaultValue": 9.81 }
+    ],
+    "tags": ["shm", "pendulum", "waves"]
+  },
+  {
+    "id": "phy-wave",
+    "name": "Wave Speed Equation",
+    "branch": "physics",
+    "level": "o-level",
+    "topic": "Waves",
+    "latex": "v = ${1:f}\\,${2:\\lambda}",
+    "definition": "Relates wave speed v, frequency f, and wavelength λ.",
+    "outputSymbol": "v",
+    "outputUnit": "m/s",
+    "calcExpr": "f * lam",
+    "variables": [
+      { "key": "f", "symbol": "f", "meaning": "Frequency", "unit": "Hz", "defaultValue": 500 },
+      { "key": "lam", "symbol": "\\lambda", "meaning": "Wavelength", "unit": "m", "defaultValue": 0.68 }
+    ],
+    "tags": ["waves", "frequency", "wavelength"]
+  },
+  {
+    "id": "phy-specific-heat",
+    "name": "Specific Heat Capacity",
+    "branch": "physics",
+    "level": "o-level",
+    "topic": "Thermal Physics",
+    "latex": "Q = ${1:m}\\,${2:c}\\,${3:\\Delta T}",
+    "definition": "Thermal energy transferred to change the temperature of mass m by ΔT.",
+    "outputSymbol": "Q",
+    "outputUnit": "J",
+    "calcExpr": "m * c * dT",
+    "variables": [
+      { "key": "m", "symbol": "m", "meaning": "Mass", "unit": "kg", "defaultValue": 1 },
+      { "key": "c", "symbol": "c", "meaning": "Specific heat capacity", "unit": "J/(kg·K)", "defaultValue": 4186 },
+      { "key": "dT", "symbol": "\\Delta T", "meaning": "Temperature change", "unit": "K", "defaultValue": 20 }
+    ],
+    "tags": ["thermal", "heat", "o-level", "ib"]
+  },
+  {
+    "id": "phy-coulomb",
     "name": "Coulomb's Law",
     "branch": "physics",
-    "level": "grade-11-12",
-    "topic": "Electrostatics",
-    "latex": "F = \\frac{1}{4\\pi\\varepsilon_0}\\frac{${1:q_1}${2:q_2}}{${3:r}^2}",
-    "definition": "Electrostatic force between two stationary point charges in vacuum.",
+    "level": "a-level-ib",
+    "topic": "Electric Fields",
+    "latex": "F = \\frac{1}{4\\pi\\varepsilon_0}\\,\\frac{${1:q_1}\\,${2:q_2}}{${3:r}^2}",
+    "definition": "Electrostatic force between two point charges in vacuum (k = 8.988e9 N·m²/C²).",
+    "outputSymbol": "F",
+    "outputUnit": "N",
+    "calcExpr": "8.98755e9 * q1 * q2 / (r^2)",
     "variables": [
-      { "symbol": "\\varepsilon_0", "meaning": "Vacuum permittivity (8.854e-12)", "unit": "F/m" },
-      { "symbol": "q_1, q_2", "meaning": "Charges", "unit": "C" },
-      { "symbol": "r", "meaning": "Separation distance", "unit": "m" }
+      { "key": "q1", "symbol": "q_1", "meaning": "Charge 1", "unit": "C", "defaultValue": 1e-6 },
+      { "key": "q2", "symbol": "q_2", "meaning": "Charge 2", "unit": "C", "defaultValue": 2e-6 },
+      { "key": "r", "symbol": "r", "meaning": "Separation", "unit": "m", "defaultValue": 0.1 }
     ],
-    "tags": ["electrostatics", "coulomb", "charge"]
+    "tags": ["electrostatics", "coulomb", "a-level", "ib"]
   },
   {
-    "id": "phy-em-2",
-    "name": "Lorentz Force Law",
+    "id": "phy-lens",
+    "name": "Thin Lens Focal Length",
     "branch": "physics",
-    "level": "grade-11-12",
-    "topic": "Magnetism",
-    "latex": "\\vec{F} = ${1:q}\\left(\\vec{E} + \\vec{v} \\times \\vec{B}\\right)",
-    "definition": "Total electromagnetic force on a charge q moving with velocity v in electric field E and magnetic field B.",
-    "variables": [
-      { "symbol": "q", "meaning": "Electric charge", "unit": "C" },
-      { "symbol": "\\vec{E}", "meaning": "Electric field", "unit": "V/m" },
-      { "symbol": "\\vec{B}", "meaning": "Magnetic flux density", "unit": "T" }
-    ],
-    "tags": ["lorentz", "magnetism", "em"]
-  },
-  {
-    "id": "phy-opt-1",
-    "name": "Snell's Law & Thin Lens Equation",
-    "branch": "physics",
-    "level": "grade-11-12",
+    "level": "o-level",
     "topic": "Optics",
-    "latex": "${1:n_1}\\sin\\theta_1 = ${2:n_2}\\sin\\theta_2, \\quad \\frac{1}{f} = \\frac{1}{d_o} + \\frac{1}{d_i}",
-    "definition": "Governs refraction at an interface and image formation for thin spherical lenses.",
-    "tags": ["optics", "snell", "lens"]
+    "latex": "f = \\left(\\frac{1}{${1:u}} + \\frac{1}{${2:v}}\\right)^{-1}",
+    "definition": "Relates focal length f, object distance u, and image distance v for a thin lens.",
+    "outputSymbol": "f",
+    "outputUnit": "cm",
+    "calcExpr": "1 / (1 / u + 1 / v)",
+    "variables": [
+      { "key": "u", "symbol": "u", "meaning": "Object distance", "unit": "cm", "defaultValue": 30 },
+      { "key": "v", "symbol": "v", "meaning": "Image distance", "unit": "cm", "defaultValue": 60 }
+    ],
+    "tags": ["optics", "lens"]
   },
   {
-    "id": "phy-mod-1",
-    "name": "Photoelectric Effect & de Broglie Wavelength",
+    "id": "phy-photon",
+    "name": "Photon Energy (Planck-Einstein)",
     "branch": "physics",
-    "level": "grade-11-12",
-    "topic": "Modern Physics",
-    "latex": "K_{\\max} = h${1:\\nu} - ${2:\\phi_0}, \\quad \\lambda = \\frac{h}{${3:p}}",
-    "definition": "Maximum kinetic energy of emitted photoelectrons and matter-wave wavelength.",
-    "tags": ["quantum", "photoelectric", "debroglie"]
-  },
-  {
-    "id": "chem-gas-1",
-    "name": "Ideal Gas Law",
-    "branch": "chemistry",
-    "level": "grade-11-12",
-    "topic": "States of Matter",
-    "latex": "${1:P}${2:V} = ${3:n}RT",
-    "definition": "Equation of state for an ideal gas relating pressure P, volume V, moles n, and temperature T.",
+    "level": "a-level-ib",
+    "topic": "Quantum & Modern Physics",
+    "latex": "E = \\frac{h\\,c}{${1:\\lambda}}",
+    "definition": "Energy of a photon of wavelength λ (h = 6.626e-34 J·s, c = 3e8 m/s).",
+    "outputSymbol": "E",
+    "outputUnit": "J",
+    "calcExpr": "6.62607e-34 * 2.99792e8 / lam",
     "variables": [
-      { "symbol": "R", "meaning": "Gas constant (8.314 J/(mol·K) or 0.08206 L·atm/(mol·K))" }
+      { "key": "lam", "symbol": "\\lambda", "meaning": "Wavelength", "unit": "m", "defaultValue": 500e-9 }
     ],
-    "tags": ["gas", "ideal", "stoichiometry"]
+    "tags": ["quantum", "photon", "planck", "a-level", "ib"]
   },
   {
-    "id": "chem-thermo-1",
-    "name": "Gibbs Free Energy",
+    "id": "chem-moles",
+    "name": "Moles & Molar Concentration",
     "branch": "chemistry",
-    "level": "grade-11-12",
-    "topic": "Chemical Thermodynamics",
-    "latex": "\\Delta G^{\\circ} = ${1:\\Delta H^{\\circ}} - ${2:T}\\Delta S^{\\circ} = -RT\\ln K",
-    "definition": "Determines reaction spontaneity (ΔG < 0 spontaneous) and links to the equilibrium constant K.",
-    "tags": ["gibbs", "enthalpy", "entropy", "equilibrium"]
-  },
-  {
-    "id": "chem-kin-1",
-    "name": "Arrhenius Rate Equation",
-    "branch": "chemistry",
-    "level": "grade-11-12",
-    "topic": "Chemical Kinetics",
-    "latex": "k = ${1:A}\\exp\\left(-\\frac{${2:E_a}}{R${3:T}}\\right)",
-    "definition": "Temperature dependence of a chemical reaction rate constant k with activation energy Ea.",
-    "tags": ["kinetics", "arrhenius", "rate"]
-  },
-  {
-    "id": "chem-acid-1",
-    "name": "Henderson-Hasselbalch Equation",
-    "branch": "chemistry",
-    "level": "grade-11-12",
-    "topic": "Acid-Base Equilibrium",
-    "latex": "\\text{pH} = \\text{p}K_a + \\log_{10}\\left(\\frac{[${1:\\text{A}^-}]}{[${2:\\text{HA}}]}\\right)",
-    "definition": "Estimates the pH of a weak acid / conjugate base buffer solution.",
-    "tags": ["ph", "buffer", "acid-base"]
-  },
-  {
-    "id": "chem-elec-1",
-    "name": "Nernst Equation",
-    "branch": "chemistry",
-    "level": "grade-11-12",
-    "topic": "Electrochemistry",
-    "latex": "E_{\\text{cell}} = E^{\\circ}_{\\text{cell}} - \\frac{RT}{${1:n}F}\\ln ${2:Q}",
-    "definition": "Calculates non-standard electrochemical cell potential from reaction quotient Q and electrons transferred n.",
-    "tags": ["nernst", "electrochemistry", "redox"]
-  },
-  {
-    "id": "chem-rxn-1",
-    "name": "Acid-Base Neutralization (mhchem)",
-    "branch": "chemistry",
-    "level": "grade-11-12",
+    "level": "o-level",
     "topic": "Stoichiometry",
-    "latex": "\\ce{${1:H2SO4} + ${2:2NaOH} -> ${3:Na2SO4} + ${4:2H2O}}",
-    "definition": "Template for balanced mhchem reactions with automatic subscripts and arrows.",
-    "tags": ["mhchem", "reaction", "neutralization"]
-  },
-  {
-    "id": "math-alg-1",
-    "name": "Quadratic Formula",
-    "branch": "math",
-    "level": "grade-11-12",
-    "topic": "Algebra",
-    "latex": "x = \\frac{-${1:b} \\pm \\sqrt{${1:b}^2 - 4${2:a}${3:c}}}{2${2:a}}",
-    "definition": "Closed-form roots of the quadratic equation ax² + bx + c = 0.",
-    "tags": ["quadratic", "roots", "algebra"]
-  },
-  {
-    "id": "math-calc-1",
-    "name": "Integration by Parts",
-    "branch": "math",
-    "level": "grade-11-12",
-    "topic": "Calculus",
-    "latex": "\\int ${1:u}\\,d${2:v} = ${1:u}${2:v} - \\int ${2:v}\\,d${1:u}",
-    "definition": "Transforms the integral of a product of functions into a simpler integral.",
-    "tags": ["integral", "calculus", "parts"]
-  },
-  {
-    "id": "math-calc-2",
-    "name": "Taylor Series Expansion",
-    "branch": "math",
-    "level": "grade-11-12",
-    "topic": "Calculus",
-    "latex": "f(x) = \\sum_{n=0}^{\\infty} \\frac{f^{(n)}(${1:a})}{n!}(x - ${1:a})^n",
-    "definition": "Power series representation of an infinitely differentiable function around x = a.",
-    "tags": ["taylor", "maclaurin", "series"]
-  },
-  {
-    "id": "math-ode-1",
-    "name": "First-Order Linear ODE (Integrating Factor)",
-    "branch": "math",
-    "level": "grade-11-12",
-    "topic": "Differential Equations",
-    "latex": "\\frac{dy}{dx} + ${1:P(x)}y = ${2:Q(x)}, \\quad \\mu(x) = e^{\\int ${1:P(x)}\\,dx}",
-    "definition": "Standard integrating factor solution for first-order linear differential equations.",
-    "tags": ["ode", "differential", "integrating-factor"]
-  },
-  {
-    "id": "math-prob-1",
-    "name": "Bayes' Theorem",
-    "branch": "math",
-    "level": "grade-11-12",
-    "topic": "Probability & Statistics",
-    "latex": "P(${1:A}\\mid ${2:B}) = \\frac{P(${2:B}\\mid ${1:A})P(${1:A})}{P(${2:B})}",
-    "definition": "Updates conditional probability of event A given observed evidence B.",
-    "tags": ["bayes", "probability", "statistics"]
-  },
-  {
-    "id": "eee-ckt-1",
-    "name": "Ohm's Law & Complex Impedance",
-    "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "Circuit Analysis",
-    "latex": "\\mathbf{V} = \\mathbf{I}\\mathbf{Z}, \\quad \\mathbf{Z}_{\\text{RLC}} = ${1:R} + j\\left(\\omega ${2:L} - \\frac{1}{\\omega ${3:C}}\\right)",
-    "definition": "Phasor Ohm's Law and series RLC complex impedance in sinusoidal steady state.",
+    "latex": "n = ${1:C}\\,${2:V}",
+    "definition": "Amount of substance (moles) from molar concentration C (mol/dm³) and volume V (dm³).",
+    "outputSymbol": "n",
+    "outputUnit": "mol",
+    "calcExpr": "C * V",
     "variables": [
-      { "symbol": "\\mathbf{Z}", "meaning": "Complex impedance", "unit": "Ω" },
-      { "symbol": "\\omega", "meaning": "Angular frequency (2πf)", "unit": "rad/s" }
+      { "key": "C", "symbol": "C", "meaning": "Molarity", "unit": "mol/dm³", "defaultValue": 0.5 },
+      { "key": "V", "symbol": "V", "meaning": "Volume", "unit": "dm³", "defaultValue": 0.25 }
     ],
-    "tags": ["ohm", "impedance", "rlc", "phasor"]
+    "tags": ["moles", "concentration", "o-level"]
   },
   {
-    "id": "eee-ckt-2",
-    "name": "Inductor & Capacitor V-I Relations",
-    "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "Circuit Analysis",
-    "latex": "v_L(t) = ${1:L}\\frac{di_L}{dt}, \\qquad i_C(t) = ${2:C}\\frac{dv_C}{dt}",
-    "definition": "Fundamental time-domain differential equations for ideal inductors and capacitors.",
-    "tags": ["inductor", "capacitor", "transient"]
+    "id": "chem-ideal-gas",
+    "name": "Ideal Gas Law (Pressure)",
+    "branch": "chemistry",
+    "level": "a-level-ib",
+    "topic": "States of Matter",
+    "latex": "P = \\frac{${1:n}\\,R\\,${2:T}}{${3:V}}",
+    "definition": "Pressure of an ideal gas (R = 8.314 J/(mol·K)) with V in m³ and T in Kelvin.",
+    "outputSymbol": "P",
+    "outputUnit": "Pa",
+    "calcExpr": "(n * 8.31446 * T) / V",
+    "variables": [
+      { "key": "n", "symbol": "n", "meaning": "Moles of gas", "unit": "mol", "defaultValue": 1 },
+      { "key": "T", "symbol": "T", "meaning": "Temperature", "unit": "K", "defaultValue": 298.15 },
+      { "key": "V", "symbol": "V", "meaning": "Volume", "unit": "m³", "defaultValue": 0.024 }
+    ],
+    "tags": ["gas", "ideal", "a-level", "ib"]
   },
   {
-    "id": "eee-pwr-1",
-    "name": "AC Complex Power Triangle",
-    "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "AC Power & 3-Phase",
-    "latex": "\\mathbf{S} = \\mathbf{V}_{\\text{rms}}\\mathbf{I}_{\\text{rms}}^* = ${1:P} + j${2:Q}, \\quad \\text{pf} = \\cos\\theta",
-    "definition": "Relates apparent power S (VA), real power P (W), reactive power Q (VAR), and power factor.",
-    "tags": ["power", "ac", "phasor", "pf"]
+    "id": "chem-gibbs",
+    "name": "Gibbs Free Energy Change",
+    "branch": "chemistry",
+    "level": "a-level-ib",
+    "topic": "Energetics & Thermodynamics",
+    "latex": "\\Delta G = ${1:\\Delta H} - ${2:T}\\,${3:\\Delta S}",
+    "definition": "Determines feasibility of a reaction (ΔG < 0 is spontaneous; keep ΔH and TΔS in matching energy units).",
+    "outputSymbol": "\\Delta G",
+    "outputUnit": "kJ/mol",
+    "calcExpr": "dH - T * (dS / 1000)",
+    "variables": [
+      { "key": "dH", "symbol": "\\Delta H", "meaning": "Enthalpy change", "unit": "kJ/mol", "defaultValue": -92.2 },
+      { "key": "T", "symbol": "T", "meaning": "Temperature", "unit": "K", "defaultValue": 298 },
+      { "key": "dS", "symbol": "\\Delta S", "meaning": "Entropy change", "unit": "J/(mol·K)", "defaultValue": -198.7 }
+    ],
+    "tags": ["gibbs", "thermodynamics", "a-level", "ib"]
   },
   {
-    "id": "eee-pwr-2",
-    "name": "Balanced Three-Phase Power",
-    "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "AC Power & 3-Phase",
-    "latex": "P_{3\\phi} = \\sqrt{3}\\,${1:V_L}${2:I_L}\\cos${3:\\theta}",
-    "definition": "Total real power delivered in a balanced three-phase Y or Δ system.",
-    "tags": ["three-phase", "power", "machines"]
+    "id": "chem-ph",
+    "name": "pH from Hydrogen Ion Concentration",
+    "branch": "chemistry",
+    "level": "a-level-ib",
+    "topic": "Acids & Bases",
+    "latex": "\\text{pH} = -\\log_{10}\\left[${1:\\text{H}^+}\\right]",
+    "definition": "Calculates solution pH from molar concentration of H⁺ ions.",
+    "outputSymbol": "\\text{pH}",
+    "outputUnit": "",
+    "calcExpr": "-log10(H)",
+    "variables": [
+      { "key": "H", "symbol": "[\\text{H}^+]", "meaning": "H⁺ concentration", "unit": "mol/dm³", "defaultValue": 0.001 }
+    ],
+    "tags": ["ph", "acid", "base", "a-level", "ib"]
   },
   {
-    "id": "eee-res-1",
-    "name": "RLC Resonant Frequency & Quality Factor",
-    "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "Filters & Resonance",
-    "latex": "f_0 = \\frac{1}{2\\pi\\sqrt{${1:L}${2:C}}}, \\quad Q = \\frac{1}{${3:R}}\\sqrt{\\frac{${1:L}}{${2:C}}}",
-    "definition": "Resonant frequency f0 where inductive and capacitive reactances cancel, plus series Q-factor.",
-    "tags": ["resonance", "filter", "rlc", "q-factor"]
+    "id": "chem-hh",
+    "name": "Henderson-Hasselbalch Buffer pH",
+    "branch": "chemistry",
+    "level": "a-level-ib",
+    "topic": "Acids & Bases",
+    "latex": "\\text{pH} = ${1:\\text{p}K_a} + \\log_{10}\\left(\\frac{${2:[\\text{A}^-]}}{${3:[\\text{HA}]}}\\right)",
+    "definition": "Computes pH of a weak acid / conjugate base buffer system.",
+    "outputSymbol": "\\text{pH}",
+    "outputUnit": "",
+    "calcExpr": "pKa + log10(A / HA)",
+    "variables": [
+      { "key": "pKa", "symbol": "\\text{p}K_a", "meaning": "Acid dissociation pKa", "unit": "", "defaultValue": 4.76 },
+      { "key": "A", "symbol": "[\\text{A}^-]", "meaning": "Conjugate base", "unit": "M", "defaultValue": 0.2 },
+      { "key": "HA", "symbol": "[\\text{HA}]", "meaning": "Weak acid", "unit": "M", "defaultValue": 0.1 }
+    ],
+    "tags": ["buffer", "ph", "a-level", "ib"]
   },
   {
-    "id": "eee-semi-1",
-    "name": "MOSFET Saturation Drain Current",
-    "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "Electronics",
-    "latex": "I_D = \\frac{1}{2}\\mu_n C_{ox}\\frac{${1:W}}{${2:L}}\\left(V_{GS} - V_{th}\\right)^2\\left(1 + \\lambda V_{DS}\\right)",
-    "definition": "Square-law drain current model for an n-channel MOSFET in saturation with channel-length modulation.",
-    "tags": ["mosfet", "electronics", "transistor"]
+    "id": "chem-arrhenius",
+    "name": "Arrhenius Rate Constant",
+    "branch": "chemistry",
+    "level": "a-level-ib",
+    "topic": "Chemical Kinetics",
+    "latex": "k = ${1:A}\\,e^{-\\frac{${2:E_a}}{R\\,${3:T}}}",
+    "definition": "Reaction rate constant k as a function of activation energy Ea (J/mol) and temperature T (K).",
+    "outputSymbol": "k",
+    "outputUnit": "s⁻¹",
+    "calcExpr": "A * exp(-Ea / (8.31446 * T))",
+    "variables": [
+      { "key": "A", "symbol": "A", "meaning": "Pre-exponential factor", "unit": "s⁻¹", "defaultValue": 1e11 },
+      { "key": "Ea", "symbol": "E_a", "meaning": "Activation energy", "unit": "J/mol", "defaultValue": 75000 },
+      { "key": "T", "symbol": "T", "meaning": "Temperature", "unit": "K", "defaultValue": 300 }
+    ],
+    "tags": ["kinetics", "arrhenius", "a-level", "ib"]
   },
   {
-    "id": "eee-semi-2",
-    "name": "Shockley Ideal Diode Equation",
-    "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "Electronics",
-    "latex": "I_D = ${1:I_S}\\left(e^{\\frac{V_D}{${2:n}V_T}} - 1\\right)",
-    "definition": "Exponential I-V characteristic of a p-n junction diode (thermal voltage VT ≈ 25.85 mV at 300 K).",
-    "tags": ["diode", "shockley", "semiconductor"]
+    "id": "math-quad-disc",
+    "name": "Quadratic Discriminant & Positive Root",
+    "branch": "math",
+    "level": "o-level",
+    "topic": "Algebra",
+    "latex": "x = \\frac{-${1:b} + \\sqrt{${1:b}^2 - 4\\,${2:a}\\,${3:c}}}{2\\,${2:a}}",
+    "definition": "Positive branch of the quadratic formula for ax² + bx + c = 0.",
+    "outputSymbol": "x_1",
+    "outputUnit": "",
+    "calcExpr": "(-b + sqrt(b^2 - 4 * a * c)) / (2 * a)",
+    "variables": [
+      { "key": "a", "symbol": "a", "meaning": "Coefficient of x²", "defaultValue": 1 },
+      { "key": "b", "symbol": "b", "meaning": "Coefficient of x", "defaultValue": -5 },
+      { "key": "c", "symbol": "c", "meaning": "Constant term", "defaultValue": 6 }
+    ],
+    "tags": ["quadratic", "algebra", "o-level"]
   },
   {
-    "id": "eee-opamp-1",
-    "name": "Op-Amp Inverting & Non-Inverting Gain",
-    "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "Electronics",
-    "latex": "A_{v,\\text{inv}} = -\\frac{${1:R_f}}{${2:R_{\\text{in}}}}, \\qquad A_{v,\\text{non-inv}} = 1 + \\frac{${1:R_f}}{${2:R_1}}",
-    "definition": "Closed-loop voltage gains for ideal inverting and non-inverting operational amplifier topologies.",
-    "tags": ["opamp", "amplifier", "gain"]
+    "id": "math-cosine-rule",
+    "name": "Law of Cosines (Side Length)",
+    "branch": "math",
+    "level": "o-level",
+    "topic": "Trigonometry",
+    "latex": "c = \\sqrt{${1:a}^2 + ${2:b}^2 - 2\\,${1:a}\\,${2:b}\\,\\cos(${3:C}^{\\circ})}",
+    "definition": "Computes side c of any triangle from sides a, b and included angle C in degrees.",
+    "outputSymbol": "c",
+    "outputUnit": "",
+    "calcExpr": "sqrt(a^2 + b^2 - 2 * a * b * cos(C deg))",
+    "variables": [
+      { "key": "a", "symbol": "a", "meaning": "Side a", "defaultValue": 7 },
+      { "key": "b", "symbol": "b", "meaning": "Side b", "defaultValue": 10 },
+      { "key": "C", "symbol": "C", "meaning": "Included angle", "unit": "deg", "defaultValue": 60 }
+    ],
+    "tags": ["trig", "cosine", "o-level", "ib"]
   },
   {
-    "id": "eee-sig-1",
-    "name": "Unilateral Laplace Transform",
-    "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "Signals & Systems",
-    "latex": "F(s) = \\mathcal{L}\\{${1:f(t)}\\} = \\int_{0^-}^{\\infty} ${1:f(t)} e^{-st}\\,dt",
-    "definition": "Transforms a causal time-domain signal f(t) into the complex s-domain for circuit/system analysis.",
-    "tags": ["laplace", "signals", "control"]
+    "id": "math-gp-sum",
+    "name": "Geometric Series Sum",
+    "branch": "math",
+    "level": "a-level-ib",
+    "topic": "Sequences & Series",
+    "latex": "S_n = ${1:a}\\,\\frac{1 - ${2:r}^{${3:n}}}{1 - ${2:r}}",
+    "definition": "Sum of the first n terms of a geometric progression with first term a and common ratio r ≠ 1.",
+    "outputSymbol": "S_n",
+    "outputUnit": "",
+    "calcExpr": "a * (1 - r^n) / (1 - r)",
+    "variables": [
+      { "key": "a", "symbol": "a", "meaning": "First term", "defaultValue": 2 },
+      { "key": "r", "symbol": "r", "meaning": "Common ratio", "defaultValue": 0.5 },
+      { "key": "n", "symbol": "n", "meaning": "Number of terms", "defaultValue": 5 }
+    ],
+    "tags": ["series", "geometric", "a-level", "ib"]
   },
   {
-    "id": "eee-sig-2",
-    "name": "Continuous-Time Fourier Transform",
-    "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "Signals & Systems",
-    "latex": "X(j\\omega) = \\int_{-\\infty}^{\\infty} ${1:x(t)} e^{-j\\omega t}\\,dt",
-    "definition": "Decomposes an aperiodic time-domain signal into its continuous frequency spectrum.",
-    "tags": ["fourier", "spectrum", "signals"]
+    "id": "math-binomial-prob",
+    "name": "Binomial Probability P(X = k)",
+    "branch": "math",
+    "level": "a-level-ib",
+    "topic": "Probability & Statistics",
+    "latex": "P(X = ${1:k}) = \\binom{${2:n}}{${1:k}}\\,${3:p}^{${1:k}}\\,\\left(1 - ${3:p}\\right)^{${2:n} - ${1:k}}",
+    "definition": "Probability of exactly k successes in n independent Bernoulli trials with success probability p.",
+    "outputSymbol": "P(X=k)",
+    "outputUnit": "",
+    "calcExpr": "combinations(n, k) * (p^k) * ((1 - p)^(n - k))",
+    "variables": [
+      { "key": "n", "symbol": "n", "meaning": "Total trials", "defaultValue": 10 },
+      { "key": "k", "symbol": "k", "meaning": "Successes", "defaultValue": 3 },
+      { "key": "p", "symbol": "p", "meaning": "Success probability", "defaultValue": 0.5 }
+    ],
+    "tags": ["probability", "binomial", "statistics", "a-level", "ib"]
   },
   {
-    "id": "eee-ctrl-1",
-    "name": "Standard 2nd-Order Transfer Function",
+    "id": "eee-ohm",
+    "name": "Ohm's Law & DC Power",
     "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "Control Systems",
-    "latex": "H(s) = \\frac{${1:\\omega_n}^2}{s^2 + 2${2:\\zeta}${1:\\omega_n}s + ${1:\\omega_n}^2}",
-    "definition": "Canonical second-order system characterized by natural frequency ωn and damping ratio ζ.",
-    "tags": ["control", "transfer-function", "damping"]
+    "level": "eee-basics",
+    "topic": "DC Circuits",
+    "latex": "V = ${1:I}\\,${2:R}, \\qquad P = ${1:I}^2\\,${2:R}",
+    "definition": "Fundamental voltage-current relation across a resistor R.",
+    "outputSymbol": "V",
+    "outputUnit": "V",
+    "calcExpr": "I * R",
+    "variables": [
+      { "key": "I", "symbol": "I", "meaning": "Current", "unit": "A", "defaultValue": 0.5 },
+      { "key": "R", "symbol": "R", "meaning": "Resistance", "unit": "Ω", "defaultValue": 220 }
+    ],
+    "tags": ["ohm", "dc", "circuits", "eee"]
   },
   {
-    "id": "eee-em-1",
-    "name": "Maxwell's Equations (Differential Form)",
+    "id": "eee-vdiv",
+    "name": "Voltage Divider Rule",
     "branch": "eee",
-    "level": "eee-y1-y2",
-    "topic": "Electromagnetics",
-    "latex": "\\nabla\\cdot\\vec{E}=\\frac{\\rho}{\\varepsilon_0},\\; \\nabla\\cdot\\vec{B}=0,\\; \\nabla\\times\\vec{E}=-\\frac{\\partial\\vec{B}}{\\partial t},\\; \\nabla\\times\\vec{B}=\\mu_0\\vec{J}+\\mu_0\\varepsilon_0\\frac{\\partial\\vec{E}}{\\partial t}",
-    "definition": "Four foundational differential equations of classical electromagnetism.",
-    "tags": ["maxwell", "electromagnetics", "fields"]
+    "level": "eee-basics",
+    "topic": "DC Circuits",
+    "latex": "V_{\\text{out}} = ${1:V_{\\text{in}}}\\,\\frac{${2:R_2}}{${3:R_1} + ${2:R_2}}",
+    "definition": "Output voltage across R2 in a series resistive voltage divider.",
+    "outputSymbol": "V_{\\text{out}}",
+    "outputUnit": "V",
+    "calcExpr": "Vin * (R2 / (R1 + R2))",
+    "variables": [
+      { "key": "Vin", "symbol": "V_{\\text{in}}", "meaning": "Input voltage", "unit": "V", "defaultValue": 12 },
+      { "key": "R1", "symbol": "R_1", "meaning": "Top resistor", "unit": "Ω", "defaultValue": 1000 },
+      { "key": "R2", "symbol": "R_2", "meaning": "Bottom resistor", "unit": "Ω", "defaultValue": 2000 }
+    ],
+    "tags": ["divider", "circuits", "eee"]
   },
   {
-    "id": "eee-mach-1",
-    "name": "Ideal Transformer & Synchronous Speed",
+    "id": "eee-parallel-r",
+    "name": "Parallel Equivalent Resistance",
     "branch": "eee",
-    "level": "eee-y1-y2",
+    "level": "eee-basics",
+    "topic": "DC Circuits",
+    "latex": "R_{\\text{eq}} = \\frac{${1:R_1}\\,${2:R_2}}{${1:R_1} + ${2:R_2}}",
+    "definition": "Equivalent resistance of two resistors connected in parallel.",
+    "outputSymbol": "R_{\\text{eq}}",
+    "outputUnit": "Ω",
+    "calcExpr": "(R1 * R2) / (R1 + R2)",
+    "variables": [
+      { "key": "R1", "symbol": "R_1", "meaning": "Resistor 1", "unit": "Ω", "defaultValue": 100 },
+      { "key": "R2", "symbol": "R_2", "meaning": "Resistor 2", "unit": "Ω", "defaultValue": 200 }
+    ],
+    "tags": ["parallel", "resistor", "circuits", "eee"]
+  },
+  {
+    "id": "eee-reactance-xl",
+    "name": "Inductive Reactance (XL)",
+    "branch": "eee",
+    "level": "eee-basics",
+    "topic": "AC Circuits",
+    "latex": "X_L = 2\\pi\\,${1:f}\\,${2:L}",
+    "definition": "Opposition of an ideal inductor L to sinusoidal AC current at frequency f.",
+    "outputSymbol": "X_L",
+    "outputUnit": "Ω",
+    "calcExpr": "2 * pi * f * L",
+    "variables": [
+      { "key": "f", "symbol": "f", "meaning": "Frequency", "unit": "Hz", "defaultValue": 50 },
+      { "key": "L", "symbol": "L", "meaning": "Inductance", "unit": "H", "defaultValue": 0.1 }
+    ],
+    "tags": ["inductor", "reactance", "ac", "eee"]
+  },
+  {
+    "id": "eee-reactance-xc",
+    "name": "Capacitive Reactance (XC)",
+    "branch": "eee",
+    "level": "eee-basics",
+    "topic": "AC Circuits",
+    "latex": "X_C = \\frac{1}{2\\pi\\,${1:f}\\,${2:C}}",
+    "definition": "Opposition of an ideal capacitor C to sinusoidal AC current at frequency f.",
+    "outputSymbol": "X_C",
+    "outputUnit": "Ω",
+    "calcExpr": "1 / (2 * pi * f * C)",
+    "variables": [
+      { "key": "f", "symbol": "f", "meaning": "Frequency", "unit": "Hz", "defaultValue": 50 },
+      { "key": "C", "symbol": "C", "meaning": "Capacitance", "unit": "F", "defaultValue": 100e-6 }
+    ],
+    "tags": ["capacitor", "reactance", "ac", "eee"]
+  },
+  {
+    "id": "eee-rlc-f0",
+    "name": "RLC Resonant Frequency",
+    "branch": "eee",
+    "level": "eee-basics",
+    "topic": "AC Circuits & Filters",
+    "latex": "f_0 = \\frac{1}{2\\pi\\sqrt{${1:L}\\,${2:C}}}",
+    "definition": "Natural resonant frequency where inductive and capacitive reactances cancel.",
+    "outputSymbol": "f_0",
+    "outputUnit": "Hz",
+    "calcExpr": "1 / (2 * pi * sqrt(L * C))",
+    "variables": [
+      { "key": "L", "symbol": "L", "meaning": "Inductance", "unit": "H", "defaultValue": 10e-3 },
+      { "key": "C", "symbol": "C", "meaning": "Capacitance", "unit": "F", "defaultValue": 10e-6 }
+    ],
+    "tags": ["resonance", "rlc", "filter", "eee"]
+  },
+  {
+    "id": "eee-rc-fc",
+    "name": "RC Filter Cutoff Frequency (-3 dB)",
+    "branch": "eee",
+    "level": "eee-basics",
+    "topic": "Electronics & Filters",
+    "latex": "f_c = \\frac{1}{2\\pi\\,${1:R}\\,${2:C}}",
+    "definition": "Half-power (-3 dB) corner frequency of a first-order RC low-pass or high-pass filter.",
+    "outputSymbol": "f_c",
+    "outputUnit": "Hz",
+    "calcExpr": "1 / (2 * pi * R * C)",
+    "variables": [
+      { "key": "R", "symbol": "R", "meaning": "Resistance", "unit": "Ω", "defaultValue": 1000 },
+      { "key": "C", "symbol": "C", "meaning": "Capacitance", "unit": "F", "defaultValue": 1e-6 }
+    ],
+    "tags": ["rc", "cutoff", "filter", "electronics", "eee"]
+  },
+  {
+    "id": "eee-opamp-noninv",
+    "name": "Non-Inverting Op-Amp Voltage Gain",
+    "branch": "eee",
+    "level": "eee-basics",
+    "topic": "Analog Electronics",
+    "latex": "A_v = 1 + \\frac{${1:R_f}}{${2:R_1}}",
+    "definition": "Closed-loop voltage gain of an ideal non-inverting operational amplifier.",
+    "outputSymbol": "A_v",
+    "outputUnit": "V/V",
+    "calcExpr": "1 + Rf / R1",
+    "variables": [
+      { "key": "Rf", "symbol": "R_f", "meaning": "Feedback resistor", "unit": "Ω", "defaultValue": 10000 },
+      { "key": "R1", "symbol": "R_1", "meaning": "Ground resistor", "unit": "Ω", "defaultValue": 1000 }
+    ],
+    "tags": ["opamp", "amplifier", "electronics", "eee"]
+  },
+  {
+    "id": "eee-db-gain",
+    "name": "Voltage Gain in Decibels (dB)",
+    "branch": "eee",
+    "level": "eee-basics",
+    "topic": "Signals & Electronics",
+    "latex": "G_{\\text{dB}} = 20\\log_{10}\\left(\\frac{${1:V_{\\text{out}}}}{${2:V_{\\text{in}}}}\\right)",
+    "definition": "Logarithmic voltage gain ratio expressed in decibels.",
+    "outputSymbol": "G_{\\text{dB}}",
+    "outputUnit": "dB",
+    "calcExpr": "20 * log10(Vout / Vin)",
+    "variables": [
+      { "key": "Vout", "symbol": "V_{\\text{out}}", "meaning": "Output voltage", "unit": "V", "defaultValue": 10 },
+      { "key": "Vin", "symbol": "V_{\\text{in}}", "meaning": "Input voltage", "unit": "V", "defaultValue": 1 }
+    ],
+    "tags": ["decibel", "db", "signals", "eee"]
+  },
+  {
+    "id": "eee-3phase-power",
+    "name": "Balanced Three-Phase Real Power",
+    "branch": "eee",
+    "level": "eee-basics",
+    "topic": "Power Systems",
+    "latex": "P_{3\\phi} = \\sqrt{3}\\,${1:V_L}\\,${2:I_L}\\,\\cos(${3:\\theta}^{\\circ})",
+    "definition": "Total real power in a balanced 3-phase Y or Δ system from line voltage, line current, and phase angle.",
+    "outputSymbol": "P_{3\\phi}",
+    "outputUnit": "W",
+    "calcExpr": "sqrt(3) * VL * IL * cos(theta deg)",
+    "variables": [
+      { "key": "VL", "symbol": "V_L", "meaning": "Line-to-line RMS voltage", "unit": "V", "defaultValue": 400 },
+      { "key": "IL", "symbol": "I_L", "meaning": "Line RMS current", "unit": "A", "defaultValue": 10 },
+      { "key": "theta", "symbol": "\\theta", "meaning": "Power factor angle", "unit": "deg", "defaultValue": 30 }
+    ],
+    "tags": ["three-phase", "power", "machines", "eee"]
+  },
+  {
+    "id": "eee-sync-speed",
+    "name": "AC Machine Synchronous Speed",
+    "branch": "eee",
+    "level": "eee-basics",
     "topic": "Electrical Machines",
-    "latex": "\\frac{V_1}{V_2} = \\frac{${1:N_1}}{${2:N_2}} = \\frac{I_2}{I_1}, \\qquad n_s = \\frac{120 ${3:f}}{${4:P}}\\text{ RPM}",
-    "definition": "Turns ratio relations for an ideal transformer and synchronous speed of an AC machine with P poles.",
-    "tags": ["transformer", "motor", "machines"]
+    "latex": "n_s = \\frac{120\\,${1:f}}{${2:P}}",
+    "definition": "Rotating magnetic field speed (RPM) of an AC motor/generator with P poles at supply frequency f.",
+    "outputSymbol": "n_s",
+    "outputUnit": "RPM",
+    "calcExpr": "(120 * f) / P",
+    "variables": [
+      { "key": "f", "symbol": "f", "meaning": "Supply frequency", "unit": "Hz", "defaultValue": 50 },
+      { "key": "P", "symbol": "P", "meaning": "Number of poles", "unit": "", "defaultValue": 4 }
+    ],
+    "tags": ["machines", "motor", "rpm", "eee"]
   },
   {
-    "id": "mech-1",
-    "name": "Axial Stress, Strain & Hooke's Law",
-    "branch": "mechanical",
-    "level": "engineering-basics",
-    "topic": "Mechanics of Materials",
-    "latex": "\\sigma = \\frac{${1:F}}{${2:A}}, \\quad \\varepsilon = \\frac{\\Delta L}{L_0}, \\quad \\sigma = ${3:E}\\varepsilon",
-    "definition": "Relates axial force, cross-sectional area, elongation, and Young's modulus E in the elastic regime.",
-    "tags": ["stress", "strain", "hooke", "mechanical"]
+    "id": "eee-transformer",
+    "name": "Ideal Transformer Secondary Voltage",
+    "branch": "eee",
+    "level": "eee-basics",
+    "topic": "Electrical Machines",
+    "latex": "V_2 = ${1:V_1}\\,\\frac{${2:N_2}}{${3:N_1}}",
+    "definition": "Secondary voltage of an ideal transformer from primary voltage and turns ratio N2/N1.",
+    "outputSymbol": "V_2",
+    "outputUnit": "V",
+    "calcExpr": "V1 * (N2 / N1)",
+    "variables": [
+      { "key": "V1", "symbol": "V_1", "meaning": "Primary voltage", "unit": "V", "defaultValue": 230 },
+      { "key": "N1", "symbol": "N_1", "meaning": "Primary turns", "defaultValue": 1000 },
+      { "key": "N2", "symbol": "N_2", "meaning": "Secondary turns", "defaultValue": 100 }
+    ],
+    "tags": ["transformer", "machines", "eee"]
   },
   {
-    "id": "mech-2",
-    "name": "Bernoulli's Equation (Incompressible Flow)",
-    "branch": "mechanical",
-    "level": "engineering-basics",
-    "topic": "Fluid Mechanics",
-    "latex": "${1:P} + \\frac{1}{2}\\rho ${2:v}^2 + \\rho g ${3:h} = \\text{const}",
-    "definition": "Conservation of mechanical energy along a streamline for steady, inviscid, incompressible flow.",
-    "tags": ["bernoulli", "fluid", "pressure"]
+    "id": "eee-nyquist",
+    "name": "Nyquist Minimum Sampling Rate",
+    "branch": "eee",
+    "level": "eee-basics",
+    "topic": "Signals & Communications",
+    "latex": "f_{s,\\min} = 2\\,${1:f_{\\max}}",
+    "definition": "Minimum sampling frequency to reconstruct a bandlimited signal of bandwidth f_max without aliasing.",
+    "outputSymbol": "f_{s,\\min}",
+    "outputUnit": "Hz",
+    "calcExpr": "2 * fmax",
+    "variables": [
+      { "key": "fmax", "symbol": "f_{\\max}", "meaning": "Max signal frequency", "unit": "Hz", "defaultValue": 20000 }
+    ],
+    "tags": ["nyquist", "sampling", "signals", "eee"]
   },
   {
-    "id": "mech-3",
-    "name": "Fourier's Law of Heat Conduction",
-    "branch": "mechanical",
-    "level": "engineering-basics",
-    "topic": "Heat Transfer",
-    "latex": "\\dot{Q} = -${1:k}${2:A}\\frac{dT}{dx}",
-    "definition": "Rate of conductive heat transfer proportional to thermal conductivity k, area A, and temperature gradient.",
-    "tags": ["heat", "conduction", "fourier"]
+    "id": "eee-digital-states",
+    "name": "Digital Logic State Count (n-bit)",
+    "branch": "eee",
+    "level": "eee-basics",
+    "topic": "Digital Electronics",
+    "latex": "N = 2^{${1:n}}",
+    "definition": "Total number of distinct binary states representable by an n-bit register or ADC.",
+    "outputSymbol": "N",
+    "outputUnit": "states",
+    "calcExpr": "2^n",
+    "variables": [
+      { "key": "n", "symbol": "n", "meaning": "Bit width", "unit": "bits", "defaultValue": 8 }
+    ],
+    "tags": ["digital", "binary", "adc", "eee"]
   },
   {
-    "id": "civil-1",
-    "name": "Flexural (Bending) Stress in a Beam",
-    "branch": "civil",
-    "level": "engineering-basics",
-    "topic": "Structural Mechanics",
-    "latex": "\\sigma = -\\frac{${1:M}${2:y}}{${3:I}}",
-    "definition": "Normal bending stress at distance y from the neutral axis for bending moment M and moment of inertia I.",
-    "tags": ["beam", "bending", "civil", "structures"]
-  },
-  {
-    "id": "cs-1",
-    "name": "Shannon Information Entropy",
-    "branch": "cs",
-    "level": "engineering-basics",
-    "topic": "Information Theory",
-    "latex": "H(X) = -\\sum_{i=1}^{${1:n}} p(x_i)\\log_2 p(x_i)",
-    "definition": "Average information content (in bits) of a discrete random variable X.",
-    "tags": ["entropy", "shannon", "information", "cs"]
-  },
-  {
-    "id": "cs-2",
-    "name": "Amdahl's Law (Parallel Speedup)",
-    "branch": "cs",
-    "level": "engineering-basics",
-    "topic": "Computer Architecture",
-    "latex": "S_{\\text{latency}}(s) = \\frac{1}{(1 - ${1:p}) + \\frac{${1:p}}{${2:s}}}",
-    "definition": "Maximum theoretical speedup when parallelizable fraction p is accelerated by factor s.",
-    "tags": ["amdahl", "parallel", "architecture", "cs"]
+    "id": "eee-em-wave",
+    "name": "Electromagnetic Wave Wavelength in Medium",
+    "branch": "eee",
+    "level": "eee-basics",
+    "topic": "Electromagnetics",
+    "latex": "\\lambda = \\frac{c}{${1:f}\\,\\sqrt{${2:\\varepsilon_r}}}",
+    "definition": "Wavelength of an EM wave of frequency f propagating in a non-magnetic medium of relative permittivity εr.",
+    "outputSymbol": "\\lambda",
+    "outputUnit": "m",
+    "calcExpr": "2.99792458e8 / (f * sqrt(er))",
+    "variables": [
+      { "key": "f", "symbol": "f", "meaning": "Frequency", "unit": "Hz", "defaultValue": 2.4e9 },
+      { "key": "er", "symbol": "\\varepsilon_r", "meaning": "Relative permittivity", "unit": "", "defaultValue": 4.4 }
+    ],
+    "tags": ["electromagnetics", "rf", "wavelength", "eee"]
   }
 ]

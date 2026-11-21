@@ -14,11 +14,13 @@ function configureMathLiveForObsidian(): void {
 /**
  * Converts template slot syntax (e.g. ${1:numerator} or {#slot}) into
  * MathLive native interactive placeholders \placeholder[slot_1]{numerator}
- * so slot-highlighting, mouse click-to-select, and Tab-jumping work seamlessly.
+ * with clean thin spacing between adjacent slots so borders never overlap.
  */
 export function templateToMathLivePlaceholders(template: string): string {
   let idx = 0;
-  return template
+  // Insert thin math space \, between immediately adjacent ${...}${...} tokens to prevent visual overlap
+  const spaced = template.replace(/\}\$\{/g, "}\\,${");
+  return spaced
     .replace(/\$\{(\d+):([^}]+)\}/g, (_m, id, label) => `\\placeholder[slot_${id}]{${label}}`)
     .replace(/\$\{(\d+)\}/g, (_m, id) => `\\placeholder[slot_${id}]{}`)
     .replace(/\{\s*#?slot\s*\}/gi, () => {
@@ -104,14 +106,35 @@ export function mountMathLiveField(
       : opts.initialLatex;
   }
 
-  // Direct mouse-click selection on highlighted placeholder slots
+  // Direct mouse-click selection on highlighted placeholder slots:
+  // Uses MathLive's hit-testing and prompt-selection so clicking any slot selects its full contents for immediate typing.
   mf.addEventListener("pointerup", (ev: PointerEvent) => {
-    const target = ev.composedPath?.()[0] as HTMLElement | undefined;
-    if (!target) return;
-    const promptEl = target.closest?.("[data-atom-id], .ML__prompt, .ML__placeholder");
+    const path = ev.composedPath?.() ?? [];
+    const promptEl = path.find((node) => {
+      if (!(node instanceof HTMLElement)) return false;
+      return (
+        node.classList.contains("ML__prompt") ||
+        node.classList.contains("ML__placeholder") ||
+        node.getAttribute("part") === "prompt" ||
+        node.getAttribute("part") === "placeholder"
+      );
+    }) as HTMLElement | undefined;
+
     if (promptEl) {
-      // Ensure the mathfield gets focus and selects the placeholder immediately for typing
       mf.focus();
+      const mfAny = mf as unknown as {
+        getOffsetFromPoint?: (x: number, y: number) => number;
+        selection?: { ranges: Array<[number, number]> };
+        position?: number;
+      };
+      if (typeof mfAny.getOffsetFromPoint === "function") {
+        const offset = mfAny.getOffsetFromPoint(ev.clientX, ev.clientY);
+        if (typeof offset === "number" && offset >= 0) {
+          mfAny.position = offset;
+        }
+      }
+      // Select the clicked placeholder/group so typing immediately replaces the slot default
+      mf.executeCommand("selectGroup");
     }
   });
 

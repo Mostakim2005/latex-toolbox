@@ -1035,11 +1035,36 @@ body:not(.lt-glassmorphic) {
    Rich Rationales, Formula DB Browser & Integrated Scientific Calculator
    ========================================================================== */
 
-.lt-modal {
-  min-width: min(92vw, 860px);
-  max-width: 96vw;
+.modal.lt-builder-modal-shell {
+  width: min(94vw, 1180px) !important;
+  max-width: 96vw !important;
+  max-height: 92vh !important;
   resize: both;
   overflow: auto;
+}
+
+.modal.lt-calc-modal-shell {
+  width: min(92vw, 860px) !important;
+  max-width: 96vw !important;
+  max-height: 90vh !important;
+}
+
+.lt-modal {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.lt-modal-nav-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lt-tab-pane {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .lt-mathlive-autoresize {
@@ -1053,12 +1078,13 @@ body:not(.lt-glassmorphic) {
 /* High-contrast clickable placeholder / prompt outlines */
 .lt-slot-highlighting-enabled::part(prompt),
 .lt-slot-highlighting-enabled::part(placeholder) {
-  background: rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.14);
-  border: 1.5px dashed var(--interactive-accent);
-  border-radius: 4px;
-  padding: 1px 5px;
-  margin: 0 2px;
+  background: rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.13);
+  border: 1px dashed var(--interactive-accent);
+  border-radius: 3px;
+  padding: 0 2px;
+  margin: 0 3px;
   cursor: pointer;
+  box-sizing: border-box;
   transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
 
@@ -1413,4 +1439,35 @@ body:not(.lt-glassmorphic) {
   .lt-calc-keypad {
     grid-template-columns: repeat(4, 1fr);
   }
+}
+
+.lt-formula-list-tall {
+  max-height: 46vh;
+}
+
+.lt-formula-calc-drawer {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--interactive-accent);
+  background: var(--background-primary);
+}
+
+.lt-formula-calc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.lt-formula-calc-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--font-ui-smaller);
+}
+
+.lt-formula-calc-cell input {
+  width: 100%;
+  font-family: var(--font-monospace);
 }

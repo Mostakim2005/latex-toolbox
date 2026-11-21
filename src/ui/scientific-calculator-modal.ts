@@ -9,91 +9,94 @@ export interface ScientificCalculatorCallbacks {
   onSendToBuilder?: (latex: string) => void;
 }
 
-export class ScientificCalculatorModal extends Modal {
-  private activeTab: CalcTab = "scientific";
-  private angleMode: "DEG" | "RAD" = "DEG";
-  private expr = "";
-  private lastAns = "0";
-  private history: Array<{ expr: string; result: string }> = [];
+export interface CalculatorState {
+  activeTab: CalcTab;
+  angleMode: "DEG" | "RAD";
+  expr: string;
+  lastAns: string;
+  history: Array<{ expr: string; result: string }>;
+}
 
-  constructor(
-    app: App,
-    private imagUnit: "j" | "i" = "j",
-    private callbacks: ScientificCalculatorCallbacks = {}
-  ) {
-    super(app);
-  }
+export function createCalculatorState(): CalculatorState {
+  return {
+    activeTab: "scientific",
+    angleMode: "DEG",
+    expr: "",
+    lastAns: "0",
+    history: [],
+  };
+}
 
-  onOpen(): void {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.addClass("lt-calc-modal");
-    this.render();
-  }
+/**
+ * Renders the full multi-mode Scientific & Engineering Calculator inside any container
+ * (used both inside the tabbed STEM Builder and in the standalone Calculator Modal).
+ */
+export function renderScientificCalculatorView(
+  container: HTMLElement,
+  state: CalculatorState,
+  imagUnit: "j" | "i",
+  callbacks: ScientificCalculatorCallbacks = {},
+  onAfterAction?: () => void
+): void {
+  const render = () => {
+    container.empty();
 
-  private render(): void {
-    const { contentEl } = this;
-    contentEl.empty();
-
-    const header = contentEl.createDiv({ cls: "lt-cas-header" });
-    header.createEl("h2", { text: "STEM Scientific & Engineering Calculator" });
-
-    const tabs = contentEl.createDiv({ cls: "lt-calc-tabs" });
+    const tabs = container.createDiv({ cls: "lt-calc-tabs" });
     const tabDefs: Array<[CalcTab, string]> = [
       ["scientific", "Scientific"],
-      ["eee", "EEE Phasors & Circuits"],
-      ["basen", "Base-N / Bitwise"],
-      ["graph", "2D Function Plotter"],
+      ["eee", "EEE phasors & circuits"],
+      ["basen", "Base-N / bitwise"],
+      ["graph", "2D function plotter"],
     ];
     for (const [id, label] of tabDefs) {
       const btn = tabs.createEl("button", {
         text: label,
-        cls: this.activeTab === id ? "lt-calc-tab-active" : "",
+        cls: state.activeTab === id ? "lt-calc-tab-active" : "",
       });
       btn.onclick = () => {
-        this.activeTab = id;
-        this.render();
+        state.activeTab = id;
+        render();
       };
     }
 
-    const body = contentEl.createDiv();
-    if (this.activeTab === "scientific") this.renderScientificTab(body);
-    else if (this.activeTab === "eee") this.renderEEETab(body);
-    else if (this.activeTab === "basen") this.renderBaseNTab(body);
-    else this.renderGraphTab(body);
-  }
+    const body = container.createDiv();
+    if (state.activeTab === "scientific") renderScientificTab(body);
+    else if (state.activeTab === "eee") renderEEETab(body);
+    else if (state.activeTab === "basen") renderBaseNTab(body);
+    else renderGraphTab(body);
+  };
 
-  private renderScientificTab(container: HTMLElement): void {
-    const display = container.createDiv({ cls: "lt-calc-display" });
+  const renderScientificTab = (parent: HTMLElement) => {
+    const display = parent.createDiv({ cls: "lt-calc-display" });
     const input = display.createEl("input", {
       type: "text",
-      value: this.expr,
+      value: state.expr,
       placeholder: "e.g. sin(30 deg)^2 + log10(1000) or 5 kOhm * 2 mA to V",
       cls: "lt-calc-input",
     });
-    const resultEl = display.createDiv({ cls: "lt-calc-result", text: `= ${this.lastAns}` });
+    const resultEl = display.createDiv({ cls: "lt-calc-result", text: `= ${state.lastAns}` });
 
-    const modeBar = container.createDiv({ cls: "lt-cas-toolbar" });
-    const angleBtn = modeBar.createEl("button", { text: `Angle: ${this.angleMode}` });
+    const modeBar = parent.createDiv({ cls: "lt-cas-toolbar" });
+    const angleBtn = modeBar.createEl("button", { text: `Angle: ${state.angleMode}` });
     angleBtn.onclick = () => {
-      this.angleMode = this.angleMode === "DEG" ? "RAD" : "DEG";
-      angleBtn.setText(`Angle: ${this.angleMode}`);
+      state.angleMode = state.angleMode === "DEG" ? "RAD" : "DEG";
+      angleBtn.setText(`Angle: ${state.angleMode}`);
     };
 
     const evaluate = () => {
-      this.expr = input.value.trim();
-      if (!this.expr) return;
+      state.expr = input.value.trim();
+      if (!state.expr) return;
       try {
-        let evalSrc = this.expr.replace(/\bAns\b/g, `(${this.lastAns})`);
-        if (this.angleMode === "DEG") {
+        let evalSrc = state.expr.replace(/\bAns\b/g, `(${state.lastAns})`);
+        if (state.angleMode === "DEG") {
           evalSrc = evalSrc.replace(/\b(sin|cos|tan)\(([^)]+)\)/g, "$1(($2) deg)");
         }
         const val: unknown = math.evaluate(evalSrc);
         const formatted = math.format(val, { precision: 10 });
-        this.lastAns = formatted;
+        state.lastAns = formatted;
         resultEl.setText(`= ${formatted}`);
-        this.history.unshift({ expr: this.expr, result: formatted });
-        if (this.history.length > 8) this.history.pop();
+        state.history.unshift({ expr: state.expr, result: formatted });
+        if (state.history.length > 8) state.history.pop();
       } catch (e) {
         resultEl.setText(`Error: ${String(e)}`);
       }
@@ -109,16 +112,16 @@ export class ScientificCalculatorModal extends Modal {
     const evalBtn = modeBar.createEl("button", { text: "= Evaluate", cls: "mod-cta" });
     evalBtn.onclick = evaluate;
 
-    const sendBtn = modeBar.createEl("button", { text: "Send to Builder" });
+    const sendBtn = modeBar.createEl("button", { text: "Send to builder" });
     sendBtn.onclick = () => {
-      this.callbacks.onSendToBuilder?.(this.lastAns);
-      this.close();
+      callbacks.onSendToBuilder?.(state.lastAns);
+      onAfterAction?.();
     };
 
-    const insertBtn = modeBar.createEl("button", { text: "Insert Result" });
+    const insertBtn = modeBar.createEl("button", { text: "Insert result" });
     insertBtn.onclick = () => {
-      this.callbacks.onInsertLatex?.(this.lastAns);
-      this.close();
+      callbacks.onInsertLatex?.(state.lastAns);
+      onAfterAction?.();
     };
 
     const keys = [
@@ -131,13 +134,13 @@ export class ScientificCalculatorModal extends Modal {
       "0", ".", "e-3", "+", "e3", "=",
     ];
 
-    const keypad = container.createDiv({ cls: "lt-calc-keypad" });
+    const keypad = parent.createDiv({ cls: "lt-calc-keypad" });
     for (const k of keys) {
       const b = keypad.createEl("button", { text: k });
       b.onclick = () => {
         if (k === "Clear") {
           input.value = "";
-          this.expr = "";
+          state.expr = "";
           resultEl.setText("= 0");
         } else if (k === "=") {
           evaluate();
@@ -147,29 +150,29 @@ export class ScientificCalculatorModal extends Modal {
         }
       };
     }
-  }
+  };
 
-  private renderEEETab(container: HTMLElement): void {
-    container.createEl("p", {
-      text: "Quick AC Phasor conversion, parallel impedance (Z1 || Z2), and RLC resonance.",
+  const renderEEETab = (parent: HTMLElement) => {
+    parent.createEl("p", {
+      text: "Quick AC phasor conversion, parallel impedance (Z1 || Z2), and RLC resonance.",
     });
 
-    const phasorRow = container.createDiv({ cls: "lt-nl-bar" });
+    const phasorRow = parent.createDiv({ cls: "lt-nl-bar" });
     const phasorIn = phasorRow.createEl("input", {
       type: "text",
-      placeholder: `Rectangular (3 + 4${this.imagUnit}) or Polar (5∠53.13)`,
+      placeholder: `Rectangular (3 + 4${imagUnit}) or Polar (5∠53.13)`,
       cls: "lt-nl-input",
     });
-    const phasorOut = container.createDiv({ cls: "lt-cas-output" });
-    phasorRow.createEl("button", { text: "Convert Phasor", cls: "mod-cta" }).onclick = () => {
-      const res = casPhasorConvert(phasorIn.value, this.imagUnit);
+    const phasorOut = parent.createDiv({ cls: "lt-cas-output" });
+    phasorRow.createEl("button", { text: "Convert phasor", cls: "mod-cta" }).onclick = () => {
+      const res = casPhasorConvert(phasorIn.value, imagUnit);
       phasorOut.setText(res.ok ? `Result: ${res.latex}` : `Error: ${res.error}`);
     };
 
-    const parRow = container.createDiv({ cls: "lt-nl-bar" });
+    const parRow = parent.createDiv({ cls: "lt-nl-bar" });
     const z1In = parRow.createEl("input", { type: "text", placeholder: "Z1 (e.g. 100 or 10+5i)" });
     const z2In = parRow.createEl("input", { type: "text", placeholder: "Z2 (e.g. 200 or 20-10i)" });
-    const parOut = container.createDiv({ cls: "lt-cas-output" });
+    const parOut = parent.createDiv({ cls: "lt-cas-output" });
     parRow.createEl("button", { text: "Z1 || Z2" }).onclick = () => {
       try {
         const a = z1In.value.replace(/j/g, "i");
@@ -181,10 +184,10 @@ export class ScientificCalculatorModal extends Modal {
       }
     };
 
-    const rlcRow = container.createDiv({ cls: "lt-nl-bar" });
+    const rlcRow = parent.createDiv({ cls: "lt-nl-bar" });
     const lIn = rlcRow.createEl("input", { type: "text", placeholder: "L in Henry (e.g. 10e-3)" });
     const cIn = rlcRow.createEl("input", { type: "text", placeholder: "C in Farad (e.g. 100e-6)" });
-    const rlcOut = container.createDiv({ cls: "lt-cas-output" });
+    const rlcOut = parent.createDiv({ cls: "lt-cas-output" });
     rlcRow.createEl("button", { text: "Resonant f₀" }).onclick = () => {
       const L = parseFloat(lIn.value);
       const C = parseFloat(cIn.value);
@@ -196,15 +199,19 @@ export class ScientificCalculatorModal extends Modal {
       const w0 = 2 * Math.PI * f0;
       rlcOut.setText(`f₀ = ${f0.toFixed(4)} Hz   |   ω₀ = ${w0.toFixed(4)} rad/s`);
     };
-  }
+  };
 
-  private renderBaseNTab(container: HTMLElement): void {
-    const row = container.createDiv({ cls: "lt-nl-bar" });
-    const decIn = row.createEl("input", { type: "text", placeholder: "Enter integer (e.g. 255 or 0xFF or 0b1010)", cls: "lt-nl-input" });
-    const out = container.createDiv({ cls: "lt-calc-display" });
+  const renderBaseNTab = (parent: HTMLElement) => {
+    const row = parent.createDiv({ cls: "lt-nl-bar" });
+    const decIn = row.createEl("input", {
+      type: "text",
+      placeholder: "Enter integer (e.g. 255 or 0xFF or 0b1010)",
+      cls: "lt-nl-input",
+    });
+    const out = parent.createDiv({ cls: "lt-calc-display" });
     out.setText("DEC: 0 | HEX: 0x0 | BIN: 0b0 | OCT: 0o0");
 
-    const update = () => {
+    decIn.addEventListener("input", () => {
       const raw = decIn.value.trim();
       if (!raw) return;
       const n = Number(raw);
@@ -216,12 +223,11 @@ export class ScientificCalculatorModal extends Modal {
       out.setText(
         `DEC: ${n}  |  HEX: 0x${u.toString(16).toUpperCase()}  |  BIN: 0b${u.toString(2)}  |  OCT: 0o${u.toString(8)}`
       );
-    };
-    decIn.addEventListener("input", update);
-  }
+    });
+  };
 
-  private renderGraphTab(container: HTMLElement): void {
-    const controls = container.createDiv({ cls: "lt-nl-bar" });
+  const renderGraphTab = (parent: HTMLElement) => {
+    const controls = parent.createDiv({ cls: "lt-nl-bar" });
     const fnIn = controls.createEl("input", {
       type: "text",
       value: "sin(x) * exp(-0.1 * x)",
@@ -232,7 +238,7 @@ export class ScientificCalculatorModal extends Modal {
     const maxIn = controls.createEl("input", { type: "text", value: "10", cls: "lt-cas-var-input" });
     const plotBtn = controls.createEl("button", { text: "Plot", cls: "mod-cta" });
 
-    const canvas = container.createEl("canvas", { cls: "lt-calc-canvas" });
+    const canvas = parent.createEl("canvas", { cls: "lt-calc-canvas" });
     canvas.width = 680;
     canvas.height = 280;
 
@@ -242,7 +248,7 @@ export class ScientificCalculatorModal extends Modal {
       const xmin = parseFloat(minIn.value) || -10;
       const xmax = parseFloat(maxIn.value) || 10;
       if (xmax <= xmin) {
-        new Notice("xmax must be greater than xmin.");
+        new Notice("Maximum x must be greater than minimum x.");
         return;
       }
 
@@ -288,7 +294,6 @@ export class ScientificCalculatorModal extends Modal {
       const toPx = (x: number) => ((x - xmin) / (xmax - xmin)) * W;
       const toPy = (y: number) => H - ((y - ymin) / (ymax - ymin)) * H;
 
-      // Grid & axes
       ctx.strokeStyle = "rgba(128,128,128,0.25)";
       ctx.lineWidth = 1;
       for (let g = 1; g < 10; g++) {
@@ -318,7 +323,6 @@ export class ScientificCalculatorModal extends Modal {
         ctx.stroke();
       }
 
-      // Curve
       ctx.strokeStyle = "#14b8a6";
       ctx.lineWidth = 2.2;
       ctx.beginPath();
@@ -342,6 +346,45 @@ export class ScientificCalculatorModal extends Modal {
 
     plotBtn.onclick = draw;
     draw();
+  };
+
+  render();
+}
+
+export class ScientificCalculatorModal extends Modal {
+  private state: CalculatorState = createCalculatorState();
+
+  constructor(
+    app: App,
+    private imagUnit: "j" | "i" = "j",
+    private callbacks: ScientificCalculatorCallbacks = {},
+    private closeOnBackdropClick = false
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    this.modalEl.addClass("lt-calc-modal-shell");
+    contentEl.addClass("lt-calc-modal");
+
+    if (!this.closeOnBackdropClick) {
+      const bg = this.containerEl.querySelector(".modal-bg");
+      if (bg instanceof HTMLElement) {
+        const blockClose = (ev: Event) => {
+          ev.stopPropagation();
+          ev.preventDefault();
+        };
+        bg.addEventListener("click", blockClose, true);
+        bg.addEventListener("mousedown", blockClose, true);
+        bg.addEventListener("pointerdown", blockClose, true);
+      }
+    }
+
+    contentEl.createEl("h2", { text: "STEM scientific & engineering calculator" });
+    const host = contentEl.createDiv();
+    renderScientificCalculatorView(host, this.state, this.imagUnit, this.callbacks, () => this.close());
   }
 
   onClose(): void {

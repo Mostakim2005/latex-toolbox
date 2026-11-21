@@ -1,0 +1,2187 @@
+diff --git a/src/core/formula-db.ts b/src/core/formula-db.ts
+index 7541577..7d5089b 100644
+--- a/src/core/formula-db.ts
++++ b/src/core/formula-db.ts
+@@ -1,3 +1,4 @@
++import * as math from "mathjs";
+ import type { FormulaEntry } from "../types";
+ import rawDb from "../data/stem-formula-db.json";
+ 
+@@ -39,3 +40,47 @@ export function searchFormulaDatabase(filter: FormulaSearchFilter = {}): Formula
+     return q.split(/\s+/).every((word) => hay.includes(word));
+   });
+ }
++
++export interface FormulaCalcResult {
++  ok: boolean;
++  formatted: string;
++  latexResult: string;
++  error?: string;
++}
++
++/**
++ * Evaluates a formula entry numerically using Math.js with user-supplied variable values.
++ */
++export function evaluateFormulaEntry(
++  entry: FormulaEntry,
++  values: Record<string, number>
++): FormulaCalcResult {
++  try {
++    const scope: Record<string, number> = {};
++    for (const v of entry.variables) {
++      const val = values[v.key];
++      if (typeof val !== "number" || !Number.isFinite(val)) {
++        return {
++          ok: false,
++          formatted: "",
++          latexResult: "",
++          error: `Missing or invalid numeric value for ${v.meaning} (${v.key}).`,
++        };
++      }
++      scope[v.key] = val;
++    }
++
++    const rawVal: unknown = math.evaluate(entry.calcExpr, scope);
++    const formatted = math.format(rawVal, { precision: 6 });
++    const unitPart = entry.outputUnit ? `\\text{ ${entry.outputUnit}}` : "";
++    const latexResult = `${entry.outputSymbol} = ${formatted}${unitPart}`;
++    return { ok: true, formatted, latexResult };
++  } catch (err) {
++    return {
++      ok: false,
++      formatted: "",
++      latexResult: "",
++      error: `Calculation error: ${String(err)}`,
++    };
++  }
++}
+diff --git a/src/data/stem-formula-db.json b/src/data/stem-formula-db.json
+index 3f2aec6..d47a9b9 100644
+--- a/src/data/stem-formula-db.json
++++ b/src/data/stem-formula-db.json
+@@ -1,452 +1,644 @@
+ [
+   {
+-    "id": "phy-kin-1",
+-    "name": "Uniform Acceleration (Displacement)",
++    "id": "phy-suvat-s",
++    "name": "Uniform Acceleration — Displacement (SUVAT)",
+     "branch": "physics",
+-    "level": "grade-11-12",
++    "level": "o-level",
+     "topic": "Kinematics",
+-    "latex": "s = ${1:u}t + \\frac{1}{2}${2:a}t^2",
+-    "definition": "Displacement of an object moving with constant acceleration a from initial velocity u over time t.",
++    "latex": "s = ${1:u}\\,t + \\frac{1}{2}\\,${2:a}\\,t^2",
++    "definition": "Displacement under constant acceleration a from initial velocity u over time t (O-Level / A-Level / IB).",
++    "outputSymbol": "s",
++    "outputUnit": "m",
++    "calcExpr": "u * t + 0.5 * a * t^2",
+     "variables": [
+-      { "symbol": "s", "meaning": "Displacement", "unit": "m" },
+-      { "symbol": "u", "meaning": "Initial velocity", "unit": "m/s" },
+-      { "symbol": "a", "meaning": "Constant acceleration", "unit": "m/s^2" },
+-      { "symbol": "t", "meaning": "Time elapsed", "unit": "s" }
++      { "key": "u", "symbol": "u", "meaning": "Initial velocity", "unit": "m/s", "defaultValue": 0 },
++      { "key": "a", "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2", "defaultValue": 9.81 },
++      { "key": "t", "symbol": "t", "meaning": "Time", "unit": "s", "defaultValue": 3 }
+     ],
+-    "tags": ["kinematics", "motion", "suvat"]
++    "tags": ["suvat", "kinematics", "o-level", "a-level", "ib"]
+   },
+   {
+-    "id": "phy-kin-2",
++    "id": "phy-suvat-v",
+     "name": "Velocity-Displacement Equation",
+     "branch": "physics",
+-    "level": "grade-11-12",
++    "level": "o-level",
+     "topic": "Kinematics",
+-    "latex": "v^2 = ${1:u}^2 + 2${2:a}${3:s}",
+-    "definition": "Relates final velocity, initial velocity, acceleration, and displacement without time.",
++    "latex": "v = \\sqrt{${1:u}^2 + 2\\,${2:a}\\,${3:s}}",
++    "definition": "Final velocity from initial velocity, acceleration, and displacement.",
++    "outputSymbol": "v",
++    "outputUnit": "m/s",
++    "calcExpr": "sqrt(u^2 + 2 * a * s)",
+     "variables": [
+-      { "symbol": "v", "meaning": "Final velocity", "unit": "m/s" },
+-      { "symbol": "u", "meaning": "Initial velocity", "unit": "m/s" },
+-      { "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2" },
+-      { "symbol": "s", "meaning": "Displacement", "unit": "m" }
++      { "key": "u", "symbol": "u", "meaning": "Initial velocity", "unit": "m/s", "defaultValue": 5 },
++      { "key": "a", "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2", "defaultValue": 2 },
++      { "key": "s", "symbol": "s", "meaning": "Displacement", "unit": "m", "defaultValue": 10 }
+     ],
+-    "tags": ["kinematics", "suvat"]
++    "tags": ["suvat", "velocity", "kinematics"]
+   },
+   {
+-    "id": "phy-dyn-1",
++    "id": "phy-newton-2",
+     "name": "Newton's Second Law",
+     "branch": "physics",
+-    "level": "grade-11-12",
++    "level": "o-level",
+     "topic": "Dynamics",
+-    "latex": "\\sum \\vec{F} = ${1:m}\\vec{a} = \\frac{d\\vec{p}}{dt}",
+-    "definition": "Net force equals mass times acceleration, or the time rate of change of linear momentum.",
++    "latex": "F = ${1:m}\\,${2:a}",
++    "definition": "Resultant force equals mass multiplied by acceleration.",
++    "outputSymbol": "F",
++    "outputUnit": "N",
++    "calcExpr": "m * a",
+     "variables": [
+-      { "symbol": "F", "meaning": "Net force", "unit": "N" },
+-      { "symbol": "m", "meaning": "Mass", "unit": "kg" },
+-      { "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2" },
+-      { "symbol": "p", "meaning": "Momentum", "unit": "kg·m/s" }
++      { "key": "m", "symbol": "m", "meaning": "Mass", "unit": "kg", "defaultValue": 10 },
++      { "key": "a", "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2", "defaultValue": 9.81 }
+     ],
+-    "tags": ["newton", "force", "momentum"]
++    "tags": ["newton", "force", "dynamics"]
+   },
+   {
+-    "id": "phy-grav-1",
+-    "name": "Universal Law of Gravitation",
++    "id": "phy-ke",
++    "name": "Kinetic Energy",
+     "branch": "physics",
+-    "level": "grade-11-12",
+-    "topic": "Gravitation",
+-    "latex": "F = G\\frac{${1:m_1}${2:m_2}}{${3:r}^2}",
+-    "definition": "Gravitational attraction between two point masses separated by distance r.",
++    "level": "o-level",
++    "topic": "Work, Energy & Power",
++    "latex": "E_k = \\frac{1}{2}\\,${1:m}\\,${2:v}^2",
++    "definition": "Translational kinetic energy of a body of mass m moving at speed v.",
++    "outputSymbol": "E_k",
++    "outputUnit": "J",
++    "calcExpr": "0.5 * m * v^2",
+     "variables": [
+-      { "symbol": "G", "meaning": "Gravitational constant (6.674e-11)", "unit": "N·m^2/kg^2" },
+-      { "symbol": "m_1, m_2", "meaning": "Masses", "unit": "kg" },
+-      { "symbol": "r", "meaning": "Center-to-center distance", "unit": "m" }
++      { "key": "m", "symbol": "m", "meaning": "Mass", "unit": "kg", "defaultValue": 2 },
++      { "key": "v", "symbol": "v", "meaning": "Speed", "unit": "m/s", "defaultValue": 10 }
+     ],
+-    "tags": ["gravity", "newton"]
++    "tags": ["energy", "kinetic", "o-level"]
+   },
+   {
+-    "id": "phy-shm-1",
+-    "name": "Simple Harmonic Motion (SHM)",
++    "id": "phy-centripetal",
++    "name": "Centripetal Force",
+     "branch": "physics",
+-    "level": "grade-11-12",
+-    "topic": "Oscillations & Waves",
+-    "latex": "x(t) = ${1:A}\\cos(${2:\\omega} t + ${3:\\phi}), \\quad \\omega = \\sqrt{\\frac{k}{m}}",
+-    "definition": "Sinusoidal displacement of a harmonic oscillator with amplitude A, angular frequency ω, and phase φ.",
++    "level": "a-level-ib",
++    "topic": "Circular Motion",
++    "latex": "F_c = \\frac{${1:m}\\,${2:v}^2}{${3:r}}",
++    "definition": "Inward force required to keep an object of mass m moving in a circle of radius r at speed v.",
++    "outputSymbol": "F_c",
++    "outputUnit": "N",
++    "calcExpr": "(m * v^2) / r",
+     "variables": [
+-      { "symbol": "A", "meaning": "Amplitude", "unit": "m" },
+-      { "symbol": "\\omega", "meaning": "Angular frequency", "unit": "rad/s" },
+-      { "symbol": "\\phi", "meaning": "Phase constant", "unit": "rad" }
++      { "key": "m", "symbol": "m", "meaning": "Mass", "unit": "kg", "defaultValue": 1.5 },
++      { "key": "v", "symbol": "v", "meaning": "Tangential speed", "unit": "m/s", "defaultValue": 6 },
++      { "key": "r", "symbol": "r", "meaning": "Radius", "unit": "m", "defaultValue": 2 }
+     ],
+-    "tags": ["shm", "oscillation", "spring"]
++    "tags": ["circular", "centripetal", "a-level", "ib"]
+   },
+   {
+-    "id": "phy-thermo-1",
+-    "name": "First Law of Thermodynamics",
++    "id": "phy-grav",
++    "name": "Newton's Law of Universal Gravitation",
+     "branch": "physics",
+-    "level": "grade-11-12",
+-    "topic": "Thermodynamics",
+-    "latex": "\\Delta U = ${1:Q} - ${2:W}",
+-    "definition": "Change in internal energy equals heat added to the system minus work done by the system.",
++    "level": "a-level-ib",
++    "topic": "Gravitational Fields",
++    "latex": "F = G\\,\\frac{${1:m_1}\\,${2:m_2}}{${3:r}^2}",
++    "definition": "Gravitational attraction between two point masses separated by distance r (G = 6.674e-11).",
++    "outputSymbol": "F",
++    "outputUnit": "N",
++    "calcExpr": "6.6743e-11 * m1 * m2 / (r^2)",
+     "variables": [
+-      { "symbol": "\\Delta U", "meaning": "Internal energy change", "unit": "J" },
+-      { "symbol": "Q", "meaning": "Heat added", "unit": "J" },
+-      { "symbol": "W", "meaning": "Work done by system", "unit": "J" }
++      { "key": "m1", "symbol": "m_1", "meaning": "Mass 1", "unit": "kg", "defaultValue": 5.972e24 },
++      { "key": "m2", "symbol": "m_2", "meaning": "Mass 2", "unit": "kg", "defaultValue": 1000 },
++      { "key": "r", "symbol": "r", "meaning": "Distance", "unit": "m", "defaultValue": 6.371e6 }
+     ],
+-    "tags": ["thermodynamics", "energy", "heat"]
++    "tags": ["gravity", "fields", "a-level", "ib"]
+   },
+   {
+-    "id": "phy-em-1",
+-    "name": "Coulomb's Law",
++    "id": "phy-shm-period",
++    "name": "Simple Pendulum Period",
++    "branch": "physics",
++    "level": "a-level-ib",
++    "topic": "Oscillations (SHM)",
++    "latex": "T = 2\\pi\\sqrt{\\frac{${1:L}}{${2:g}}}",
++    "definition": "Oscillation period of a simple pendulum of length L under gravitational field strength g.",
++    "outputSymbol": "T",
++    "outputUnit": "s",
++    "calcExpr": "2 * pi * sqrt(L / g)",
++    "variables": [
++      { "key": "L", "symbol": "L", "meaning": "Pendulum length", "unit": "m", "defaultValue": 1 },
++      { "key": "g", "symbol": "g", "meaning": "Gravity", "unit": "m/s^2", "defaultValue": 9.81 }
++    ],
++    "tags": ["shm", "pendulum", "waves"]
++  },
++  {
++    "id": "phy-wave",
++    "name": "Wave Speed Equation",
++    "branch": "physics",
++    "level": "o-level",
++    "topic": "Waves",
++    "latex": "v = ${1:f}\\,${2:\\lambda}",
++    "definition": "Relates wave speed v, frequency f, and wavelength λ.",
++    "outputSymbol": "v",
++    "outputUnit": "m/s",
++    "calcExpr": "f * lam",
++    "variables": [
++      { "key": "f", "symbol": "f", "meaning": "Frequency", "unit": "Hz", "defaultValue": 500 },
++      { "key": "lam", "symbol": "\\lambda", "meaning": "Wavelength", "unit": "m", "defaultValue": 0.68 }
++    ],
++    "tags": ["waves", "frequency", "wavelength"]
++  },
++  {
++    "id": "phy-specific-heat",
++    "name": "Specific Heat Capacity",
+     "branch": "physics",
+-    "level": "grade-11-12",
+-    "topic": "Electrostatics",
+-    "latex": "F = \\frac{1}{4\\pi\\varepsilon_0}\\frac{${1:q_1}${2:q_2}}{${3:r}^2}",
+-    "definition": "Electrostatic force between two stationary point charges in vacuum.",
++    "level": "o-level",
++    "topic": "Thermal Physics",
++    "latex": "Q = ${1:m}\\,${2:c}\\,${3:\\Delta T}",
++    "definition": "Thermal energy transferred to change the temperature of mass m by ΔT.",
++    "outputSymbol": "Q",
++    "outputUnit": "J",
++    "calcExpr": "m * c * dT",
+     "variables": [
+-      { "symbol": "\\varepsilon_0", "meaning": "Vacuum permittivity (8.854e-12)", "unit": "F/m" },
+-      { "symbol": "q_1, q_2", "meaning": "Charges", "unit": "C" },
+-      { "symbol": "r", "meaning": "Separation distance", "unit": "m" }
++      { "key": "m", "symbol": "m", "meaning": "Mass", "unit": "kg", "defaultValue": 1 },
++      { "key": "c", "symbol": "c", "meaning": "Specific heat capacity", "unit": "J/(kg·K)", "defaultValue": 4186 },
++      { "key": "dT", "symbol": "\\Delta T", "meaning": "Temperature change", "unit": "K", "defaultValue": 20 }
+     ],
+-    "tags": ["electrostatics", "coulomb", "charge"]
++    "tags": ["thermal", "heat", "o-level", "ib"]
+   },
+   {
+-    "id": "phy-em-2",
+-    "name": "Lorentz Force Law",
++    "id": "phy-coulomb",
++    "name": "Coulomb's Law",
+     "branch": "physics",
+-    "level": "grade-11-12",
+-    "topic": "Magnetism",
+-    "latex": "\\vec{F} = ${1:q}\\left(\\vec{E} + \\vec{v} \\times \\vec{B}\\right)",
+-    "definition": "Total electromagnetic force on a charge q moving with velocity v in electric field E and magnetic field B.",
++    "level": "a-level-ib",
++    "topic": "Electric Fields",
++    "latex": "F = \\frac{1}{4\\pi\\varepsilon_0}\\,\\frac{${1:q_1}\\,${2:q_2}}{${3:r}^2}",
++    "definition": "Electrostatic force between two point charges in vacuum (k = 8.988e9 N·m²/C²).",
++    "outputSymbol": "F",
++    "outputUnit": "N",
++    "calcExpr": "8.98755e9 * q1 * q2 / (r^2)",
+     "variables": [
+-      { "symbol": "q", "meaning": "Electric charge", "unit": "C" },
+-      { "symbol": "\\vec{E}", "meaning": "Electric field", "unit": "V/m" },
+-      { "symbol": "\\vec{B}", "meaning": "Magnetic flux density", "unit": "T" }
++      { "key": "q1", "symbol": "q_1", "meaning": "Charge 1", "unit": "C", "defaultValue": 1e-6 },
++      { "key": "q2", "symbol": "q_2", "meaning": "Charge 2", "unit": "C", "defaultValue": 2e-6 },
++      { "key": "r", "symbol": "r", "meaning": "Separation", "unit": "m", "defaultValue": 0.1 }
+     ],
+-    "tags": ["lorentz", "magnetism", "em"]
++    "tags": ["electrostatics", "coulomb", "a-level", "ib"]
+   },
+   {
+-    "id": "phy-opt-1",
+-    "name": "Snell's Law & Thin Lens Equation",
++    "id": "phy-lens",
++    "name": "Thin Lens Focal Length",
+     "branch": "physics",
+-    "level": "grade-11-12",
++    "level": "o-level",
+     "topic": "Optics",
+-    "latex": "${1:n_1}\\sin\\theta_1 = ${2:n_2}\\sin\\theta_2, \\quad \\frac{1}{f} = \\frac{1}{d_o} + \\frac{1}{d_i}",
+-    "definition": "Governs refraction at an interface and image formation for thin spherical lenses.",
+-    "tags": ["optics", "snell", "lens"]
++    "latex": "f = \\left(\\frac{1}{${1:u}} + \\frac{1}{${2:v}}\\right)^{-1}",
++    "definition": "Relates focal length f, object distance u, and image distance v for a thin lens.",
++    "outputSymbol": "f",
++    "outputUnit": "cm",
++    "calcExpr": "1 / (1 / u + 1 / v)",
++    "variables": [
++      { "key": "u", "symbol": "u", "meaning": "Object distance", "unit": "cm", "defaultValue": 30 },
++      { "key": "v", "symbol": "v", "meaning": "Image distance", "unit": "cm", "defaultValue": 60 }
++    ],
++    "tags": ["optics", "lens"]
+   },
+   {
+-    "id": "phy-mod-1",
+-    "name": "Photoelectric Effect & de Broglie Wavelength",
++    "id": "phy-photon",
++    "name": "Photon Energy (Planck-Einstein)",
+     "branch": "physics",
+-    "level": "grade-11-12",
+-    "topic": "Modern Physics",
+-    "latex": "K_{\\max} = h${1:\\nu} - ${2:\\phi_0}, \\quad \\lambda = \\frac{h}{${3:p}}",
+-    "definition": "Maximum kinetic energy of emitted photoelectrons and matter-wave wavelength.",
+-    "tags": ["quantum", "photoelectric", "debroglie"]
++    "level": "a-level-ib",
++    "topic": "Quantum & Modern Physics",
++    "latex": "E = \\frac{h\\,c}{${1:\\lambda}}",
++    "definition": "Energy of a photon of wavelength λ (h = 6.626e-34 J·s, c = 3e8 m/s).",
++    "outputSymbol": "E",
++    "outputUnit": "J",
++    "calcExpr": "6.62607e-34 * 2.99792e8 / lam",
++    "variables": [
++      { "key": "lam", "symbol": "\\lambda", "meaning": "Wavelength", "unit": "m", "defaultValue": 500e-9 }
++    ],
++    "tags": ["quantum", "photon", "planck", "a-level", "ib"]
+   },
+   {
+-    "id": "chem-gas-1",
+-    "name": "Ideal Gas Law",
++    "id": "chem-moles",
++    "name": "Moles & Molar Concentration",
+     "branch": "chemistry",
+-    "level": "grade-11-12",
+-    "topic": "States of Matter",
+-    "latex": "${1:P}${2:V} = ${3:n}RT",
+-    "definition": "Equation of state for an ideal gas relating pressure P, volume V, moles n, and temperature T.",
++    "level": "o-level",
++    "topic": "Stoichiometry",
++    "latex": "n = ${1:C}\\,${2:V}",
++    "definition": "Amount of substance (moles) from molar concentration C (mol/dm³) and volume V (dm³).",
++    "outputSymbol": "n",
++    "outputUnit": "mol",
++    "calcExpr": "C * V",
+     "variables": [
+-      { "symbol": "R", "meaning": "Gas constant (8.314 J/(mol·K) or 0.08206 L·atm/(mol·K))" }
++      { "key": "C", "symbol": "C", "meaning": "Molarity", "unit": "mol/dm³", "defaultValue": 0.5 },
++      { "key": "V", "symbol": "V", "meaning": "Volume", "unit": "dm³", "defaultValue": 0.25 }
+     ],
+-    "tags": ["gas", "ideal", "stoichiometry"]
++    "tags": ["moles", "concentration", "o-level"]
+   },
+   {
+-    "id": "chem-thermo-1",
+-    "name": "Gibbs Free Energy",
++    "id": "chem-ideal-gas",
++    "name": "Ideal Gas Law (Pressure)",
+     "branch": "chemistry",
+-    "level": "grade-11-12",
+-    "topic": "Chemical Thermodynamics",
+-    "latex": "\\Delta G^{\\circ} = ${1:\\Delta H^{\\circ}} - ${2:T}\\Delta S^{\\circ} = -RT\\ln K",
+-    "definition": "Determines reaction spontaneity (ΔG < 0 spontaneous) and links to the equilibrium constant K.",
+-    "tags": ["gibbs", "enthalpy", "entropy", "equilibrium"]
++    "level": "a-level-ib",
++    "topic": "States of Matter",
++    "latex": "P = \\frac{${1:n}\\,R\\,${2:T}}{${3:V}}",
++    "definition": "Pressure of an ideal gas (R = 8.314 J/(mol·K)) with V in m³ and T in Kelvin.",
++    "outputSymbol": "P",
++    "outputUnit": "Pa",
++    "calcExpr": "(n * 8.31446 * T) / V",
++    "variables": [
++      { "key": "n", "symbol": "n", "meaning": "Moles of gas", "unit": "mol", "defaultValue": 1 },
++      { "key": "T", "symbol": "T", "meaning": "Temperature", "unit": "K", "defaultValue": 298.15 },
++      { "key": "V", "symbol": "V", "meaning": "Volume", "unit": "m³", "defaultValue": 0.024 }
++    ],
++    "tags": ["gas", "ideal", "a-level", "ib"]
+   },
+   {
+-    "id": "chem-kin-1",
+-    "name": "Arrhenius Rate Equation",
++    "id": "chem-gibbs",
++    "name": "Gibbs Free Energy Change",
+     "branch": "chemistry",
+-    "level": "grade-11-12",
+-    "topic": "Chemical Kinetics",
+-    "latex": "k = ${1:A}\\exp\\left(-\\frac{${2:E_a}}{R${3:T}}\\right)",
+-    "definition": "Temperature dependence of a chemical reaction rate constant k with activation energy Ea.",
+-    "tags": ["kinetics", "arrhenius", "rate"]
++    "level": "a-level-ib",
++    "topic": "Energetics & Thermodynamics",
++    "latex": "\\Delta G = ${1:\\Delta H} - ${2:T}\\,${3:\\Delta S}",
++    "definition": "Determines feasibility of a reaction (ΔG < 0 is spontaneous; keep ΔH and TΔS in matching energy units).",
++    "outputSymbol": "\\Delta G",
++    "outputUnit": "kJ/mol",
++    "calcExpr": "dH - T * (dS / 1000)",
++    "variables": [
++      { "key": "dH", "symbol": "\\Delta H", "meaning": "Enthalpy change", "unit": "kJ/mol", "defaultValue": -92.2 },
++      { "key": "T", "symbol": "T", "meaning": "Temperature", "unit": "K", "defaultValue": 298 },
++      { "key": "dS", "symbol": "\\Delta S", "meaning": "Entropy change", "unit": "J/(mol·K)", "defaultValue": -198.7 }
++    ],
++    "tags": ["gibbs", "thermodynamics", "a-level", "ib"]
+   },
+   {
+-    "id": "chem-acid-1",
+-    "name": "Henderson-Hasselbalch Equation",
++    "id": "chem-ph",
++    "name": "pH from Hydrogen Ion Concentration",
+     "branch": "chemistry",
+-    "level": "grade-11-12",
+-    "topic": "Acid-Base Equilibrium",
+-    "latex": "\\text{pH} = \\text{p}K_a + \\log_{10}\\left(\\frac{[${1:\\text{A}^-}]}{[${2:\\text{HA}}]}\\right)",
+-    "definition": "Estimates the pH of a weak acid / conjugate base buffer solution.",
+-    "tags": ["ph", "buffer", "acid-base"]
++    "level": "a-level-ib",
++    "topic": "Acids & Bases",
++    "latex": "\\text{pH} = -\\log_{10}\\left[${1:\\text{H}^+}\\right]",
++    "definition": "Calculates solution pH from molar concentration of H⁺ ions.",
++    "outputSymbol": "\\text{pH}",
++    "outputUnit": "",
++    "calcExpr": "-log10(H)",
++    "variables": [
++      { "key": "H", "symbol": "[\\text{H}^+]", "meaning": "H⁺ concentration", "unit": "mol/dm³", "defaultValue": 0.001 }
++    ],
++    "tags": ["ph", "acid", "base", "a-level", "ib"]
+   },
+   {
+-    "id": "chem-elec-1",
+-    "name": "Nernst Equation",
++    "id": "chem-hh",
++    "name": "Henderson-Hasselbalch Buffer pH",
+     "branch": "chemistry",
+-    "level": "grade-11-12",
+-    "topic": "Electrochemistry",
+-    "latex": "E_{\\text{cell}} = E^{\\circ}_{\\text{cell}} - \\frac{RT}{${1:n}F}\\ln ${2:Q}",
+-    "definition": "Calculates non-standard electrochemical cell potential from reaction quotient Q and electrons transferred n.",
+-    "tags": ["nernst", "electrochemistry", "redox"]
++    "level": "a-level-ib",
++    "topic": "Acids & Bases",
++    "latex": "\\text{pH} = ${1:\\text{p}K_a} + \\log_{10}\\left(\\frac{${2:[\\text{A}^-]}}{${3:[\\text{HA}]}}\\right)",
++    "definition": "Computes pH of a weak acid / conjugate base buffer system.",
++    "outputSymbol": "\\text{pH}",
++    "outputUnit": "",
++    "calcExpr": "pKa + log10(A / HA)",
++    "variables": [
++      { "key": "pKa", "symbol": "\\text{p}K_a", "meaning": "Acid dissociation pKa", "unit": "", "defaultValue": 4.76 },
++      { "key": "A", "symbol": "[\\text{A}^-]", "meaning": "Conjugate base", "unit": "M", "defaultValue": 0.2 },
++      { "key": "HA", "symbol": "[\\text{HA}]", "meaning": "Weak acid", "unit": "M", "defaultValue": 0.1 }
++    ],
++    "tags": ["buffer", "ph", "a-level", "ib"]
+   },
+   {
+-    "id": "chem-rxn-1",
+-    "name": "Acid-Base Neutralization (mhchem)",
++    "id": "chem-arrhenius",
++    "name": "Arrhenius Rate Constant",
+     "branch": "chemistry",
+-    "level": "grade-11-12",
+-    "topic": "Stoichiometry",
+-    "latex": "\\ce{${1:H2SO4} + ${2:2NaOH} -> ${3:Na2SO4} + ${4:2H2O}}",
+-    "definition": "Template for balanced mhchem reactions with automatic subscripts and arrows.",
+-    "tags": ["mhchem", "reaction", "neutralization"]
++    "level": "a-level-ib",
++    "topic": "Chemical Kinetics",
++    "latex": "k = ${1:A}\\,e^{-\\frac{${2:E_a}}{R\\,${3:T}}}",
++    "definition": "Reaction rate constant k as a function of activation energy Ea (J/mol) and temperature T (K).",
++    "outputSymbol": "k",
++    "outputUnit": "s⁻¹",
++    "calcExpr": "A * exp(-Ea / (8.31446 * T))",
++    "variables": [
++      { "key": "A", "symbol": "A", "meaning": "Pre-exponential factor", "unit": "s⁻¹", "defaultValue": 1e11 },
++      { "key": "Ea", "symbol": "E_a", "meaning": "Activation energy", "unit": "J/mol", "defaultValue": 75000 },
++      { "key": "T", "symbol": "T", "meaning": "Temperature", "unit": "K", "defaultValue": 300 }
++    ],
++    "tags": ["kinetics", "arrhenius", "a-level", "ib"]
+   },
+   {
+-    "id": "math-alg-1",
+-    "name": "Quadratic Formula",
++    "id": "math-quad-disc",
++    "name": "Quadratic Discriminant & Positive Root",
+     "branch": "math",
+-    "level": "grade-11-12",
++    "level": "o-level",
+     "topic": "Algebra",
+-    "latex": "x = \\frac{-${1:b} \\pm \\sqrt{${1:b}^2 - 4${2:a}${3:c}}}{2${2:a}}",
+-    "definition": "Closed-form roots of the quadratic equation ax² + bx + c = 0.",
+-    "tags": ["quadratic", "roots", "algebra"]
++    "latex": "x = \\frac{-${1:b} + \\sqrt{${1:b}^2 - 4\\,${2:a}\\,${3:c}}}{2\\,${2:a}}",
++    "definition": "Positive branch of the quadratic formula for ax² + bx + c = 0.",
++    "outputSymbol": "x_1",
++    "outputUnit": "",
++    "calcExpr": "(-b + sqrt(b^2 - 4 * a * c)) / (2 * a)",
++    "variables": [
++      { "key": "a", "symbol": "a", "meaning": "Coefficient of x²", "defaultValue": 1 },
++      { "key": "b", "symbol": "b", "meaning": "Coefficient of x", "defaultValue": -5 },
++      { "key": "c", "symbol": "c", "meaning": "Constant term", "defaultValue": 6 }
++    ],
++    "tags": ["quadratic", "algebra", "o-level"]
+   },
+   {
+-    "id": "math-calc-1",
+-    "name": "Integration by Parts",
++    "id": "math-cosine-rule",
++    "name": "Law of Cosines (Side Length)",
+     "branch": "math",
+-    "level": "grade-11-12",
+-    "topic": "Calculus",
+-    "latex": "\\int ${1:u}\\,d${2:v} = ${1:u}${2:v} - \\int ${2:v}\\,d${1:u}",
+-    "definition": "Transforms the integral of a product of functions into a simpler integral.",
+-    "tags": ["integral", "calculus", "parts"]
++    "level": "o-level",
++    "topic": "Trigonometry",
++    "latex": "c = \\sqrt{${1:a}^2 + ${2:b}^2 - 2\\,${1:a}\\,${2:b}\\,\\cos(${3:C}^{\\circ})}",
++    "definition": "Computes side c of any triangle from sides a, b and included angle C in degrees.",
++    "outputSymbol": "c",
++    "outputUnit": "",
++    "calcExpr": "sqrt(a^2 + b^2 - 2 * a * b * cos(C deg))",
++    "variables": [
++      { "key": "a", "symbol": "a", "meaning": "Side a", "defaultValue": 7 },
++      { "key": "b", "symbol": "b", "meaning": "Side b", "defaultValue": 10 },
++      { "key": "C", "symbol": "C", "meaning": "Included angle", "unit": "deg", "defaultValue": 60 }
++    ],
++    "tags": ["trig", "cosine", "o-level", "ib"]
+   },
+   {
+-    "id": "math-calc-2",
+-    "name": "Taylor Series Expansion",
++    "id": "math-gp-sum",
++    "name": "Geometric Series Sum",
+     "branch": "math",
+-    "level": "grade-11-12",
+-    "topic": "Calculus",
+-    "latex": "f(x) = \\sum_{n=0}^{\\infty} \\frac{f^{(n)}(${1:a})}{n!}(x - ${1:a})^n",
+-    "definition": "Power series representation of an infinitely differentiable function around x = a.",
+-    "tags": ["taylor", "maclaurin", "series"]
++    "level": "a-level-ib",
++    "topic": "Sequences & Series",
++    "latex": "S_n = ${1:a}\\,\\frac{1 - ${2:r}^{${3:n}}}{1 - ${2:r}}",
++    "definition": "Sum of the first n terms of a geometric progression with first term a and common ratio r ≠ 1.",
++    "outputSymbol": "S_n",
++    "outputUnit": "",
++    "calcExpr": "a * (1 - r^n) / (1 - r)",
++    "variables": [
++      { "key": "a", "symbol": "a", "meaning": "First term", "defaultValue": 2 },
++      { "key": "r", "symbol": "r", "meaning": "Common ratio", "defaultValue": 0.5 },
++      { "key": "n", "symbol": "n", "meaning": "Number of terms", "defaultValue": 5 }
++    ],
++    "tags": ["series", "geometric", "a-level", "ib"]
+   },
+   {
+-    "id": "math-ode-1",
+-    "name": "First-Order Linear ODE (Integrating Factor)",
++    "id": "math-binomial-prob",
++    "name": "Binomial Probability P(X = k)",
+     "branch": "math",
+-    "level": "grade-11-12",
+-    "topic": "Differential Equations",
+-    "latex": "\\frac{dy}{dx} + ${1:P(x)}y = ${2:Q(x)}, \\quad \\mu(x) = e^{\\int ${1:P(x)}\\,dx}",
+-    "definition": "Standard integrating factor solution for first-order linear differential equations.",
+-    "tags": ["ode", "differential", "integrating-factor"]
++    "level": "a-level-ib",
++    "topic": "Probability & Statistics",
++    "latex": "P(X = ${1:k}) = \\binom{${2:n}}{${1:k}}\\,${3:p}^{${1:k}}\\,\\left(1 - ${3:p}\\right)^{${2:n} - ${1:k}}",
++    "definition": "Probability of exactly k successes in n independent Bernoulli trials with success probability p.",
++    "outputSymbol": "P(X=k)",
++    "outputUnit": "",
++    "calcExpr": "combinations(n, k) * (p^k) * ((1 - p)^(n - k))",
++    "variables": [
++      { "key": "n", "symbol": "n", "meaning": "Total trials", "defaultValue": 10 },
++      { "key": "k", "symbol": "k", "meaning": "Successes", "defaultValue": 3 },
++      { "key": "p", "symbol": "p", "meaning": "Success probability", "defaultValue": 0.5 }
++    ],
++    "tags": ["probability", "binomial", "statistics", "a-level", "ib"]
+   },
+   {
+-    "id": "math-prob-1",
+-    "name": "Bayes' Theorem",
+-    "branch": "math",
+-    "level": "grade-11-12",
+-    "topic": "Probability & Statistics",
+-    "latex": "P(${1:A}\\mid ${2:B}) = \\frac{P(${2:B}\\mid ${1:A})P(${1:A})}{P(${2:B})}",
+-    "definition": "Updates conditional probability of event A given observed evidence B.",
+-    "tags": ["bayes", "probability", "statistics"]
++    "id": "eee-ohm",
++    "name": "Ohm's Law & DC Power",
++    "branch": "eee",
++    "level": "eee-basics",
++    "topic": "DC Circuits",
++    "latex": "V = ${1:I}\\,${2:R}, \\qquad P = ${1:I}^2\\,${2:R}",
++    "definition": "Fundamental voltage-current relation across a resistor R.",
++    "outputSymbol": "V",
++    "outputUnit": "V",
++    "calcExpr": "I * R",
++    "variables": [
++      { "key": "I", "symbol": "I", "meaning": "Current", "unit": "A", "defaultValue": 0.5 },
++      { "key": "R", "symbol": "R", "meaning": "Resistance", "unit": "Ω", "defaultValue": 220 }
++    ],
++    "tags": ["ohm", "dc", "circuits", "eee"]
++  },
++  {
++    "id": "eee-vdiv",
++    "name": "Voltage Divider Rule",
++    "branch": "eee",
++    "level": "eee-basics",
++    "topic": "DC Circuits",
++    "latex": "V_{\\text{out}} = ${1:V_{\\text{in}}}\\,\\frac{${2:R_2}}{${3:R_1} + ${2:R_2}}",
++    "definition": "Output voltage across R2 in a series resistive voltage divider.",
++    "outputSymbol": "V_{\\text{out}}",
++    "outputUnit": "V",
++    "calcExpr": "Vin * (R2 / (R1 + R2))",
++    "variables": [
++      { "key": "Vin", "symbol": "V_{\\text{in}}", "meaning": "Input voltage", "unit": "V", "defaultValue": 12 },
++      { "key": "R1", "symbol": "R_1", "meaning": "Top resistor", "unit": "Ω", "defaultValue": 1000 },
++      { "key": "R2", "symbol": "R_2", "meaning": "Bottom resistor", "unit": "Ω", "defaultValue": 2000 }
++    ],
++    "tags": ["divider", "circuits", "eee"]
+   },
+   {
+-    "id": "eee-ckt-1",
+-    "name": "Ohm's Law & Complex Impedance",
++    "id": "eee-parallel-r",
++    "name": "Parallel Equivalent Resistance",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "Circuit Analysis",
+-    "latex": "\\mathbf{V} = \\mathbf{I}\\mathbf{Z}, \\quad \\mathbf{Z}_{\\text{RLC}} = ${1:R} + j\\left(\\omega ${2:L} - \\frac{1}{\\omega ${3:C}}\\right)",
+-    "definition": "Phasor Ohm's Law and series RLC complex impedance in sinusoidal steady state.",
++    "level": "eee-basics",
++    "topic": "DC Circuits",
++    "latex": "R_{\\text{eq}} = \\frac{${1:R_1}\\,${2:R_2}}{${1:R_1} + ${2:R_2}}",
++    "definition": "Equivalent resistance of two resistors connected in parallel.",
++    "outputSymbol": "R_{\\text{eq}}",
++    "outputUnit": "Ω",
++    "calcExpr": "(R1 * R2) / (R1 + R2)",
+     "variables": [
+-      { "symbol": "\\mathbf{Z}", "meaning": "Complex impedance", "unit": "Ω" },
+-      { "symbol": "\\omega", "meaning": "Angular frequency (2πf)", "unit": "rad/s" }
++      { "key": "R1", "symbol": "R_1", "meaning": "Resistor 1", "unit": "Ω", "defaultValue": 100 },
++      { "key": "R2", "symbol": "R_2", "meaning": "Resistor 2", "unit": "Ω", "defaultValue": 200 }
+     ],
+-    "tags": ["ohm", "impedance", "rlc", "phasor"]
++    "tags": ["parallel", "resistor", "circuits", "eee"]
+   },
+   {
+-    "id": "eee-ckt-2",
+-    "name": "Inductor & Capacitor V-I Relations",
++    "id": "eee-reactance-xl",
++    "name": "Inductive Reactance (XL)",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "Circuit Analysis",
+-    "latex": "v_L(t) = ${1:L}\\frac{di_L}{dt}, \\qquad i_C(t) = ${2:C}\\frac{dv_C}{dt}",
+-    "definition": "Fundamental time-domain differential equations for ideal inductors and capacitors.",
+-    "tags": ["inductor", "capacitor", "transient"]
++    "level": "eee-basics",
++    "topic": "AC Circuits",
++    "latex": "X_L = 2\\pi\\,${1:f}\\,${2:L}",
++    "definition": "Opposition of an ideal inductor L to sinusoidal AC current at frequency f.",
++    "outputSymbol": "X_L",
++    "outputUnit": "Ω",
++    "calcExpr": "2 * pi * f * L",
++    "variables": [
++      { "key": "f", "symbol": "f", "meaning": "Frequency", "unit": "Hz", "defaultValue": 50 },
++      { "key": "L", "symbol": "L", "meaning": "Inductance", "unit": "H", "defaultValue": 0.1 }
++    ],
++    "tags": ["inductor", "reactance", "ac", "eee"]
+   },
+   {
+-    "id": "eee-pwr-1",
+-    "name": "AC Complex Power Triangle",
++    "id": "eee-reactance-xc",
++    "name": "Capacitive Reactance (XC)",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "AC Power & 3-Phase",
+-    "latex": "\\mathbf{S} = \\mathbf{V}_{\\text{rms}}\\mathbf{I}_{\\text{rms}}^* = ${1:P} + j${2:Q}, \\quad \\text{pf} = \\cos\\theta",
+-    "definition": "Relates apparent power S (VA), real power P (W), reactive power Q (VAR), and power factor.",
+-    "tags": ["power", "ac", "phasor", "pf"]
++    "level": "eee-basics",
++    "topic": "AC Circuits",
++    "latex": "X_C = \\frac{1}{2\\pi\\,${1:f}\\,${2:C}}",
++    "definition": "Opposition of an ideal capacitor C to sinusoidal AC current at frequency f.",
++    "outputSymbol": "X_C",
++    "outputUnit": "Ω",
++    "calcExpr": "1 / (2 * pi * f * C)",
++    "variables": [
++      { "key": "f", "symbol": "f", "meaning": "Frequency", "unit": "Hz", "defaultValue": 50 },
++      { "key": "C", "symbol": "C", "meaning": "Capacitance", "unit": "F", "defaultValue": 100e-6 }
++    ],
++    "tags": ["capacitor", "reactance", "ac", "eee"]
+   },
+   {
+-    "id": "eee-pwr-2",
+-    "name": "Balanced Three-Phase Power",
++    "id": "eee-rlc-f0",
++    "name": "RLC Resonant Frequency",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "AC Power & 3-Phase",
+-    "latex": "P_{3\\phi} = \\sqrt{3}\\,${1:V_L}${2:I_L}\\cos${3:\\theta}",
+-    "definition": "Total real power delivered in a balanced three-phase Y or Δ system.",
+-    "tags": ["three-phase", "power", "machines"]
++    "level": "eee-basics",
++    "topic": "AC Circuits & Filters",
++    "latex": "f_0 = \\frac{1}{2\\pi\\sqrt{${1:L}\\,${2:C}}}",
++    "definition": "Natural resonant frequency where inductive and capacitive reactances cancel.",
++    "outputSymbol": "f_0",
++    "outputUnit": "Hz",
++    "calcExpr": "1 / (2 * pi * sqrt(L * C))",
++    "variables": [
++      { "key": "L", "symbol": "L", "meaning": "Inductance", "unit": "H", "defaultValue": 10e-3 },
++      { "key": "C", "symbol": "C", "meaning": "Capacitance", "unit": "F", "defaultValue": 10e-6 }
++    ],
++    "tags": ["resonance", "rlc", "filter", "eee"]
+   },
+   {
+-    "id": "eee-res-1",
+-    "name": "RLC Resonant Frequency & Quality Factor",
++    "id": "eee-rc-fc",
++    "name": "RC Filter Cutoff Frequency (-3 dB)",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "Filters & Resonance",
+-    "latex": "f_0 = \\frac{1}{2\\pi\\sqrt{${1:L}${2:C}}}, \\quad Q = \\frac{1}{${3:R}}\\sqrt{\\frac{${1:L}}{${2:C}}}",
+-    "definition": "Resonant frequency f0 where inductive and capacitive reactances cancel, plus series Q-factor.",
+-    "tags": ["resonance", "filter", "rlc", "q-factor"]
++    "level": "eee-basics",
++    "topic": "Electronics & Filters",
++    "latex": "f_c = \\frac{1}{2\\pi\\,${1:R}\\,${2:C}}",
++    "definition": "Half-power (-3 dB) corner frequency of a first-order RC low-pass or high-pass filter.",
++    "outputSymbol": "f_c",
++    "outputUnit": "Hz",
++    "calcExpr": "1 / (2 * pi * R * C)",
++    "variables": [
++      { "key": "R", "symbol": "R", "meaning": "Resistance", "unit": "Ω", "defaultValue": 1000 },
++      { "key": "C", "symbol": "C", "meaning": "Capacitance", "unit": "F", "defaultValue": 1e-6 }
++    ],
++    "tags": ["rc", "cutoff", "filter", "electronics", "eee"]
+   },
+   {
+-    "id": "eee-semi-1",
+-    "name": "MOSFET Saturation Drain Current",
++    "id": "eee-opamp-noninv",
++    "name": "Non-Inverting Op-Amp Voltage Gain",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "Electronics",
+-    "latex": "I_D = \\frac{1}{2}\\mu_n C_{ox}\\frac{${1:W}}{${2:L}}\\left(V_{GS} - V_{th}\\right)^2\\left(1 + \\lambda V_{DS}\\right)",
+-    "definition": "Square-law drain current model for an n-channel MOSFET in saturation with channel-length modulation.",
+-    "tags": ["mosfet", "electronics", "transistor"]
++    "level": "eee-basics",
++    "topic": "Analog Electronics",
++    "latex": "A_v = 1 + \\frac{${1:R_f}}{${2:R_1}}",
++    "definition": "Closed-loop voltage gain of an ideal non-inverting operational amplifier.",
++    "outputSymbol": "A_v",
++    "outputUnit": "V/V",
++    "calcExpr": "1 + Rf / R1",
++    "variables": [
++      { "key": "Rf", "symbol": "R_f", "meaning": "Feedback resistor", "unit": "Ω", "defaultValue": 10000 },
++      { "key": "R1", "symbol": "R_1", "meaning": "Ground resistor", "unit": "Ω", "defaultValue": 1000 }
++    ],
++    "tags": ["opamp", "amplifier", "electronics", "eee"]
+   },
+   {
+-    "id": "eee-semi-2",
+-    "name": "Shockley Ideal Diode Equation",
++    "id": "eee-db-gain",
++    "name": "Voltage Gain in Decibels (dB)",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "Electronics",
+-    "latex": "I_D = ${1:I_S}\\left(e^{\\frac{V_D}{${2:n}V_T}} - 1\\right)",
+-    "definition": "Exponential I-V characteristic of a p-n junction diode (thermal voltage VT ≈ 25.85 mV at 300 K).",
+-    "tags": ["diode", "shockley", "semiconductor"]
++    "level": "eee-basics",
++    "topic": "Signals & Electronics",
++    "latex": "G_{\\text{dB}} = 20\\log_{10}\\left(\\frac{${1:V_{\\text{out}}}}{${2:V_{\\text{in}}}}\\right)",
++    "definition": "Logarithmic voltage gain ratio expressed in decibels.",
++    "outputSymbol": "G_{\\text{dB}}",
++    "outputUnit": "dB",
++    "calcExpr": "20 * log10(Vout / Vin)",
++    "variables": [
++      { "key": "Vout", "symbol": "V_{\\text{out}}", "meaning": "Output voltage", "unit": "V", "defaultValue": 10 },
++      { "key": "Vin", "symbol": "V_{\\text{in}}", "meaning": "Input voltage", "unit": "V", "defaultValue": 1 }
++    ],
++    "tags": ["decibel", "db", "signals", "eee"]
+   },
+   {
+-    "id": "eee-opamp-1",
+-    "name": "Op-Amp Inverting & Non-Inverting Gain",
++    "id": "eee-3phase-power",
++    "name": "Balanced Three-Phase Real Power",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "Electronics",
+-    "latex": "A_{v,\\text{inv}} = -\\frac{${1:R_f}}{${2:R_{\\text{in}}}}, \\qquad A_{v,\\text{non-inv}} = 1 + \\frac{${1:R_f}}{${2:R_1}}",
+-    "definition": "Closed-loop voltage gains for ideal inverting and non-inverting operational amplifier topologies.",
+-    "tags": ["opamp", "amplifier", "gain"]
++    "level": "eee-basics",
++    "topic": "Power Systems",
++    "latex": "P_{3\\phi} = \\sqrt{3}\\,${1:V_L}\\,${2:I_L}\\,\\cos(${3:\\theta}^{\\circ})",
++    "definition": "Total real power in a balanced 3-phase Y or Δ system from line voltage, line current, and phase angle.",
++    "outputSymbol": "P_{3\\phi}",
++    "outputUnit": "W",
++    "calcExpr": "sqrt(3) * VL * IL * cos(theta deg)",
++    "variables": [
++      { "key": "VL", "symbol": "V_L", "meaning": "Line-to-line RMS voltage", "unit": "V", "defaultValue": 400 },
++      { "key": "IL", "symbol": "I_L", "meaning": "Line RMS current", "unit": "A", "defaultValue": 10 },
++      { "key": "theta", "symbol": "\\theta", "meaning": "Power factor angle", "unit": "deg", "defaultValue": 30 }
++    ],
++    "tags": ["three-phase", "power", "machines", "eee"]
+   },
+   {
+-    "id": "eee-sig-1",
+-    "name": "Unilateral Laplace Transform",
++    "id": "eee-sync-speed",
++    "name": "AC Machine Synchronous Speed",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "Signals & Systems",
+-    "latex": "F(s) = \\mathcal{L}\\{${1:f(t)}\\} = \\int_{0^-}^{\\infty} ${1:f(t)} e^{-st}\\,dt",
+-    "definition": "Transforms a causal time-domain signal f(t) into the complex s-domain for circuit/system analysis.",
+-    "tags": ["laplace", "signals", "control"]
++    "level": "eee-basics",
++    "topic": "Electrical Machines",
++    "latex": "n_s = \\frac{120\\,${1:f}}{${2:P}}",
++    "definition": "Rotating magnetic field speed (RPM) of an AC motor/generator with P poles at supply frequency f.",
++    "outputSymbol": "n_s",
++    "outputUnit": "RPM",
++    "calcExpr": "(120 * f) / P",
++    "variables": [
++      { "key": "f", "symbol": "f", "meaning": "Supply frequency", "unit": "Hz", "defaultValue": 50 },
++      { "key": "P", "symbol": "P", "meaning": "Number of poles", "unit": "", "defaultValue": 4 }
++    ],
++    "tags": ["machines", "motor", "rpm", "eee"]
+   },
+   {
+-    "id": "eee-sig-2",
+-    "name": "Continuous-Time Fourier Transform",
++    "id": "eee-transformer",
++    "name": "Ideal Transformer Secondary Voltage",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "Signals & Systems",
+-    "latex": "X(j\\omega) = \\int_{-\\infty}^{\\infty} ${1:x(t)} e^{-j\\omega t}\\,dt",
+-    "definition": "Decomposes an aperiodic time-domain signal into its continuous frequency spectrum.",
+-    "tags": ["fourier", "spectrum", "signals"]
++    "level": "eee-basics",
++    "topic": "Electrical Machines",
++    "latex": "V_2 = ${1:V_1}\\,\\frac{${2:N_2}}{${3:N_1}}",
++    "definition": "Secondary voltage of an ideal transformer from primary voltage and turns ratio N2/N1.",
++    "outputSymbol": "V_2",
++    "outputUnit": "V",
++    "calcExpr": "V1 * (N2 / N1)",
++    "variables": [
++      { "key": "V1", "symbol": "V_1", "meaning": "Primary voltage", "unit": "V", "defaultValue": 230 },
++      { "key": "N1", "symbol": "N_1", "meaning": "Primary turns", "defaultValue": 1000 },
++      { "key": "N2", "symbol": "N_2", "meaning": "Secondary turns", "defaultValue": 100 }
++    ],
++    "tags": ["transformer", "machines", "eee"]
+   },
+   {
+-    "id": "eee-ctrl-1",
+-    "name": "Standard 2nd-Order Transfer Function",
++    "id": "eee-nyquist",
++    "name": "Nyquist Minimum Sampling Rate",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "Control Systems",
+-    "latex": "H(s) = \\frac{${1:\\omega_n}^2}{s^2 + 2${2:\\zeta}${1:\\omega_n}s + ${1:\\omega_n}^2}",
+-    "definition": "Canonical second-order system characterized by natural frequency ωn and damping ratio ζ.",
+-    "tags": ["control", "transfer-function", "damping"]
++    "level": "eee-basics",
++    "topic": "Signals & Communications",
++    "latex": "f_{s,\\min} = 2\\,${1:f_{\\max}}",
++    "definition": "Minimum sampling frequency to reconstruct a bandlimited signal of bandwidth f_max without aliasing.",
++    "outputSymbol": "f_{s,\\min}",
++    "outputUnit": "Hz",
++    "calcExpr": "2 * fmax",
++    "variables": [
++      { "key": "fmax", "symbol": "f_{\\max}", "meaning": "Max signal frequency", "unit": "Hz", "defaultValue": 20000 }
++    ],
++    "tags": ["nyquist", "sampling", "signals", "eee"]
+   },
+   {
+-    "id": "eee-em-1",
+-    "name": "Maxwell's Equations (Differential Form)",
++    "id": "eee-digital-states",
++    "name": "Digital Logic State Count (n-bit)",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "Electromagnetics",
+-    "latex": "\\nabla\\cdot\\vec{E}=\\frac{\\rho}{\\varepsilon_0},\\; \\nabla\\cdot\\vec{B}=0,\\; \\nabla\\times\\vec{E}=-\\frac{\\partial\\vec{B}}{\\partial t},\\; \\nabla\\times\\vec{B}=\\mu_0\\vec{J}+\\mu_0\\varepsilon_0\\frac{\\partial\\vec{E}}{\\partial t}",
+-    "definition": "Four foundational differential equations of classical electromagnetism.",
+-    "tags": ["maxwell", "electromagnetics", "fields"]
++    "level": "eee-basics",
++    "topic": "Digital Electronics",
++    "latex": "N = 2^{${1:n}}",
++    "definition": "Total number of distinct binary states representable by an n-bit register or ADC.",
++    "outputSymbol": "N",
++    "outputUnit": "states",
++    "calcExpr": "2^n",
++    "variables": [
++      { "key": "n", "symbol": "n", "meaning": "Bit width", "unit": "bits", "defaultValue": 8 }
++    ],
++    "tags": ["digital", "binary", "adc", "eee"]
+   },
+   {
+-    "id": "eee-mach-1",
+-    "name": "Ideal Transformer & Synchronous Speed",
++    "id": "eee-em-wave",
++    "name": "Electromagnetic Wave Wavelength in Medium",
+     "branch": "eee",
+-    "level": "eee-y1-y2",
+-    "topic": "Electrical Machines",
+-    "latex": "\\frac{V_1}{V_2} = \\frac{${1:N_1}}{${2:N_2}} = \\frac{I_2}{I_1}, \\qquad n_s = \\frac{120 ${3:f}}{${4:P}}\\text{ RPM}",
+-    "definition": "Turns ratio relations for an ideal transformer and synchronous speed of an AC machine with P poles.",
+-    "tags": ["transformer", "motor", "machines"]
+-  },
+-  {
+-    "id": "mech-1",
+-    "name": "Axial Stress, Strain & Hooke's Law",
+-    "branch": "mechanical",
+-    "level": "engineering-basics",
+-    "topic": "Mechanics of Materials",
+-    "latex": "\\sigma = \\frac{${1:F}}{${2:A}}, \\quad \\varepsilon = \\frac{\\Delta L}{L_0}, \\quad \\sigma = ${3:E}\\varepsilon",
+-    "definition": "Relates axial force, cross-sectional area, elongation, and Young's modulus E in the elastic regime.",
+-    "tags": ["stress", "strain", "hooke", "mechanical"]
+-  },
+-  {
+-    "id": "mech-2",
+-    "name": "Bernoulli's Equation (Incompressible Flow)",
+-    "branch": "mechanical",
+-    "level": "engineering-basics",
+-    "topic": "Fluid Mechanics",
+-    "latex": "${1:P} + \\frac{1}{2}\\rho ${2:v}^2 + \\rho g ${3:h} = \\text{const}",
+-    "definition": "Conservation of mechanical energy along a streamline for steady, inviscid, incompressible flow.",
+-    "tags": ["bernoulli", "fluid", "pressure"]
+-  },
+-  {
+-    "id": "mech-3",
+-    "name": "Fourier's Law of Heat Conduction",
+-    "branch": "mechanical",
+-    "level": "engineering-basics",
+-    "topic": "Heat Transfer",
+-    "latex": "\\dot{Q} = -${1:k}${2:A}\\frac{dT}{dx}",
+-    "definition": "Rate of conductive heat transfer proportional to thermal conductivity k, area A, and temperature gradient.",
+-    "tags": ["heat", "conduction", "fourier"]
+-  },
+-  {
+-    "id": "civil-1",
+-    "name": "Flexural (Bending) Stress in a Beam",
+-    "branch": "civil",
+-    "level": "engineering-basics",
+-    "topic": "Structural Mechanics",
+-    "latex": "\\sigma = -\\frac{${1:M}${2:y}}{${3:I}}",
+-    "definition": "Normal bending stress at distance y from the neutral axis for bending moment M and moment of inertia I.",
+-    "tags": ["beam", "bending", "civil", "structures"]
+-  },
+-  {
+-    "id": "cs-1",
+-    "name": "Shannon Information Entropy",
+-    "branch": "cs",
+-    "level": "engineering-basics",
+-    "topic": "Information Theory",
+-    "latex": "H(X) = -\\sum_{i=1}^{${1:n}} p(x_i)\\log_2 p(x_i)",
+-    "definition": "Average information content (in bits) of a discrete random variable X.",
+-    "tags": ["entropy", "shannon", "information", "cs"]
+-  },
+-  {
+-    "id": "cs-2",
+-    "name": "Amdahl's Law (Parallel Speedup)",
+-    "branch": "cs",
+-    "level": "engineering-basics",
+-    "topic": "Computer Architecture",
+-    "latex": "S_{\\text{latency}}(s) = \\frac{1}{(1 - ${1:p}) + \\frac{${1:p}}{${2:s}}}",
+-    "definition": "Maximum theoretical speedup when parallelizable fraction p is accelerated by factor s.",
+-    "tags": ["amdahl", "parallel", "architecture", "cs"]
++    "level": "eee-basics",
++    "topic": "Electromagnetics",
++    "latex": "\\lambda = \\frac{c}{${1:f}\\,\\sqrt{${2:\\varepsilon_r}}}",
++    "definition": "Wavelength of an EM wave of frequency f propagating in a non-magnetic medium of relative permittivity εr.",
++    "outputSymbol": "\\lambda",
++    "outputUnit": "m",
++    "calcExpr": "2.99792458e8 / (f * sqrt(er))",
++    "variables": [
++      { "key": "f", "symbol": "f", "meaning": "Frequency", "unit": "Hz", "defaultValue": 2.4e9 },
++      { "key": "er", "symbol": "\\varepsilon_r", "meaning": "Relative permittivity", "unit": "", "defaultValue": 4.4 }
++    ],
++    "tags": ["electromagnetics", "rf", "wavelength", "eee"]
+   }
+ ]
+diff --git a/src/main.ts b/src/main.ts
+index 8a9a420..9a8cb4c 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -1,7 +1,7 @@
+ import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
+ import type { MathfieldElement } from "mathlive";
+ import { DEFAULT_SETTINGS, getMergedLibrary, safeSaveSettings } from "./settings";
+-import type { CASOperation, CASResult, DerivationLine, LaTeXSettings, RationaleType } from "./types";
++import type { CASOperation, CASResult, DerivationLine, FormulaEntry, LaTeXSettings, RationaleType } from "./types";
+ import { normalizeDelimiters, wrapMath } from "./core/delimiters";
+ import {
+   casDifferentiate,
+@@ -22,27 +22,38 @@ import {
+   hasRichRationales,
+   registerDerivationBlockProcessor,
+ } from "./core/derivation-renderer";
+-import { searchFormulaDatabase } from "./core/formula-db";
++import { evaluateFormulaEntry, searchFormulaDatabase } from "./core/formula-db";
+ import { detectCompanionLatexPlugins, isCursorInMathZone } from "./core/editor-interop";
+ import { mountMathLiveField, stripMathLivePlaceholders, templateToMathLivePlaceholders } from "./ui/mathlive-field";
+ import { applyMathLiveKeyboardConfig } from "./ui/stem-keyboards";
+-import { ScientificCalculatorModal } from "./ui/scientific-calculator-modal";
++import {
++  createCalculatorState,
++  renderScientificCalculatorView,
++  ScientificCalculatorModal,
++} from "./ui/scientific-calculator-modal";
+ import { normalizeChemicalFormulaInput, TAXONOMY } from "./taxonomy";
+ 
+ function makeLineId(): string {
+   return `line_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+ }
+ 
++type BuilderTab = "builder" | "formulas" | "calculator";
++
+ class MathLiveBuilderModal extends Modal {
+   private lines: DerivationLine[] = [];
+   private activeLineIdx = 0;
++  private activeTab: BuilderTab = "builder";
+   private fieldRefs: MathfieldElement[] = [];
+   private linesContainer!: HTMLElement;
+   private varInput!: HTMLInputElement;
+   private casPreviewEl!: HTMLElement;
++  private builderPaneEl!: HTMLElement;
++  private formulaPaneEl!: HTMLElement;
++  private calcPaneEl!: HTMLElement;
++  private tabButtons = new Map<BuilderTab, HTMLButtonElement>();
++  private calcState = createCalculatorState();
++  private selectedCalcFormula: FormulaEntry | null = null;
+   private lastCasResult: { label: string; res: CASResult } | null = null;
+-  private showFormulaBrowser = false;
+-  private formulaBrowserEl!: HTMLElement;
+ 
+   constructor(
+     app: App,
+@@ -61,59 +72,85 @@ class MathLiveBuilderModal extends Modal {
+   onOpen(): void {
+     const { contentEl } = this;
+     contentEl.empty();
++    // Apply wide, non-cramped sizing directly on modalEl so nothing clips horizontally
++    this.modalEl.addClass("lt-builder-modal-shell");
+     contentEl.addClass("lt-modal");
+     applyMathLiveKeyboardConfig(this.plugin.settings);
+ 
+-    const header = contentEl.createDiv({ cls: "lt-cas-header" });
+-    header.createEl("h2", { text: "STEM LaTeX Builder v5.5 (MathLive + Full CAS)" });
++    // Prevent accidental closing when clicking outside modal unless enabled in Settings
++    if (!this.plugin.settings.closeOnBackdropClick) {
++      const bg = this.containerEl.querySelector(".modal-bg");
++      if (bg instanceof HTMLElement) {
++        const blockClose = (ev: Event) => {
++          ev.stopPropagation();
++          ev.preventDefault();
++        };
++        bg.addEventListener("click", blockClose, true);
++        bg.addEventListener("mousedown", blockClose, true);
++        bg.addEventListener("pointerdown", blockClose, true);
++      }
++    }
+ 
+-    const headerActions = header.createDiv({ cls: "lt-cas-preview-actions" });
+-    const dbToggleBtn = headerActions.createEl("button", { text: "Formula DB" });
+-    dbToggleBtn.onclick = () => {
+-      this.showFormulaBrowser = !this.showFormulaBrowser;
+-      this.formulaBrowserEl.toggleClass("lt-hidden", !this.showFormulaBrowser);
+-    };
+-    const calcBtn = headerActions.createEl("button", { text: "Calculator" });
+-    calcBtn.onclick = () => {
+-      new ScientificCalculatorModal(this.app, this.plugin.settings.eeImaginaryUnit, {
+-        onInsertLatex: (ltx) => this.insertIntoActiveLine(ltx),
+-        onSendToBuilder: (ltx) => this.insertIntoActiveLine(ltx),
+-      }).open();
+-    };
++    // Header + instant tab switcher (Builder & CAS | Formula DB | Scientific Calculator)
++    const header = contentEl.createDiv({ cls: "lt-cas-header" });
++    header.createEl("h2", { text: "STEM LaTeX builder v5.5 (MathLive + Full CAS)" });
+ 
+-    // 1. Natural Language / Wolfram / MATLAB / Symbolab bar
+-    this.renderNaturalLanguageBar(contentEl);
++    const navTabs = header.createDiv({ cls: "lt-modal-nav-tabs" });
++    const tabDefs: Array<[BuilderTab, string]> = [
++      ["builder", "Builder & CAS"],
++      ["formulas", "Formula database (calculable)"],
++      ["calculator", "Scientific calculator"],
++    ];
++    for (const [id, label] of tabDefs) {
++      const btn = navTabs.createEl("button", { text: label });
++      btn.onclick = () => this.switchTab(id);
++      this.tabButtons.set(id, btn);
++    }
+ 
+-    // 2. Multiline Derivation Editor (line numbers + clickable MathLive slots + per-line rich rationales)
+-    this.linesContainer = contentEl.createDiv({ cls: "lt-derivation-lines" });
++    // Pane 1: Builder & CAS
++    this.builderPaneEl = contentEl.createDiv({ cls: "lt-tab-pane" });
++    this.renderNaturalLanguageBar(this.builderPaneEl);
++    this.linesContainer = this.builderPaneEl.createDiv({ cls: "lt-derivation-lines" });
+     this.renderDerivationLines();
+ 
+-    const lineControls = contentEl.createDiv({ cls: "lt-cas-toolbar" });
+-    lineControls.createEl("button", { text: "+ Add Line" }).onclick = () => {
++    const lineControls = this.builderPaneEl.createDiv({ cls: "lt-cas-toolbar" });
++    lineControls.createEl("button", { text: "+ Add line" }).onclick = () => {
+       this.addLineAfter(this.activeLineIdx, "");
+     };
+     const lineNumBtn = lineControls.createEl("button", {
+-      text: this.plugin.settings.enableLineNumbering ? "Line Numbers: ON" : "Line Numbers: OFF",
++      text: this.plugin.settings.enableLineNumbering ? "Line numbers: ON" : "Line numbers: OFF",
+     });
+     lineNumBtn.onclick = async () => {
+       this.plugin.settings.enableLineNumbering = !this.plugin.settings.enableLineNumbering;
+       await this.plugin.saveSettings();
+-      lineNumBtn.setText(this.plugin.settings.enableLineNumbering ? "Line Numbers: ON" : "Line Numbers: OFF");
++      lineNumBtn.setText(this.plugin.settings.enableLineNumbering ? "Line numbers: ON" : "Line numbers: OFF");
+       this.renderDerivationLines();
+     };
+ 
+-    // 3. Expanded Two-Tier CAS Toolbar + Non-Destructive Live Preview
+     if (this.plugin.settings.enableLocalCAS) {
+-      this.renderCASToolbar(contentEl);
++      this.renderCASToolbar(this.builderPaneEl);
+     }
+ 
+-    // 4. Collapsible Read-Only STEM Formula Database Browser
+-    this.formulaBrowserEl = contentEl.createDiv({ cls: "lt-formula-browser lt-hidden" });
+-    this.renderFormulaBrowser(this.formulaBrowserEl);
++    // Pane 2: Calculable Formula Database
++    this.formulaPaneEl = contentEl.createDiv({ cls: "lt-tab-pane lt-hidden" });
++    this.renderFormulaBrowser(this.formulaPaneEl);
+ 
+-    // 5. Footer Insert Actions (Pure LaTeX vs Interactive Rationale Block)
++    // Pane 3: Embedded Scientific Calculator
++    this.calcPaneEl = contentEl.createDiv({ cls: "lt-tab-pane lt-hidden" });
++    renderScientificCalculatorView(this.calcPaneEl, this.calcState, this.plugin.settings.eeImaginaryUnit, {
++      onInsertLatex: (ltx) => {
++        this.insertIntoActiveLine(ltx);
++        this.switchTab("builder");
++      },
++      onSendToBuilder: (ltx) => {
++        this.insertIntoActiveLine(ltx);
++        this.switchTab("builder");
++      },
++    });
++
++    // Footer Insert Actions
+     const actions = contentEl.createDiv({ cls: "modal-button-container" });
+-    const insertLatexBtn = actions.createEl("button", { text: "Insert Pure LaTeX", cls: "mod-cta" });
++    const insertLatexBtn = actions.createEl("button", { text: "Insert pure LaTeX", cls: "mod-cta" });
+     insertLatexBtn.onclick = () => {
+       const pure = exportDerivationToPureLatex(
+         this.lines.map((l) => ({ ...l, latex: stripMathLivePlaceholders(l.latex) })),
+@@ -122,7 +159,7 @@ class MathLiveBuilderModal extends Modal {
+       this.commitToEditor(pure, false);
+     };
+ 
+-    const insertRichBtn = actions.createEl("button", { text: "Insert Interactive Derivation" });
++    const insertRichBtn = actions.createEl("button", { text: "Insert interactive derivation" });
+     insertRichBtn.onclick = () => {
+       const cleanedLines = this.lines.map((l) => ({ ...l, latex: stripMathLivePlaceholders(l.latex) }));
+       const block = exportDerivationToInteractiveBlock(cleanedLines, this.plugin.settings.enableLineNumbering);
+@@ -130,6 +167,17 @@ class MathLiveBuilderModal extends Modal {
+     };
+ 
+     actions.createEl("button", { text: "Cancel" }).onclick = () => this.close();
++    this.switchTab("builder");
++  }
++
++  private switchTab(tab: BuilderTab): void {
++    this.activeTab = tab;
++    this.builderPaneEl.toggleClass("lt-hidden", tab !== "builder");
++    this.formulaPaneEl.toggleClass("lt-hidden", tab !== "formulas");
++    this.calcPaneEl.toggleClass("lt-hidden", tab !== "calculator");
++    for (const [id, btn] of this.tabButtons.entries()) {
++      btn.toggleClass("lt-calc-tab-active", id === tab);
++    }
+   }
+ 
+   private renderNaturalLanguageBar(parent: HTMLElement): void {
+@@ -224,7 +272,7 @@ class MathLiveBuilderModal extends Modal {
+       const types: Array<[RationaleType, string]> = [
+         ["text", "Text"],
+         ["audio", "Audio"],
+-        ["link", "Web Link"],
++        ["link", "Web link"],
+         ["app", "App URI"],
+       ];
+       for (const [val, lbl] of types) {
+@@ -247,7 +295,6 @@ class MathLiveBuilderModal extends Modal {
+       });
+       labelInput.toggleClass("lt-hidden", typeSel.value === "text");
+ 
+-      // Quick helper bar for Audio recording or App scheme presets
+       const helperBar = ratBox.createDiv({ cls: "lt-rationale-controls" });
+       const renderRationaleHelpers = () => {
+         helperBar.empty();
+@@ -257,7 +304,7 @@ class MathLiveBuilderModal extends Modal {
+ 
+         if (curType === "app") {
+           const schemeSel = helperBar.createEl("select", { cls: "dropdown" });
+-          schemeSel.createEl("option", { value: "", text: "Preset App..." });
++          schemeSel.createEl("option", { value: "", text: "Preset app..." });
+           for (const [appName, uri] of Object.entries(this.plugin.settings.externalAppSchemes ?? {})) {
+             schemeSel.createEl("option", { value: uri, text: appName });
+           }
+@@ -268,13 +315,13 @@ class MathLiveBuilderModal extends Modal {
+             syncRationale();
+           };
+         } else if (curType === "audio") {
+-          const recBtn = helperBar.createEl("button", { text: "🎙️ Record Voice Note" });
++          const recBtn = helperBar.createEl("button", { text: "Record voice note" });
+           let recorder: MediaRecorder | null = null;
+           let chunks: BlobPart[] = [];
+           recBtn.onclick = async () => {
+             if (recorder && recorder.state === "recording") {
+               recorder.stop();
+-              recBtn.setText("🎙️ Record Voice Note");
++              recBtn.setText("Record voice note");
+               return;
+             }
+             try {
+@@ -300,7 +347,7 @@ class MathLiveBuilderModal extends Modal {
+                 new Notice(`Saved audio rationale to ${path}`);
+               };
+               recorder.start();
+-              recBtn.setText("⏹ Stop Recording");
++              recBtn.setText("Stop recording");
+             } catch (e) {
+               new Notice(`Microphone error: ${String(e)}`);
+             }
+@@ -323,7 +370,6 @@ class MathLiveBuilderModal extends Modal {
+       labelInput.addEventListener("input", syncRationale);
+       renderRationaleHelpers();
+ 
+-      // Row actions (+, ✕)
+       const rowBtns = row.createDiv({ cls: "lt-row-actions" });
+       rowBtns.createEl("button", { text: "+" }).onclick = () => this.addLineAfter(idx, "");
+       if (this.lines.length > 1) {
+@@ -397,10 +443,10 @@ class MathLiveBuilderModal extends Modal {
+       };
+     }
+ 
+-    btnBar.createEl("button", { text: "Balance Chem" }).onclick = () => {
++    btnBar.createEl("button", { text: "Balance chem" }).onclick = () => {
+       const activeLatex = stripMathLivePlaceholders(this.lines[this.activeLineIdx]?.latex ?? "");
+       const bal = balanceChemicalEquation(activeLatex);
+-      this.showCasPreview("Balance Chemistry", {
++      this.showCasPreview("Balance chemistry", {
+         ok: bal.ok,
+         latex: bal.latex,
+         engine: "Nullspace Stoichiometry",
+@@ -427,10 +473,10 @@ class MathLiveBuilderModal extends Modal {
+     });
+ 
+     const act = box.createDiv({ cls: "lt-cas-preview-actions" });
+-    act.createEl("button", { text: "Replace Line" }).onclick = () => {
++    act.createEl("button", { text: "Replace line" }).onclick = () => {
+       this.insertIntoActiveLine(res.latex, true);
+     };
+-    act.createEl("button", { text: "Append Next Line", cls: "mod-cta" }).onclick = () => {
++    act.createEl("button", { text: "Append next line", cls: "mod-cta" }).onclick = () => {
+       this.addLineAfter(this.activeLineIdx, res.latex, {
+         type: "text",
+         label: label,
+@@ -444,32 +490,88 @@ class MathLiveBuilderModal extends Modal {
+     const filters = container.createDiv({ cls: "lt-formula-filters" });
+     const searchIn = filters.createEl("input", {
+       type: "text",
+-      placeholder: "Search Grade 11-12, EEE Y1-Y2, Engineering formulas & definitions...",
++      placeholder: "Search O-Level / A-Level / IB Physics, Chemistry, Math & basic EEE formulas...",
+       cls: "lt-nl-input",
+     });
++
+     const branchSel = filters.createEl("select", { cls: "dropdown" });
+     const branches = [
+-      ["all", "All Branches"],
+-      ["eee", "EEE (Y1-Y2)"],
+-      ["physics", "Physics"],
+-      ["chemistry", "Chemistry"],
+-      ["math", "Mathematics"],
+-      ["mechanical", "Mechanical"],
+-      ["civil", "Civil"],
+-      ["cs", "Computer Science"],
++      ["all", "All subjects"],
++      ["physics", "Physics (O/A-Level & IB)"],
++      ["chemistry", "Chemistry (O/A-Level & IB)"],
++      ["math", "Mathematics (O/A-Level & IB)"],
++      ["eee", "Electrical engineering (basics)"],
+     ];
+     for (const [val, lbl] of branches) branchSel.createEl("option", { value: val, text: lbl });
+ 
+     const levelSel = filters.createEl("select", { cls: "dropdown" });
+     const levels = [
+-      ["all", "All Levels"],
+-      ["grade-11-12", "Grade 11–12"],
+-      ["eee-y1-y2", "EEE Year 1–2"],
+-      ["engineering-basics", "Engineering Basics"],
++      ["all", "All levels"],
++      ["o-level", "O-Level / IGCSE"],
++      ["a-level-ib", "A-Level / IB"],
++      ["eee-basics", "EEE basics (all branches)"],
+     ];
+     for (const [val, lbl] of levels) levelSel.createEl("option", { value: val, text: lbl });
+ 
+-    const listEl = container.createDiv({ cls: "lt-formula-list" });
++    // Inline Formula Calculator Panel (shown when user clicks "Calculate" on any formula card)
++    const calcDrawer = container.createDiv({ cls: "lt-formula-calc-drawer lt-hidden" });
++    const renderCalcDrawer = (entry: FormulaEntry | null) => {
++      calcDrawer.empty();
++      if (!entry) {
++        calcDrawer.addClass("lt-hidden");
++        return;
++      }
++      calcDrawer.removeClass("lt-hidden");
++      const top = calcDrawer.createDiv({ cls: "lt-cas-header" });
++      top.createEl("strong", { text: `Calculate: ${entry.name}` });
++      top.createEl("button", { text: "Close" }).onclick = () => renderCalcDrawer(null);
++
++      calcDrawer.createDiv({ text: entry.definition, cls: "lt-formula-meta" });
++
++      const inputsGrid = calcDrawer.createDiv({ cls: "lt-formula-calc-grid" });
++      const varInputs = new Map<string, HTMLInputElement>();
++      for (const v of entry.variables) {
++        const cell = inputsGrid.createDiv({ cls: "lt-formula-calc-cell" });
++        cell.createEl("label", {
++          text: `${v.meaning} (${v.key})${v.unit ? ` [${v.unit}]` : ""}`,
++        });
++        const inp = cell.createEl("input", {
++          type: "number",
++          value: v.defaultValue !== undefined ? String(v.defaultValue) : "1",
++        });
++        inp.step = "any";
++        varInputs.set(v.key, inp);
++      }
++
++      const outBox = calcDrawer.createDiv({ cls: "lt-cas-preview" });
++      const outText = outBox.createSpan({ cls: "lt-cas-preview-expr", text: "Click Compute to evaluate." });
++      const outBtns = outBox.createDiv({ cls: "lt-cas-preview-actions" });
++
++      let latestLatex = entry.latex;
++      const compute = () => {
++        const vals: Record<string, number> = {};
++        for (const [k, inp] of varInputs.entries()) {
++          vals[k] = parseFloat(inp.value);
++        }
++        const res = evaluateFormulaEntry(entry, vals);
++        if (!res.ok) {
++          outText.setText(res.error ?? "Calculation failed.");
++          return;
++        }
++        latestLatex = `${stripMathLivePlaceholders(templateToMathLivePlaceholders(entry.latex))} \\implies ${res.latexResult}`;
++        outText.setText(`${entry.outputSymbol} = ${res.formatted}${entry.outputUnit ? ` ${entry.outputUnit}` : ""}`);
++      };
++
++      outBtns.createEl("button", { text: "Compute", cls: "mod-cta" }).onclick = compute;
++      outBtns.createEl("button", { text: "Insert result into builder" }).onclick = () => {
++        compute();
++        this.insertIntoActiveLine(latestLatex, true);
++        this.switchTab("builder");
++      };
++      compute();
++    };
++
++    const listEl = container.createDiv({ cls: "lt-formula-list lt-formula-list-tall" });
+     const refresh = () => {
+       listEl.empty();
+       const results = searchFormulaDatabase({
+@@ -482,15 +584,22 @@ class MathLiveBuilderModal extends Modal {
+         card.createDiv({ text: item.name, cls: "lt-formula-title" });
+         card.createDiv({ text: `${item.branch.toUpperCase()} • ${item.topic} • ${item.level}`, cls: "lt-formula-meta" });
+         card.createDiv({ text: item.definition, cls: "lt-formula-def" });
+-        if (item.variables && item.variables.length > 0) {
+-          const varsText = item.variables.map((v) => `${v.symbol}: ${v.meaning}${v.unit ? ` (${v.unit})` : ""}`).join(" | ");
+-          card.createDiv({ text: varsText, cls: "lt-formula-meta" });
+-        }
+-        card.onclick = () => {
++
++        const cardActions = card.createDiv({ cls: "lt-cas-preview-actions" });
++        const insBtn = cardActions.createEl("button", { text: "Insert template" });
++        insBtn.onclick = (ev) => {
++          ev.stopPropagation();
+           const withSlots = templateToMathLivePlaceholders(item.latex);
+           this.insertIntoActiveLine(withSlots, true);
++          this.switchTab("builder");
+           new Notice(`Inserted: ${item.name}`);
+         };
++        const calcBtn = cardActions.createEl("button", { text: "Calculate", cls: "mod-cta" });
++        calcBtn.onclick = (ev) => {
++          ev.stopPropagation();
++          this.selectedCalcFormula = item;
++          renderCalcDrawer(item);
++        };
+       }
+     };
+ 
+@@ -578,6 +687,7 @@ export default class LatexToolboxPlugin extends Plugin {
+       balanceChemicalEquation,
+       naturalLanguageToLatex,
+       searchFormulaDatabase,
++      evaluateFormulaEntry,
+       casSimplify,
+       casExpand,
+       casFactor,
+@@ -597,18 +707,22 @@ export default class LatexToolboxPlugin extends Plugin {
+       openCalculator: () => {
+         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+         const editor = view ? view.editor : null;
+-        new ScientificCalculatorModal(this.app, this.settings.eeImaginaryUnit, {
+-          onInsertLatex: (ltx) => {
+-            if (editor) editor.replaceSelection(wrapMath(ltx, this.settings.wrapStyle));
+-            else void navigator.clipboard?.writeText(ltx);
++        new ScientificCalculatorModal(
++          this.app,
++          this.settings.eeImaginaryUnit,
++          {
++            onInsertLatex: (ltx) => {
++              if (editor) editor.replaceSelection(wrapMath(ltx, this.settings.wrapStyle));
++              else void navigator.clipboard?.writeText(ltx);
++            },
++            onSendToBuilder: (ltx) => (this.api.openBuilder as (t?: string) => void)(ltx),
+           },
+-          onSendToBuilder: (ltx) => (this.api.openBuilder as (t?: string) => void)(ltx),
+-        }).open();
++          this.settings.closeOnBackdropClick
++        ).open();
+       },
+     };
+     (window as unknown as Record<string, unknown>).LatexToolboxAPI = this.api;
+ 
+-    // Auto-fix pasted AI LaTeX delimiters (\(...\), \[...\])
+     this.registerEvent(
+       this.app.workspace.on("editor-paste", (evt, editor) => {
+         if (evt.defaultPrevented || !this.settings.autoFixOnPaste) return;
+@@ -623,13 +737,13 @@ export default class LatexToolboxPlugin extends Plugin {
+ 
+     this.addCommand({
+       id: "open-stem-builder",
+-      name: "Open interactive STEM builder (MathLive + Full CAS)",
++      name: "Open interactive STEM builder (MathLive + full CAS)",
+       callback: () => (this.api.openBuilder as () => void)(),
+     });
+ 
+     this.addCommand({
+       id: "open-scientific-calculator",
+-      name: "Open STEM Scientific & Engineering Calculator",
++      name: "Open STEM scientific & engineering calculator",
+       callback: () => (this.api.openCalculator as () => void)(),
+     });
+ 
+@@ -648,7 +762,7 @@ export default class LatexToolboxPlugin extends Plugin {
+       },
+     });
+ 
+-    this.addRibbonIcon("calculator", "STEM LaTeX Builder", () => (this.api.openBuilder as () => void)());
++    this.addRibbonIcon("calculator", "STEM LaTeX builder", () => (this.api.openBuilder as () => void)());
+     this.addSettingTab(new LatexToolboxSettingTab(this.app, this));
+   }
+ 
+@@ -688,6 +802,16 @@ class LatexToolboxSettingTab extends PluginSettingTab {
+       text: `Detected companions: LaTeX Suite (${companions.hasLatexSuite ? "Active" : "Off"}), Quick LaTeX (${companions.hasQuickLatex ? "Active" : "Off"}).`,
+     });
+ 
++    new Setting(containerEl)
++      .setName("Close builder when clicking outside modal")
++      .setDesc("Disabled by default so accidental clicks on empty background space do not close your work.")
++      .addToggle((t) =>
++        t.setValue(this.plugin.settings.closeOnBackdropClick).onChange(async (v) => {
++          this.plugin.settings.closeOnBackdropClick = v;
++          await this.plugin.saveSettings();
++        })
++      );
++
+     new Setting(containerEl)
+       .setName("Show numeric keyboard tab (123)")
+       .setDesc("Keep disabled if you prefer typing numbers on your physical keyboard. Re-enable anytime.")
+@@ -710,7 +834,7 @@ class LatexToolboxSettingTab extends PluginSettingTab {
+ 
+     new Setting(containerEl)
+       .setName("Enable dedicated STEM keyboard tabs (che, ee, math, phy)")
+-      .setDesc("Adds specialized virtual keyboard tabs for Chemistry, EEE, Mathematics, and Physics.")
++      .setDesc("Adds specialized virtual keyboard tabs for chemistry, EEE, mathematics, and physics.")
+       .addToggle((t) =>
+         t.setValue(this.plugin.settings.enableStemKeyboardTabs).onChange(async (v) => {
+           this.plugin.settings.enableStemKeyboardTabs = v;
+@@ -720,7 +844,7 @@ class LatexToolboxSettingTab extends PluginSettingTab {
+ 
+     new Setting(containerEl)
+       .setName("Enable clickable slot highlighting in MathLive")
+-      .setDesc("Outlines valid template input areas for direct mouse clicking and Tab jumping.")
++      .setDesc("Outlines valid template input areas for direct mouse clicking and tab jumping.")
+       .addToggle((t) =>
+         t.setValue(this.plugin.settings.enableSlotHighlighting).onChange(async (v) => {
+           this.plugin.settings.enableSlotHighlighting = v;
+@@ -748,11 +872,11 @@ class LatexToolboxSettingTab extends PluginSettingTab {
+         })
+       );
+ 
+-    new Setting(containerEl).setName("Computer Algebra System (CAS) & Engineering").setHeading();
++    new Setting(containerEl).setName("Computer algebra system & engineering").setHeading();
+ 
+     new Setting(containerEl)
+-      .setName("Enable Local CAS toolbar")
+-      .setDesc("Enables Simplify, Expand, Factor, Solve, d/dx, Integration, Phasors, Units, and Matrices.")
++      .setName("Enable local CAS toolbar")
++      .setDesc("Enables simplify, expand, factor, solve, d/dx, integration, phasors, units, and matrices.")
+       .addToggle((t) =>
+         t.setValue(this.plugin.settings.enableLocalCAS).onChange(async (v) => {
+           this.plugin.settings.enableLocalCAS = v;
+@@ -761,12 +885,12 @@ class LatexToolboxSettingTab extends PluginSettingTab {
+       );
+ 
+     new Setting(containerEl)
+-      .setName("CAS Backend Mode")
+-      .setDesc("Use 'Hybrid Python/SymPy' on Desktop for full CAS (Laplace, Fourier, ODEs, Series, Eigenvalues).")
++      .setName("CAS backend mode")
++      .setDesc("Use hybrid Python/SymPy on desktop for full CAS (Laplace, Fourier, ODEs, series, eigenvalues).")
+       .addDropdown((d) =>
+         d
+-          .addOption("js-only", "Bundled JS Only (Compute Engine + Nerdamer + Math.js)")
+-          .addOption("hybrid-python", "Hybrid JS + Local Python/SymPy (Full Desktop CAS)")
++          .addOption("js-only", "Bundled JS only (Compute Engine + Nerdamer + Math.js)")
++          .addOption("hybrid-python", "Hybrid JS + local Python/SymPy (full desktop CAS)")
+           .setValue(this.plugin.settings.casBackend)
+           .onChange(async (v) => {
+             this.plugin.settings.casBackend = v as LaTeXSettings["casBackend"];
+@@ -775,7 +899,7 @@ class LatexToolboxSettingTab extends PluginSettingTab {
+       );
+ 
+     new Setting(containerEl)
+-      .setName("Python Executable Path")
++      .setName("Python executable path")
+       .setDesc("Path or command for Python 3 with SymPy installed (e.g. python, python3, or full venv path).")
+       .addText((txt) =>
+         txt
+@@ -798,7 +922,7 @@ class LatexToolboxSettingTab extends PluginSettingTab {
+       );
+ 
+     new Setting(containerEl)
+-      .setName("EEE Imaginary Unit Notation")
++      .setName("EEE imaginary unit notation")
+       .setDesc("Choose j (electrical engineering standard) or i (mathematics standard).")
+       .addDropdown((d) =>
+         d
+@@ -812,7 +936,7 @@ class LatexToolboxSettingTab extends PluginSettingTab {
+       );
+ 
+     new Setting(containerEl)
+-      .setName("Audio Rationale Vault Folder")
++      .setName("Audio rationale vault folder")
+       .setDesc("Folder where recorded voice-note rationales are saved.")
+       .addText((txt) =>
+         txt
+diff --git a/src/settings.ts b/src/settings.ts
+index 507f59e..58c3137 100644
+--- a/src/settings.ts
++++ b/src/settings.ts
+@@ -33,6 +33,7 @@ export const DEFAULT_SETTINGS: LaTeXSettings = {
+   enableStemKeyboardTabs: true,
+   enableLineNumbering: true,
+   autoResizeEditor: true,
++  closeOnBackdropClick: false,
+   casBackend: "js-only",
+   pythonExecutable: "python",
+   eeImaginaryUnit: "j",
+diff --git a/src/types.ts b/src/types.ts
+index c417c38..ea48838 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -52,20 +52,28 @@ export type CASOperation =
+   | "matrix_eig";
+ 
+ export interface FormulaVariable {
++  /** Machine-readable variable name used in calcExpr (e.g., "u", "a", "t"). */
++  key: string;
+   symbol: string;
+   meaning: string;
+   unit?: string;
++  defaultValue?: number;
+ }
+ 
+ export interface FormulaEntry {
+   id: string;
+   name: string;
+-  branch: "math" | "physics" | "chemistry" | "eee" | "mechanical" | "civil" | "cs" | "general";
+-  level: "grade-11-12" | "eee-y1-y2" | "engineering-basics";
++  branch: "math" | "physics" | "chemistry" | "eee";
++  level: "o-level" | "a-level-ib" | "eee-basics";
+   topic: string;
+   latex: string;
+   definition: string;
+-  variables?: FormulaVariable[];
++  /** Output symbol & unit for direct numeric calculation. */
++  outputSymbol: string;
++  outputUnit?: string;
++  /** Math.js expression using variable keys to compute the output value directly. */
++  calcExpr: string;
++  variables: FormulaVariable[];
+   tags?: string[];
+ }
+ 
+@@ -91,6 +99,7 @@ export interface LaTeXSettings {
+   enableStemKeyboardTabs: boolean;
+   enableLineNumbering: boolean;
+   autoResizeEditor: boolean;
++  closeOnBackdropClick: boolean;
+   /** v5.5.0 Full CAS & EEE options */
+   casBackend: CASBackendMode;
+   pythonExecutable: string;
+diff --git a/src/ui/mathlive-field.ts b/src/ui/mathlive-field.ts
+index 626196d..5aec883 100644
+--- a/src/ui/mathlive-field.ts
++++ b/src/ui/mathlive-field.ts
+@@ -14,11 +14,13 @@ function configureMathLiveForObsidian(): void {
+ /**
+  * Converts template slot syntax (e.g. ${1:numerator} or {#slot}) into
+  * MathLive native interactive placeholders \placeholder[slot_1]{numerator}
+- * so slot-highlighting, mouse click-to-select, and Tab-jumping work seamlessly.
++ * with clean thin spacing between adjacent slots so borders never overlap.
+  */
+ export function templateToMathLivePlaceholders(template: string): string {
+   let idx = 0;
+-  return template
++  // Insert thin math space \, between immediately adjacent ${...}${...} tokens to prevent visual overlap
++  const spaced = template.replace(/\}\$\{/g, "}\\,${");
++  return spaced
+     .replace(/\$\{(\d+):([^}]+)\}/g, (_m, id, label) => `\\placeholder[slot_${id}]{${label}}`)
+     .replace(/\$\{(\d+)\}/g, (_m, id) => `\\placeholder[slot_${id}]{}`)
+     .replace(/\{\s*#?slot\s*\}/gi, () => {
+@@ -104,14 +106,35 @@ export function mountMathLiveField(
+       : opts.initialLatex;
+   }
+ 
+-  // Direct mouse-click selection on highlighted placeholder slots
++  // Direct mouse-click selection on highlighted placeholder slots:
++  // Uses MathLive's hit-testing and prompt-selection so clicking any slot selects its full contents for immediate typing.
+   mf.addEventListener("pointerup", (ev: PointerEvent) => {
+-    const target = ev.composedPath?.()[0] as HTMLElement | undefined;
+-    if (!target) return;
+-    const promptEl = target.closest?.("[data-atom-id], .ML__prompt, .ML__placeholder");
++    const path = ev.composedPath?.() ?? [];
++    const promptEl = path.find((node) => {
++      if (!(node instanceof HTMLElement)) return false;
++      return (
++        node.classList.contains("ML__prompt") ||
++        node.classList.contains("ML__placeholder") ||
++        node.getAttribute("part") === "prompt" ||
++        node.getAttribute("part") === "placeholder"
++      );
++    }) as HTMLElement | undefined;
++
+     if (promptEl) {
+-      // Ensure the mathfield gets focus and selects the placeholder immediately for typing
+       mf.focus();
++      const mfAny = mf as unknown as {
++        getOffsetFromPoint?: (x: number, y: number) => number;
++        selection?: { ranges: Array<[number, number]> };
++        position?: number;
++      };
++      if (typeof mfAny.getOffsetFromPoint === "function") {
++        const offset = mfAny.getOffsetFromPoint(ev.clientX, ev.clientY);
++        if (typeof offset === "number" && offset >= 0) {
++          mfAny.position = offset;
++        }
++      }
++      // Select the clicked placeholder/group so typing immediately replaces the slot default
++      mf.executeCommand("selectGroup");
+     }
+   });
+ 
+diff --git a/src/ui/scientific-calculator-modal.ts b/src/ui/scientific-calculator-modal.ts
+index 04be2f1..c5971c0 100644
+--- a/src/ui/scientific-calculator-modal.ts
++++ b/src/ui/scientific-calculator-modal.ts
+@@ -9,91 +9,94 @@ export interface ScientificCalculatorCallbacks {
+   onSendToBuilder?: (latex: string) => void;
+ }
+ 
+-export class ScientificCalculatorModal extends Modal {
+-  private activeTab: CalcTab = "scientific";
+-  private angleMode: "DEG" | "RAD" = "DEG";
+-  private expr = "";
+-  private lastAns = "0";
+-  private history: Array<{ expr: string; result: string }> = [];
+-
+-  constructor(
+-    app: App,
+-    private imagUnit: "j" | "i" = "j",
+-    private callbacks: ScientificCalculatorCallbacks = {}
+-  ) {
+-    super(app);
+-  }
+-
+-  onOpen(): void {
+-    const { contentEl } = this;
+-    contentEl.empty();
+-    contentEl.addClass("lt-calc-modal");
+-    this.render();
+-  }
+-
+-  private render(): void {
+-    const { contentEl } = this;
+-    contentEl.empty();
++export interface CalculatorState {
++  activeTab: CalcTab;
++  angleMode: "DEG" | "RAD";
++  expr: string;
++  lastAns: string;
++  history: Array<{ expr: string; result: string }>;
++}
+ 
+-    const header = contentEl.createDiv({ cls: "lt-cas-header" });
+-    header.createEl("h2", { text: "STEM Scientific & Engineering Calculator" });
++export function createCalculatorState(): CalculatorState {
++  return {
++    activeTab: "scientific",
++    angleMode: "DEG",
++    expr: "",
++    lastAns: "0",
++    history: [],
++  };
++}
+ 
+-    const tabs = contentEl.createDiv({ cls: "lt-calc-tabs" });
++/**
++ * Renders the full multi-mode Scientific & Engineering Calculator inside any container
++ * (used both inside the tabbed STEM Builder and in the standalone Calculator Modal).
++ */
++export function renderScientificCalculatorView(
++  container: HTMLElement,
++  state: CalculatorState,
++  imagUnit: "j" | "i",
++  callbacks: ScientificCalculatorCallbacks = {},
++  onAfterAction?: () => void
++): void {
++  const render = () => {
++    container.empty();
++
++    const tabs = container.createDiv({ cls: "lt-calc-tabs" });
+     const tabDefs: Array<[CalcTab, string]> = [
+       ["scientific", "Scientific"],
+-      ["eee", "EEE Phasors & Circuits"],
+-      ["basen", "Base-N / Bitwise"],
+-      ["graph", "2D Function Plotter"],
++      ["eee", "EEE phasors & circuits"],
++      ["basen", "Base-N / bitwise"],
++      ["graph", "2D function plotter"],
+     ];
+     for (const [id, label] of tabDefs) {
+       const btn = tabs.createEl("button", {
+         text: label,
+-        cls: this.activeTab === id ? "lt-calc-tab-active" : "",
++        cls: state.activeTab === id ? "lt-calc-tab-active" : "",
+       });
+       btn.onclick = () => {
+-        this.activeTab = id;
+-        this.render();
++        state.activeTab = id;
++        render();
+       };
+     }
+ 
+-    const body = contentEl.createDiv();
+-    if (this.activeTab === "scientific") this.renderScientificTab(body);
+-    else if (this.activeTab === "eee") this.renderEEETab(body);
+-    else if (this.activeTab === "basen") this.renderBaseNTab(body);
+-    else this.renderGraphTab(body);
+-  }
++    const body = container.createDiv();
++    if (state.activeTab === "scientific") renderScientificTab(body);
++    else if (state.activeTab === "eee") renderEEETab(body);
++    else if (state.activeTab === "basen") renderBaseNTab(body);
++    else renderGraphTab(body);
++  };
+ 
+-  private renderScientificTab(container: HTMLElement): void {
+-    const display = container.createDiv({ cls: "lt-calc-display" });
++  const renderScientificTab = (parent: HTMLElement) => {
++    const display = parent.createDiv({ cls: "lt-calc-display" });
+     const input = display.createEl("input", {
+       type: "text",
+-      value: this.expr,
++      value: state.expr,
+       placeholder: "e.g. sin(30 deg)^2 + log10(1000) or 5 kOhm * 2 mA to V",
+       cls: "lt-calc-input",
+     });
+-    const resultEl = display.createDiv({ cls: "lt-calc-result", text: `= ${this.lastAns}` });
++    const resultEl = display.createDiv({ cls: "lt-calc-result", text: `= ${state.lastAns}` });
+ 
+-    const modeBar = container.createDiv({ cls: "lt-cas-toolbar" });
+-    const angleBtn = modeBar.createEl("button", { text: `Angle: ${this.angleMode}` });
++    const modeBar = parent.createDiv({ cls: "lt-cas-toolbar" });
++    const angleBtn = modeBar.createEl("button", { text: `Angle: ${state.angleMode}` });
+     angleBtn.onclick = () => {
+-      this.angleMode = this.angleMode === "DEG" ? "RAD" : "DEG";
+-      angleBtn.setText(`Angle: ${this.angleMode}`);
++      state.angleMode = state.angleMode === "DEG" ? "RAD" : "DEG";
++      angleBtn.setText(`Angle: ${state.angleMode}`);
+     };
+ 
+     const evaluate = () => {
+-      this.expr = input.value.trim();
+-      if (!this.expr) return;
++      state.expr = input.value.trim();
++      if (!state.expr) return;
+       try {
+-        let evalSrc = this.expr.replace(/\bAns\b/g, `(${this.lastAns})`);
+-        if (this.angleMode === "DEG") {
++        let evalSrc = state.expr.replace(/\bAns\b/g, `(${state.lastAns})`);
++        if (state.angleMode === "DEG") {
+           evalSrc = evalSrc.replace(/\b(sin|cos|tan)\(([^)]+)\)/g, "$1(($2) deg)");
+         }
+         const val: unknown = math.evaluate(evalSrc);
+         const formatted = math.format(val, { precision: 10 });
+-        this.lastAns = formatted;
++        state.lastAns = formatted;
+         resultEl.setText(`= ${formatted}`);
+-        this.history.unshift({ expr: this.expr, result: formatted });
+-        if (this.history.length > 8) this.history.pop();
++        state.history.unshift({ expr: state.expr, result: formatted });
++        if (state.history.length > 8) state.history.pop();
+       } catch (e) {
+         resultEl.setText(`Error: ${String(e)}`);
+       }
+@@ -109,16 +112,16 @@ export class ScientificCalculatorModal extends Modal {
+     const evalBtn = modeBar.createEl("button", { text: "= Evaluate", cls: "mod-cta" });
+     evalBtn.onclick = evaluate;
+ 
+-    const sendBtn = modeBar.createEl("button", { text: "Send to Builder" });
++    const sendBtn = modeBar.createEl("button", { text: "Send to builder" });
+     sendBtn.onclick = () => {
+-      this.callbacks.onSendToBuilder?.(this.lastAns);
+-      this.close();
++      callbacks.onSendToBuilder?.(state.lastAns);
++      onAfterAction?.();
+     };
+ 
+-    const insertBtn = modeBar.createEl("button", { text: "Insert Result" });
++    const insertBtn = modeBar.createEl("button", { text: "Insert result" });
+     insertBtn.onclick = () => {
+-      this.callbacks.onInsertLatex?.(this.lastAns);
+-      this.close();
++      callbacks.onInsertLatex?.(state.lastAns);
++      onAfterAction?.();
+     };
+ 
+     const keys = [
+@@ -131,13 +134,13 @@ export class ScientificCalculatorModal extends Modal {
+       "0", ".", "e-3", "+", "e3", "=",
+     ];
+ 
+-    const keypad = container.createDiv({ cls: "lt-calc-keypad" });
++    const keypad = parent.createDiv({ cls: "lt-calc-keypad" });
+     for (const k of keys) {
+       const b = keypad.createEl("button", { text: k });
+       b.onclick = () => {
+         if (k === "Clear") {
+           input.value = "";
+-          this.expr = "";
++          state.expr = "";
+           resultEl.setText("= 0");
+         } else if (k === "=") {
+           evaluate();
+@@ -147,29 +150,29 @@ export class ScientificCalculatorModal extends Modal {
+         }
+       };
+     }
+-  }
++  };
+ 
+-  private renderEEETab(container: HTMLElement): void {
+-    container.createEl("p", {
+-      text: "Quick AC Phasor conversion, parallel impedance (Z1 || Z2), and RLC resonance.",
++  const renderEEETab = (parent: HTMLElement) => {
++    parent.createEl("p", {
++      text: "Quick AC phasor conversion, parallel impedance (Z1 || Z2), and RLC resonance.",
+     });
+ 
+-    const phasorRow = container.createDiv({ cls: "lt-nl-bar" });
++    const phasorRow = parent.createDiv({ cls: "lt-nl-bar" });
+     const phasorIn = phasorRow.createEl("input", {
+       type: "text",
+-      placeholder: `Rectangular (3 + 4${this.imagUnit}) or Polar (5∠53.13)`,
++      placeholder: `Rectangular (3 + 4${imagUnit}) or Polar (5∠53.13)`,
+       cls: "lt-nl-input",
+     });
+-    const phasorOut = container.createDiv({ cls: "lt-cas-output" });
+-    phasorRow.createEl("button", { text: "Convert Phasor", cls: "mod-cta" }).onclick = () => {
+-      const res = casPhasorConvert(phasorIn.value, this.imagUnit);
++    const phasorOut = parent.createDiv({ cls: "lt-cas-output" });
++    phasorRow.createEl("button", { text: "Convert phasor", cls: "mod-cta" }).onclick = () => {
++      const res = casPhasorConvert(phasorIn.value, imagUnit);
+       phasorOut.setText(res.ok ? `Result: ${res.latex}` : `Error: ${res.error}`);
+     };
+ 
+-    const parRow = container.createDiv({ cls: "lt-nl-bar" });
++    const parRow = parent.createDiv({ cls: "lt-nl-bar" });
+     const z1In = parRow.createEl("input", { type: "text", placeholder: "Z1 (e.g. 100 or 10+5i)" });
+     const z2In = parRow.createEl("input", { type: "text", placeholder: "Z2 (e.g. 200 or 20-10i)" });
+-    const parOut = container.createDiv({ cls: "lt-cas-output" });
++    const parOut = parent.createDiv({ cls: "lt-cas-output" });
+     parRow.createEl("button", { text: "Z1 || Z2" }).onclick = () => {
+       try {
+         const a = z1In.value.replace(/j/g, "i");
+@@ -181,10 +184,10 @@ export class ScientificCalculatorModal extends Modal {
+       }
+     };
+ 
+-    const rlcRow = container.createDiv({ cls: "lt-nl-bar" });
++    const rlcRow = parent.createDiv({ cls: "lt-nl-bar" });
+     const lIn = rlcRow.createEl("input", { type: "text", placeholder: "L in Henry (e.g. 10e-3)" });
+     const cIn = rlcRow.createEl("input", { type: "text", placeholder: "C in Farad (e.g. 100e-6)" });
+-    const rlcOut = container.createDiv({ cls: "lt-cas-output" });
++    const rlcOut = parent.createDiv({ cls: "lt-cas-output" });
+     rlcRow.createEl("button", { text: "Resonant f₀" }).onclick = () => {
+       const L = parseFloat(lIn.value);
+       const C = parseFloat(cIn.value);
+@@ -196,15 +199,19 @@ export class ScientificCalculatorModal extends Modal {
+       const w0 = 2 * Math.PI * f0;
+       rlcOut.setText(`f₀ = ${f0.toFixed(4)} Hz   |   ω₀ = ${w0.toFixed(4)} rad/s`);
+     };
+-  }
++  };
+ 
+-  private renderBaseNTab(container: HTMLElement): void {
+-    const row = container.createDiv({ cls: "lt-nl-bar" });
+-    const decIn = row.createEl("input", { type: "text", placeholder: "Enter integer (e.g. 255 or 0xFF or 0b1010)", cls: "lt-nl-input" });
+-    const out = container.createDiv({ cls: "lt-calc-display" });
++  const renderBaseNTab = (parent: HTMLElement) => {
++    const row = parent.createDiv({ cls: "lt-nl-bar" });
++    const decIn = row.createEl("input", {
++      type: "text",
++      placeholder: "Enter integer (e.g. 255 or 0xFF or 0b1010)",
++      cls: "lt-nl-input",
++    });
++    const out = parent.createDiv({ cls: "lt-calc-display" });
+     out.setText("DEC: 0 | HEX: 0x0 | BIN: 0b0 | OCT: 0o0");
+ 
+-    const update = () => {
++    decIn.addEventListener("input", () => {
+       const raw = decIn.value.trim();
+       if (!raw) return;
+       const n = Number(raw);
+@@ -216,12 +223,11 @@ export class ScientificCalculatorModal extends Modal {
+       out.setText(
+         `DEC: ${n}  |  HEX: 0x${u.toString(16).toUpperCase()}  |  BIN: 0b${u.toString(2)}  |  OCT: 0o${u.toString(8)}`
+       );
+-    };
+-    decIn.addEventListener("input", update);
+-  }
++    });
++  };
+ 
+-  private renderGraphTab(container: HTMLElement): void {
+-    const controls = container.createDiv({ cls: "lt-nl-bar" });
++  const renderGraphTab = (parent: HTMLElement) => {
++    const controls = parent.createDiv({ cls: "lt-nl-bar" });
+     const fnIn = controls.createEl("input", {
+       type: "text",
+       value: "sin(x) * exp(-0.1 * x)",
+@@ -232,7 +238,7 @@ export class ScientificCalculatorModal extends Modal {
+     const maxIn = controls.createEl("input", { type: "text", value: "10", cls: "lt-cas-var-input" });
+     const plotBtn = controls.createEl("button", { text: "Plot", cls: "mod-cta" });
+ 
+-    const canvas = container.createEl("canvas", { cls: "lt-calc-canvas" });
++    const canvas = parent.createEl("canvas", { cls: "lt-calc-canvas" });
+     canvas.width = 680;
+     canvas.height = 280;
+ 
+@@ -242,7 +248,7 @@ export class ScientificCalculatorModal extends Modal {
+       const xmin = parseFloat(minIn.value) || -10;
+       const xmax = parseFloat(maxIn.value) || 10;
+       if (xmax <= xmin) {
+-        new Notice("xmax must be greater than xmin.");
++        new Notice("Maximum x must be greater than minimum x.");
+         return;
+       }
+ 
+@@ -288,7 +294,6 @@ export class ScientificCalculatorModal extends Modal {
+       const toPx = (x: number) => ((x - xmin) / (xmax - xmin)) * W;
+       const toPy = (y: number) => H - ((y - ymin) / (ymax - ymin)) * H;
+ 
+-      // Grid & axes
+       ctx.strokeStyle = "rgba(128,128,128,0.25)";
+       ctx.lineWidth = 1;
+       for (let g = 1; g < 10; g++) {
+@@ -318,7 +323,6 @@ export class ScientificCalculatorModal extends Modal {
+         ctx.stroke();
+       }
+ 
+-      // Curve
+       ctx.strokeStyle = "#14b8a6";
+       ctx.lineWidth = 2.2;
+       ctx.beginPath();
+@@ -342,6 +346,45 @@ export class ScientificCalculatorModal extends Modal {
+ 
+     plotBtn.onclick = draw;
+     draw();
++  };
++
++  render();
++}
++
++export class ScientificCalculatorModal extends Modal {
++  private state: CalculatorState = createCalculatorState();
++
++  constructor(
++    app: App,
++    private imagUnit: "j" | "i" = "j",
++    private callbacks: ScientificCalculatorCallbacks = {},
++    private closeOnBackdropClick = false
++  ) {
++    super(app);
++  }
++
++  onOpen(): void {
++    const { contentEl } = this;
++    contentEl.empty();
++    this.modalEl.addClass("lt-calc-modal-shell");
++    contentEl.addClass("lt-calc-modal");
++
++    if (!this.closeOnBackdropClick) {
++      const bg = this.containerEl.querySelector(".modal-bg");
++      if (bg instanceof HTMLElement) {
++        const blockClose = (ev: Event) => {
++          ev.stopPropagation();
++          ev.preventDefault();
++        };
++        bg.addEventListener("click", blockClose, true);
++        bg.addEventListener("mousedown", blockClose, true);
++        bg.addEventListener("pointerdown", blockClose, true);
++      }
++    }
++
++    contentEl.createEl("h2", { text: "STEM scientific & engineering calculator" });
++    const host = contentEl.createDiv();
++    renderScientificCalculatorView(host, this.state, this.imagUnit, this.callbacks, () => this.close());
+   }
+ 
+   onClose(): void {
+diff --git a/styles.css b/styles.css
+index fa9dc39..c41dcd3 100644
+--- a/styles.css
++++ b/styles.css
+@@ -1035,13 +1035,38 @@ body:not(.lt-glassmorphic) {
+    Rich Rationales, Formula DB Browser & Integrated Scientific Calculator
+    ========================================================================== */
+ 
+-.lt-modal {
+-  min-width: min(92vw, 860px);
+-  max-width: 96vw;
++.modal.lt-builder-modal-shell {
++  width: min(94vw, 1180px) !important;
++  max-width: 96vw !important;
++  max-height: 92vh !important;
+   resize: both;
+   overflow: auto;
+ }
+ 
++.modal.lt-calc-modal-shell {
++  width: min(92vw, 860px) !important;
++  max-width: 96vw !important;
++  max-height: 90vh !important;
++}
++
++.lt-modal {
++  width: 100%;
++  max-width: 100%;
++  overflow-x: hidden;
++  box-sizing: border-box;
++}
++
++.lt-modal-nav-tabs {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px;
++}
++
++.lt-tab-pane {
++  width: 100%;
++  box-sizing: border-box;
++}
++
+ .lt-mathlive-autoresize {
+   min-height: 48px;
+   max-height: 360px;
+@@ -1053,12 +1078,13 @@ body:not(.lt-glassmorphic) {
+ /* High-contrast clickable placeholder / prompt outlines */
+ .lt-slot-highlighting-enabled::part(prompt),
+ .lt-slot-highlighting-enabled::part(placeholder) {
+-  background: rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.14);
+-  border: 1.5px dashed var(--interactive-accent);
+-  border-radius: 4px;
+-  padding: 1px 5px;
+-  margin: 0 2px;
++  background: rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.13);
++  border: 1px dashed var(--interactive-accent);
++  border-radius: 3px;
++  padding: 0 2px;
++  margin: 0 3px;
+   cursor: pointer;
++  box-sizing: border-box;
+   transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+ }
+ 
+@@ -1414,3 +1440,34 @@ body:not(.lt-glassmorphic) {
+     grid-template-columns: repeat(4, 1fr);
+   }
+ }
++
++.lt-formula-list-tall {
++  max-height: 46vh;
++}
++
++.lt-formula-calc-drawer {
++  margin-bottom: 10px;
++  padding: 10px 12px;
++  border-radius: var(--radius-m);
++  border: 1px solid var(--interactive-accent);
++  background: var(--background-primary);
++}
++
++.lt-formula-calc-grid {
++  display: grid;
++  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
++  gap: 8px;
++  margin: 8px 0;
++}
++
++.lt-formula-calc-cell {
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++  font-size: var(--font-ui-smaller);
++}
++
++.lt-formula-calc-cell input {
++  width: 100%;
++  font-family: var(--font-monospace);
++}

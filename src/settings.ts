@@ -33,6 +33,7 @@ export const DEFAULT_SETTINGS: LaTeXSettings = {
   enableStemKeyboardTabs: true,
   enableLineNumbering: true,
   autoResizeEditor: true,
+  closeOnBackdropClick: false,
   casBackend: "js-only",
   pythonExecutable: "python",
   eeImaginaryUnit: "j",

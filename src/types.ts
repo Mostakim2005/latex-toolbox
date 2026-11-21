@@ -52,20 +52,28 @@ export type CASOperation =
   | "matrix_eig";
 
 export interface FormulaVariable {
+  /** Machine-readable variable name used in calcExpr (e.g., "u", "a", "t"). */
+  key: string;
   symbol: string;
   meaning: string;
   unit?: string;
+  defaultValue?: number;
 }
 
 export interface FormulaEntry {
   id: string;
   name: string;
-  branch: "math" | "physics" | "chemistry" | "eee" | "mechanical" | "civil" | "cs" | "general";
-  level: "grade-11-12" | "eee-y1-y2" | "engineering-basics";
+  branch: "math" | "physics" | "chemistry" | "eee";
+  level: "o-level" | "a-level-ib" | "eee-basics";
   topic: string;
   latex: string;
   definition: string;
-  variables?: FormulaVariable[];
+  /** Output symbol & unit for direct numeric calculation. */
+  outputSymbol: string;
+  outputUnit?: string;
+  /** Math.js expression using variable keys to compute the output value directly. */
+  calcExpr: string;
+  variables: FormulaVariable[];
   tags?: string[];
 }
 
@@ -91,6 +99,7 @@ export interface LaTeXSettings {
   enableStemKeyboardTabs: boolean;
   enableLineNumbering: boolean;
   autoResizeEditor: boolean;
+  closeOnBackdropClick: boolean;
   /** v5.5.0 Full CAS & EEE options */
   casBackend: CASBackendMode;
   pythonExecutable: string;

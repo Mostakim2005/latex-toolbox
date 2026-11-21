@@ -18,6 +18,11 @@
 * **Decision Maker:** `[DECIDED BY: HUMAN]`
 * **Original User Intention:** Prevents plugin updates or settings saves from overwriting user customizations.
 
+### [DECISION: Modal-Backdrop-Dismissal-Guard] | Aliases: modal backdrop click, accidental close guard
+> **1-Line Summary:** MathLive Builder and Calculator modals guard against accidental backdrop clicks discarding unfinished multiline derivations.
+* **Decision Maker:** `[DECIDED BY: HUMAN]`
+* **Original User Intention:** Prevent frustrating data loss when clicking outside the modal or dragging selection across the modal bounds.
+
 ## 2. Do-Not-Touch Engineering Landmines (Traps)
 
 ### [TRAP: Greedy-Dollar-Delimiter-Capture] | Aliases: currency collision, inline math corruption
