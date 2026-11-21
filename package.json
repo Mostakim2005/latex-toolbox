@@ -1,6 +1,6 @@
 {
   "name": "obsidian-latex-toolbox",
-  "version": "5.0.0",
+  "version": "5.5.0",
   "description": "A modular scientific LaTeX assistant for Obsidian.",
   "main": "main.js",
   "type": "module",
@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@cortex-js/compute-engine": "^0.26.0",
+    "mathjs": "^15.2.0",
     "mathlive": "^0.101.0",
     "nerdamer": "^1.1.13"
   }

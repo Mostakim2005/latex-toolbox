@@ -1,0 +1,2058 @@
+diff --git a/manifest.json b/manifest.json
+index fa2d6e9..ce2a323 100644
+--- a/manifest.json
++++ b/manifest.json
+@@ -1,10 +1,10 @@
+-{
+-  "id": "latex-toolbox",
+-  "name": "LaTeX Toolbox",
+-  "version": "5.0.0",
+-  "minAppVersion": "0.15.0",
+-  "description": "STEM LaTeX Companion with visual builder, presets, shortcuts, and AI delimiter fixer.",
+-  "author": "Mostakim2005",
+-  "authorUrl": "https://github.com/Mostakim2005",
+-  "isDesktopOnly": false
+-}
++{
++  "id": "latex-toolbox",
++  "name": "LaTeX Toolbox",
++  "version": "5.5.0",
++  "minAppVersion": "0.15.0",
++  "description": "STEM LaTeX Companion with visual builder, presets, shortcuts, and AI delimiter fixer.",
++  "author": "Mostakim2005",
++  "authorUrl": "https://github.com/Mostakim2005",
++  "isDesktopOnly": false
++}
+diff --git a/package.json b/package.json
+index 0367e96..03f6a7e 100644
+--- a/package.json
++++ b/package.json
+@@ -1,43 +1,43 @@
+-{
+-  "name": "obsidian-latex-toolbox",
+-  "version": "5.0.0",
+-  "description": "A modular scientific LaTeX assistant for Obsidian.",
+-  "main": "main.js",
+-  "type": "module",
+-  "scripts": {
+-    "dev": "node esbuild.config.mjs",
+-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+-    "version": "node version-bump.mjs && git add manifest.json versions.json",
+-    "lint": "eslint .",
+-    "test": "tsc -p tests/tsconfig.json --pretty false && node tests/run-all.mjs",
+-    "typecheck": "tsc -noEmit -skipLibCheck",
+-    "verify:release": "node scripts/verify-release.mjs"
+-  },
+-  "keywords": [
+-    "obsidian",
+-    "latex",
+-    "math",
+-    "physics",
+-    "chemistry",
+-    "science"
+-  ],
+-  "license": "PolyForm-Noncommercial-1.0.0",
+-  "devDependencies": {
+-    "@eslint/js": "^9.39.4",
+-    "@types/node": "^22.15.17",
+-    "esbuild": "0.25.5",
+-    "eslint": "^9.39.4",
+-    "eslint-plugin-obsidianmd": "^0.4.0",
+-    "globals": "^17.6.0",
+-    "jiti": "^2.6.1",
+-    "obsidian": "latest",
+-    "typescript": "^5.8.3",
+-    "typescript-eslint": "^8.59.1"
+-  },
+-  "dependencies": {
+-    "@cortex-js/compute-engine": "^0.26.0",
+-    "mathjs": "^15.2.0",
+-    "mathlive": "^0.101.0",
+-    "nerdamer": "^1.1.13"
+-  }
+-}
++{
++  "name": "obsidian-latex-toolbox",
++  "version": "5.5.0",
++  "description": "A modular scientific LaTeX assistant for Obsidian.",
++  "main": "main.js",
++  "type": "module",
++  "scripts": {
++    "dev": "node esbuild.config.mjs",
++    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
++    "version": "node version-bump.mjs && git add manifest.json versions.json",
++    "lint": "eslint .",
++    "test": "tsc -p tests/tsconfig.json --pretty false && node tests/run-all.mjs",
++    "typecheck": "tsc -noEmit -skipLibCheck",
++    "verify:release": "node scripts/verify-release.mjs"
++  },
++  "keywords": [
++    "obsidian",
++    "latex",
++    "math",
++    "physics",
++    "chemistry",
++    "science"
++  ],
++  "license": "PolyForm-Noncommercial-1.0.0",
++  "devDependencies": {
++    "@eslint/js": "^9.39.4",
++    "@types/node": "^22.15.17",
++    "esbuild": "0.25.5",
++    "eslint": "^9.39.4",
++    "eslint-plugin-obsidianmd": "^0.4.0",
++    "globals": "^17.6.0",
++    "jiti": "^2.6.1",
++    "obsidian": "latest",
++    "typescript": "^5.8.3",
++    "typescript-eslint": "^8.59.1"
++  },
++  "dependencies": {
++    "@cortex-js/compute-engine": "^0.26.0",
++    "mathjs": "^15.2.0",
++    "mathlive": "^0.101.0",
++    "nerdamer": "^1.1.13"
++  }
++}
+diff --git a/src/core/formula-db.ts b/src/core/formula-db.ts
+new file mode 100644
+index 0000000..7541577
+--- /dev/null
++++ b/src/core/formula-db.ts
+@@ -0,0 +1,41 @@
++import type { FormulaEntry } from "../types";
++import rawDb from "../data/stem-formula-db.json";
++
++const READONLY_DB: readonly FormulaEntry[] = Object.freeze(
++  (rawDb as FormulaEntry[]).map((entry) => Object.freeze(entry))
++);
++
++export function getAllFormulas(): readonly FormulaEntry[] {
++  return READONLY_DB;
++}
++
++export interface FormulaSearchFilter {
++  query?: string;
++  branch?: string;
++  level?: string;
++}
++
++export function searchFormulaDatabase(filter: FormulaSearchFilter = {}): FormulaEntry[] {
++  const q = (filter.query ?? "").trim().toLowerCase();
++  const branch = (filter.branch ?? "all").toLowerCase();
++  const level = (filter.level ?? "all").toLowerCase();
++
++  return READONLY_DB.filter((item) => {
++    if (branch !== "all" && item.branch !== branch) return false;
++    if (level !== "all" && item.level !== level) return false;
++    if (!q) return true;
++
++    const hay = [
++      item.name,
++      item.topic,
++      item.definition,
++      item.latex,
++      ...(item.tags ?? []),
++      ...(item.variables?.map((v) => `${v.symbol} ${v.meaning} ${v.unit ?? ""}`) ?? []),
++    ]
++      .join(" ")
++      .toLowerCase();
++
++    return q.split(/\s+/).every((word) => hay.includes(word));
++  });
++}
+diff --git a/src/data/stem-formula-db.json b/src/data/stem-formula-db.json
+new file mode 100644
+index 0000000..3f2aec6
+--- /dev/null
++++ b/src/data/stem-formula-db.json
+@@ -0,0 +1,452 @@
++[
++  {
++    "id": "phy-kin-1",
++    "name": "Uniform Acceleration (Displacement)",
++    "branch": "physics",
++    "level": "grade-11-12",
++    "topic": "Kinematics",
++    "latex": "s = ${1:u}t + \\frac{1}{2}${2:a}t^2",
++    "definition": "Displacement of an object moving with constant acceleration a from initial velocity u over time t.",
++    "variables": [
++      { "symbol": "s", "meaning": "Displacement", "unit": "m" },
++      { "symbol": "u", "meaning": "Initial velocity", "unit": "m/s" },
++      { "symbol": "a", "meaning": "Constant acceleration", "unit": "m/s^2" },
++      { "symbol": "t", "meaning": "Time elapsed", "unit": "s" }
++    ],
++    "tags": ["kinematics", "motion", "suvat"]
++  },
++  {
++    "id": "phy-kin-2",
++    "name": "Velocity-Displacement Equation",
++    "branch": "physics",
++    "level": "grade-11-12",
++    "topic": "Kinematics",
++    "latex": "v^2 = ${1:u}^2 + 2${2:a}${3:s}",
++    "definition": "Relates final velocity, initial velocity, acceleration, and displacement without time.",
++    "variables": [
++      { "symbol": "v", "meaning": "Final velocity", "unit": "m/s" },
++      { "symbol": "u", "meaning": "Initial velocity", "unit": "m/s" },
++      { "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2" },
++      { "symbol": "s", "meaning": "Displacement", "unit": "m" }
++    ],
++    "tags": ["kinematics", "suvat"]
++  },
++  {
++    "id": "phy-dyn-1",
++    "name": "Newton's Second Law",
++    "branch": "physics",
++    "level": "grade-11-12",
++    "topic": "Dynamics",
++    "latex": "\\sum \\vec{F} = ${1:m}\\vec{a} = \\frac{d\\vec{p}}{dt}",
++    "definition": "Net force equals mass times acceleration, or the time rate of change of linear momentum.",
++    "variables": [
++      { "symbol": "F", "meaning": "Net force", "unit": "N" },
++      { "symbol": "m", "meaning": "Mass", "unit": "kg" },
++      { "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2" },
++      { "symbol": "p", "meaning": "Momentum", "unit": "kg·m/s" }
++    ],
++    "tags": ["newton", "force", "momentum"]
++  },
++  {
++    "id": "phy-grav-1",
++    "name": "Universal Law of Gravitation",
++    "branch": "physics",
++    "level": "grade-11-12",
++    "topic": "Gravitation",
++    "latex": "F = G\\frac{${1:m_1}${2:m_2}}{${3:r}^2}",
++    "definition": "Gravitational attraction between two point masses separated by distance r.",
++    "variables": [
++      { "symbol": "G", "meaning": "Gravitational constant (6.674e-11)", "unit": "N·m^2/kg^2" },
++      { "symbol": "m_1, m_2", "meaning": "Masses", "unit": "kg" },
++      { "symbol": "r", "meaning": "Center-to-center distance", "unit": "m" }
++    ],
++    "tags": ["gravity", "newton"]
++  },
++  {
++    "id": "phy-shm-1",
++    "name": "Simple Harmonic Motion (SHM)",
++    "branch": "physics",
++    "level": "grade-11-12",
++    "topic": "Oscillations & Waves",
++    "latex": "x(t) = ${1:A}\\cos(${2:\\omega} t + ${3:\\phi}), \\quad \\omega = \\sqrt{\\frac{k}{m}}",
++    "definition": "Sinusoidal displacement of a harmonic oscillator with amplitude A, angular frequency ω, and phase φ.",
++    "variables": [
++      { "symbol": "A", "meaning": "Amplitude", "unit": "m" },
++      { "symbol": "\\omega", "meaning": "Angular frequency", "unit": "rad/s" },
++      { "symbol": "\\phi", "meaning": "Phase constant", "unit": "rad" }
++    ],
++    "tags": ["shm", "oscillation", "spring"]
++  },
++  {
++    "id": "phy-thermo-1",
++    "name": "First Law of Thermodynamics",
++    "branch": "physics",
++    "level": "grade-11-12",
++    "topic": "Thermodynamics",
++    "latex": "\\Delta U = ${1:Q} - ${2:W}",
++    "definition": "Change in internal energy equals heat added to the system minus work done by the system.",
++    "variables": [
++      { "symbol": "\\Delta U", "meaning": "Internal energy change", "unit": "J" },
++      { "symbol": "Q", "meaning": "Heat added", "unit": "J" },
++      { "symbol": "W", "meaning": "Work done by system", "unit": "J" }
++    ],
++    "tags": ["thermodynamics", "energy", "heat"]
++  },
++  {
++    "id": "phy-em-1",
++    "name": "Coulomb's Law",
++    "branch": "physics",
++    "level": "grade-11-12",
++    "topic": "Electrostatics",
++    "latex": "F = \\frac{1}{4\\pi\\varepsilon_0}\\frac{${1:q_1}${2:q_2}}{${3:r}^2}",
++    "definition": "Electrostatic force between two stationary point charges in vacuum.",
++    "variables": [
++      { "symbol": "\\varepsilon_0", "meaning": "Vacuum permittivity (8.854e-12)", "unit": "F/m" },
++      { "symbol": "q_1, q_2", "meaning": "Charges", "unit": "C" },
++      { "symbol": "r", "meaning": "Separation distance", "unit": "m" }
++    ],
++    "tags": ["electrostatics", "coulomb", "charge"]
++  },
++  {
++    "id": "phy-em-2",
++    "name": "Lorentz Force Law",
++    "branch": "physics",
++    "level": "grade-11-12",
++    "topic": "Magnetism",
++    "latex": "\\vec{F} = ${1:q}\\left(\\vec{E} + \\vec{v} \\times \\vec{B}\\right)",
++    "definition": "Total electromagnetic force on a charge q moving with velocity v in electric field E and magnetic field B.",
++    "variables": [
++      { "symbol": "q", "meaning": "Electric charge", "unit": "C" },
++      { "symbol": "\\vec{E}", "meaning": "Electric field", "unit": "V/m" },
++      { "symbol": "\\vec{B}", "meaning": "Magnetic flux density", "unit": "T" }
++    ],
++    "tags": ["lorentz", "magnetism", "em"]
++  },
++  {
++    "id": "phy-opt-1",
++    "name": "Snell's Law & Thin Lens Equation",
++    "branch": "physics",
++    "level": "grade-11-12",
++    "topic": "Optics",
++    "latex": "${1:n_1}\\sin\\theta_1 = ${2:n_2}\\sin\\theta_2, \\quad \\frac{1}{f} = \\frac{1}{d_o} + \\frac{1}{d_i}",
++    "definition": "Governs refraction at an interface and image formation for thin spherical lenses.",
++    "tags": ["optics", "snell", "lens"]
++  },
++  {
++    "id": "phy-mod-1",
++    "name": "Photoelectric Effect & de Broglie Wavelength",
++    "branch": "physics",
++    "level": "grade-11-12",
++    "topic": "Modern Physics",
++    "latex": "K_{\\max} = h${1:\\nu} - ${2:\\phi_0}, \\quad \\lambda = \\frac{h}{${3:p}}",
++    "definition": "Maximum kinetic energy of emitted photoelectrons and matter-wave wavelength.",
++    "tags": ["quantum", "photoelectric", "debroglie"]
++  },
++  {
++    "id": "chem-gas-1",
++    "name": "Ideal Gas Law",
++    "branch": "chemistry",
++    "level": "grade-11-12",
++    "topic": "States of Matter",
++    "latex": "${1:P}${2:V} = ${3:n}RT",
++    "definition": "Equation of state for an ideal gas relating pressure P, volume V, moles n, and temperature T.",
++    "variables": [
++      { "symbol": "R", "meaning": "Gas constant (8.314 J/(mol·K) or 0.08206 L·atm/(mol·K))" }
++    ],
++    "tags": ["gas", "ideal", "stoichiometry"]
++  },
++  {
++    "id": "chem-thermo-1",
++    "name": "Gibbs Free Energy",
++    "branch": "chemistry",
++    "level": "grade-11-12",
++    "topic": "Chemical Thermodynamics",
++    "latex": "\\Delta G^{\\circ} = ${1:\\Delta H^{\\circ}} - ${2:T}\\Delta S^{\\circ} = -RT\\ln K",
++    "definition": "Determines reaction spontaneity (ΔG < 0 spontaneous) and links to the equilibrium constant K.",
++    "tags": ["gibbs", "enthalpy", "entropy", "equilibrium"]
++  },
++  {
++    "id": "chem-kin-1",
++    "name": "Arrhenius Rate Equation",
++    "branch": "chemistry",
++    "level": "grade-11-12",
++    "topic": "Chemical Kinetics",
++    "latex": "k = ${1:A}\\exp\\left(-\\frac{${2:E_a}}{R${3:T}}\\right)",
++    "definition": "Temperature dependence of a chemical reaction rate constant k with activation energy Ea.",
++    "tags": ["kinetics", "arrhenius", "rate"]
++  },
++  {
++    "id": "chem-acid-1",
++    "name": "Henderson-Hasselbalch Equation",
++    "branch": "chemistry",
++    "level": "grade-11-12",
++    "topic": "Acid-Base Equilibrium",
++    "latex": "\\text{pH} = \\text{p}K_a + \\log_{10}\\left(\\frac{[${1:\\text{A}^-}]}{[${2:\\text{HA}}]}\\right)",
++    "definition": "Estimates the pH of a weak acid / conjugate base buffer solution.",
++    "tags": ["ph", "buffer", "acid-base"]
++  },
++  {
++    "id": "chem-elec-1",
++    "name": "Nernst Equation",
++    "branch": "chemistry",
++    "level": "grade-11-12",
++    "topic": "Electrochemistry",
++    "latex": "E_{\\text{cell}} = E^{\\circ}_{\\text{cell}} - \\frac{RT}{${1:n}F}\\ln ${2:Q}",
++    "definition": "Calculates non-standard electrochemical cell potential from reaction quotient Q and electrons transferred n.",
++    "tags": ["nernst", "electrochemistry", "redox"]
++  },
++  {
++    "id": "chem-rxn-1",
++    "name": "Acid-Base Neutralization (mhchem)",
++    "branch": "chemistry",
++    "level": "grade-11-12",
++    "topic": "Stoichiometry",
++    "latex": "\\ce{${1:H2SO4} + ${2:2NaOH} -> ${3:Na2SO4} + ${4:2H2O}}",
++    "definition": "Template for balanced mhchem reactions with automatic subscripts and arrows.",
++    "tags": ["mhchem", "reaction", "neutralization"]
++  },
++  {
++    "id": "math-alg-1",
++    "name": "Quadratic Formula",
++    "branch": "math",
++    "level": "grade-11-12",
++    "topic": "Algebra",
++    "latex": "x = \\frac{-${1:b} \\pm \\sqrt{${1:b}^2 - 4${2:a}${3:c}}}{2${2:a}}",
++    "definition": "Closed-form roots of the quadratic equation ax² + bx + c = 0.",
++    "tags": ["quadratic", "roots", "algebra"]
++  },
++  {
++    "id": "math-calc-1",
++    "name": "Integration by Parts",
++    "branch": "math",
++    "level": "grade-11-12",
++    "topic": "Calculus",
++    "latex": "\\int ${1:u}\\,d${2:v} = ${1:u}${2:v} - \\int ${2:v}\\,d${1:u}",
++    "definition": "Transforms the integral of a product of functions into a simpler integral.",
++    "tags": ["integral", "calculus", "parts"]
++  },
++  {
++    "id": "math-calc-2",
++    "name": "Taylor Series Expansion",
++    "branch": "math",
++    "level": "grade-11-12",
++    "topic": "Calculus",
++    "latex": "f(x) = \\sum_{n=0}^{\\infty} \\frac{f^{(n)}(${1:a})}{n!}(x - ${1:a})^n",
++    "definition": "Power series representation of an infinitely differentiable function around x = a.",
++    "tags": ["taylor", "maclaurin", "series"]
++  },
++  {
++    "id": "math-ode-1",
++    "name": "First-Order Linear ODE (Integrating Factor)",
++    "branch": "math",
++    "level": "grade-11-12",
++    "topic": "Differential Equations",
++    "latex": "\\frac{dy}{dx} + ${1:P(x)}y = ${2:Q(x)}, \\quad \\mu(x) = e^{\\int ${1:P(x)}\\,dx}",
++    "definition": "Standard integrating factor solution for first-order linear differential equations.",
++    "tags": ["ode", "differential", "integrating-factor"]
++  },
++  {
++    "id": "math-prob-1",
++    "name": "Bayes' Theorem",
++    "branch": "math",
++    "level": "grade-11-12",
++    "topic": "Probability & Statistics",
++    "latex": "P(${1:A}\\mid ${2:B}) = \\frac{P(${2:B}\\mid ${1:A})P(${1:A})}{P(${2:B})}",
++    "definition": "Updates conditional probability of event A given observed evidence B.",
++    "tags": ["bayes", "probability", "statistics"]
++  },
++  {
++    "id": "eee-ckt-1",
++    "name": "Ohm's Law & Complex Impedance",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "Circuit Analysis",
++    "latex": "\\mathbf{V} = \\mathbf{I}\\mathbf{Z}, \\quad \\mathbf{Z}_{\\text{RLC}} = ${1:R} + j\\left(\\omega ${2:L} - \\frac{1}{\\omega ${3:C}}\\right)",
++    "definition": "Phasor Ohm's Law and series RLC complex impedance in sinusoidal steady state.",
++    "variables": [
++      { "symbol": "\\mathbf{Z}", "meaning": "Complex impedance", "unit": "Ω" },
++      { "symbol": "\\omega", "meaning": "Angular frequency (2πf)", "unit": "rad/s" }
++    ],
++    "tags": ["ohm", "impedance", "rlc", "phasor"]
++  },
++  {
++    "id": "eee-ckt-2",
++    "name": "Inductor & Capacitor V-I Relations",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "Circuit Analysis",
++    "latex": "v_L(t) = ${1:L}\\frac{di_L}{dt}, \\qquad i_C(t) = ${2:C}\\frac{dv_C}{dt}",
++    "definition": "Fundamental time-domain differential equations for ideal inductors and capacitors.",
++    "tags": ["inductor", "capacitor", "transient"]
++  },
++  {
++    "id": "eee-pwr-1",
++    "name": "AC Complex Power Triangle",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "AC Power & 3-Phase",
++    "latex": "\\mathbf{S} = \\mathbf{V}_{\\text{rms}}\\mathbf{I}_{\\text{rms}}^* = ${1:P} + j${2:Q}, \\quad \\text{pf} = \\cos\\theta",
++    "definition": "Relates apparent power S (VA), real power P (W), reactive power Q (VAR), and power factor.",
++    "tags": ["power", "ac", "phasor", "pf"]
++  },
++  {
++    "id": "eee-pwr-2",
++    "name": "Balanced Three-Phase Power",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "AC Power & 3-Phase",
++    "latex": "P_{3\\phi} = \\sqrt{3}\\,${1:V_L}${2:I_L}\\cos${3:\\theta}",
++    "definition": "Total real power delivered in a balanced three-phase Y or Δ system.",
++    "tags": ["three-phase", "power", "machines"]
++  },
++  {
++    "id": "eee-res-1",
++    "name": "RLC Resonant Frequency & Quality Factor",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "Filters & Resonance",
++    "latex": "f_0 = \\frac{1}{2\\pi\\sqrt{${1:L}${2:C}}}, \\quad Q = \\frac{1}{${3:R}}\\sqrt{\\frac{${1:L}}{${2:C}}}",
++    "definition": "Resonant frequency f0 where inductive and capacitive reactances cancel, plus series Q-factor.",
++    "tags": ["resonance", "filter", "rlc", "q-factor"]
++  },
++  {
++    "id": "eee-semi-1",
++    "name": "MOSFET Saturation Drain Current",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "Electronics",
++    "latex": "I_D = \\frac{1}{2}\\mu_n C_{ox}\\frac{${1:W}}{${2:L}}\\left(V_{GS} - V_{th}\\right)^2\\left(1 + \\lambda V_{DS}\\right)",
++    "definition": "Square-law drain current model for an n-channel MOSFET in saturation with channel-length modulation.",
++    "tags": ["mosfet", "electronics", "transistor"]
++  },
++  {
++    "id": "eee-semi-2",
++    "name": "Shockley Ideal Diode Equation",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "Electronics",
++    "latex": "I_D = ${1:I_S}\\left(e^{\\frac{V_D}{${2:n}V_T}} - 1\\right)",
++    "definition": "Exponential I-V characteristic of a p-n junction diode (thermal voltage VT ≈ 25.85 mV at 300 K).",
++    "tags": ["diode", "shockley", "semiconductor"]
++  },
++  {
++    "id": "eee-opamp-1",
++    "name": "Op-Amp Inverting & Non-Inverting Gain",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "Electronics",
++    "latex": "A_{v,\\text{inv}} = -\\frac{${1:R_f}}{${2:R_{\\text{in}}}}, \\qquad A_{v,\\text{non-inv}} = 1 + \\frac{${1:R_f}}{${2:R_1}}",
++    "definition": "Closed-loop voltage gains for ideal inverting and non-inverting operational amplifier topologies.",
++    "tags": ["opamp", "amplifier", "gain"]
++  },
++  {
++    "id": "eee-sig-1",
++    "name": "Unilateral Laplace Transform",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "Signals & Systems",
++    "latex": "F(s) = \\mathcal{L}\\{${1:f(t)}\\} = \\int_{0^-}^{\\infty} ${1:f(t)} e^{-st}\\,dt",
++    "definition": "Transforms a causal time-domain signal f(t) into the complex s-domain for circuit/system analysis.",
++    "tags": ["laplace", "signals", "control"]
++  },
++  {
++    "id": "eee-sig-2",
++    "name": "Continuous-Time Fourier Transform",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "Signals & Systems",
++    "latex": "X(j\\omega) = \\int_{-\\infty}^{\\infty} ${1:x(t)} e^{-j\\omega t}\\,dt",
++    "definition": "Decomposes an aperiodic time-domain signal into its continuous frequency spectrum.",
++    "tags": ["fourier", "spectrum", "signals"]
++  },
++  {
++    "id": "eee-ctrl-1",
++    "name": "Standard 2nd-Order Transfer Function",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "Control Systems",
++    "latex": "H(s) = \\frac{${1:\\omega_n}^2}{s^2 + 2${2:\\zeta}${1:\\omega_n}s + ${1:\\omega_n}^2}",
++    "definition": "Canonical second-order system characterized by natural frequency ωn and damping ratio ζ.",
++    "tags": ["control", "transfer-function", "damping"]
++  },
++  {
++    "id": "eee-em-1",
++    "name": "Maxwell's Equations (Differential Form)",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "Electromagnetics",
++    "latex": "\\nabla\\cdot\\vec{E}=\\frac{\\rho}{\\varepsilon_0},\\; \\nabla\\cdot\\vec{B}=0,\\; \\nabla\\times\\vec{E}=-\\frac{\\partial\\vec{B}}{\\partial t},\\; \\nabla\\times\\vec{B}=\\mu_0\\vec{J}+\\mu_0\\varepsilon_0\\frac{\\partial\\vec{E}}{\\partial t}",
++    "definition": "Four foundational differential equations of classical electromagnetism.",
++    "tags": ["maxwell", "electromagnetics", "fields"]
++  },
++  {
++    "id": "eee-mach-1",
++    "name": "Ideal Transformer & Synchronous Speed",
++    "branch": "eee",
++    "level": "eee-y1-y2",
++    "topic": "Electrical Machines",
++    "latex": "\\frac{V_1}{V_2} = \\frac{${1:N_1}}{${2:N_2}} = \\frac{I_2}{I_1}, \\qquad n_s = \\frac{120 ${3:f}}{${4:P}}\\text{ RPM}",
++    "definition": "Turns ratio relations for an ideal transformer and synchronous speed of an AC machine with P poles.",
++    "tags": ["transformer", "motor", "machines"]
++  },
++  {
++    "id": "mech-1",
++    "name": "Axial Stress, Strain & Hooke's Law",
++    "branch": "mechanical",
++    "level": "engineering-basics",
++    "topic": "Mechanics of Materials",
++    "latex": "\\sigma = \\frac{${1:F}}{${2:A}}, \\quad \\varepsilon = \\frac{\\Delta L}{L_0}, \\quad \\sigma = ${3:E}\\varepsilon",
++    "definition": "Relates axial force, cross-sectional area, elongation, and Young's modulus E in the elastic regime.",
++    "tags": ["stress", "strain", "hooke", "mechanical"]
++  },
++  {
++    "id": "mech-2",
++    "name": "Bernoulli's Equation (Incompressible Flow)",
++    "branch": "mechanical",
++    "level": "engineering-basics",
++    "topic": "Fluid Mechanics",
++    "latex": "${1:P} + \\frac{1}{2}\\rho ${2:v}^2 + \\rho g ${3:h} = \\text{const}",
++    "definition": "Conservation of mechanical energy along a streamline for steady, inviscid, incompressible flow.",
++    "tags": ["bernoulli", "fluid", "pressure"]
++  },
++  {
++    "id": "mech-3",
++    "name": "Fourier's Law of Heat Conduction",
++    "branch": "mechanical",
++    "level": "engineering-basics",
++    "topic": "Heat Transfer",
++    "latex": "\\dot{Q} = -${1:k}${2:A}\\frac{dT}{dx}",
++    "definition": "Rate of conductive heat transfer proportional to thermal conductivity k, area A, and temperature gradient.",
++    "tags": ["heat", "conduction", "fourier"]
++  },
++  {
++    "id": "civil-1",
++    "name": "Flexural (Bending) Stress in a Beam",
++    "branch": "civil",
++    "level": "engineering-basics",
++    "topic": "Structural Mechanics",
++    "latex": "\\sigma = -\\frac{${1:M}${2:y}}{${3:I}}",
++    "definition": "Normal bending stress at distance y from the neutral axis for bending moment M and moment of inertia I.",
++    "tags": ["beam", "bending", "civil", "structures"]
++  },
++  {
++    "id": "cs-1",
++    "name": "Shannon Information Entropy",
++    "branch": "cs",
++    "level": "engineering-basics",
++    "topic": "Information Theory",
++    "latex": "H(X) = -\\sum_{i=1}^{${1:n}} p(x_i)\\log_2 p(x_i)",
++    "definition": "Average information content (in bits) of a discrete random variable X.",
++    "tags": ["entropy", "shannon", "information", "cs"]
++  },
++  {
++    "id": "cs-2",
++    "name": "Amdahl's Law (Parallel Speedup)",
++    "branch": "cs",
++    "level": "engineering-basics",
++    "topic": "Computer Architecture",
++    "latex": "S_{\\text{latency}}(s) = \\frac{1}{(1 - ${1:p}) + \\frac{${1:p}}{${2:s}}}",
++    "definition": "Maximum theoretical speedup when parallelizable fraction p is accelerated by factor s.",
++    "tags": ["amdahl", "parallel", "architecture", "cs"]
++  }
++]
+diff --git a/src/main.ts b/src/main.ts
+index 80cc918..afd49ad 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -1,211 +1,838 @@
+-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
+-import { DEFAULT_SETTINGS, getMergedLibrary, safeSaveSettings } from "./settings";
+-import type { LaTeXSettings } from "./types";
+-import { normalizeDelimiters, wrapMath } from "./core/delimiters";
+-import { casDifferentiate, casExpand, casSimplify, casSolve } from "./core/cas-engine";
+-import { detectCompanionLatexPlugins, isCursorInMathZone } from "./core/editor-interop";
+-import { mountMathLiveField, stripMathLivePlaceholders } from "./ui/mathlive-field";
+-import { normalizeChemicalFormulaInput, TAXONOMY } from "./taxonomy";
+-
+-class MathLiveBuilderModal extends Modal {
+-  private latex = "";
+-  constructor(
+-    app: App,
+-    private plugin: LatexToolboxPlugin,
+-    private editor: Editor | null,
+-    initialText = ""
+-  ) {
+-    super(app);
+-    this.latex = initialText;
+-  }
+-
+-  onOpen(): void {
+-    const { contentEl } = this;
+-    contentEl.empty();
+-    contentEl.addClass("lt-modal");
+-    contentEl.createEl("h2", { text: "STEM LaTeX Builder (MathLive + Local CAS)" });
+-
+-    const fieldHost = contentEl.createDiv({ cls: "lt-mathlive-host" });
+-    const mf = mountMathLiveField(fieldHost, {
+-      initialLatex: this.latex,
+-      enableSlotHighlighting: this.plugin.settings.enableSlotHighlighting,
+-      onChange: (clean) => {
+-        this.latex = clean;
+-      },
+-    });
+-
+-    const casBar = contentEl.createDiv({ cls: "lt-cas-toolbar" });
+-    const casOut = contentEl.createDiv({ cls: "lt-cas-output" });
+-
+-    const runCas = (label: string, fn: (src: string) => { ok: boolean; latex: string; numeric?: string; error?: string }) => {
+-      const res = fn(this.latex);
+-      casOut.empty();
+-      if (!res.ok) {
+-        casOut.createSpan({ text: `${label} error: ${res.error}`, cls: "lt-cas-error" });
+-        return;
+-      }
+-      this.latex = res.latex;
+-      mf.value = res.latex;
+-      casOut.createSpan({ text: `${label}: ${res.latex}${res.numeric ? ` (≈ ${res.numeric})` : ""}` });
+-    };
+-
+-    if (this.plugin.settings.enableLocalCAS) {
+-      casBar.createEl("button", { text: "Simplify" }).onclick = () => runCas("Simplify", casSimplify);
+-      casBar.createEl("button", { text: "Expand" }).onclick = () => runCas("Expand", casExpand);
+-      casBar.createEl("button", { text: "Solve (x)" }).onclick = () => runCas("Solve", (s) => casSolve(s, "x"));
+-      casBar.createEl("button", { text: "d/dx" }).onclick = () => runCas("Derivative", (s) => casDifferentiate(s, "x"));
+-    }
+-
+-    const actions = contentEl.createDiv({ cls: "modal-button-container" });
+-    const insertBtn = actions.createEl("button", { text: "Insert LaTeX", cls: "mod-cta" });
+-    insertBtn.onclick = () => {
+-      const clean = stripMathLivePlaceholders(this.latex);
+-      if (this.editor) {
+-        const zone = isCursorInMathZone(this.editor);
+-        this.editor.replaceSelection(zone.inMath ? clean : wrapMath(clean, this.plugin.settings.wrapStyle));
+-      } else {
+-        void navigator.clipboard?.writeText(clean);
+-        new Notice("Copied LaTeX to clipboard.");
+-      }
+-      this.close();
+-    };
+-    actions.createEl("button", { text: "Cancel" }).onclick = () => this.close();
+-  }
+-
+-  onClose(): void {
+-    this.contentEl.empty();
+-  }
+-}
+-
+-export default class LatexToolboxPlugin extends Plugin {
+-  settings!: LaTeXSettings;
+-  api!: Record<string, unknown>;
+-
+-  async onload(): Promise<void> {
+-    await this.loadSettings();
+-    this.applyThemePreferences();
+-
+-    const companions = detectCompanionLatexPlugins(this.app);
+-    this.api = {
+-      version: "5.0.0",
+-      normalizeDelimiters,
+-      normalizeChemicalFormulaInput,
+-      casSimplify,
+-      casExpand,
+-      casSolve,
+-      casDifferentiate,
+-      getTaxonomy: () => TAXONOMY,
+-      getMergedLibrary: () => getMergedLibrary(this.settings),
+-      companions,
+-      openBuilder: (initialText?: string) => {
+-        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+-        const editor = view ? view.editor : null;
+-        const text = initialText ?? (editor ? editor.getSelection() : "");
+-        new MathLiveBuilderModal(this.app, this, editor, text).open();
+-      },
+-    };
+-    (window as unknown as Record<string, unknown>).LatexToolboxAPI = this.api;
+-
+-    // Auto-fix pasted AI LaTeX delimiters (\(...\), \[...\])
+-    this.registerEvent(
+-      this.app.workspace.on("editor-paste", (evt, editor) => {
+-        if (!this.settings.autoFixOnPaste) return;
+-        const text = evt.clipboardData?.getData("text/plain") ?? "";
+-        if (text && (text.includes("\\(") || text.includes("\\["))) {
+-          evt.preventDefault();
+-          editor.replaceSelection(normalizeDelimiters(text));
+-          new Notice("Normalized AI LaTeX delimiters.");
+-        }
+-      })
+-    );
+-
+-    this.addCommand({
+-      id: "open-stem-builder",
+-      name: "Open interactive STEM builder (MathLive + CAS)",
+-      callback: () => (this.api.openBuilder as () => void)(),
+-    });
+-
+-    this.addCommand({
+-      id: "fix-ai-latex-delimiters",
+-      name: "Fix AI LaTeX delimiters in selection or active note",
+-      editorCallback: (editor) => {
+-        const sel = editor.getSelection();
+-        if (sel) {
+-          editor.replaceSelection(normalizeDelimiters(sel));
+-          new Notice("Normalized LaTeX delimiters in selection.");
+-        } else {
+-          editor.setValue(normalizeDelimiters(editor.getValue()));
+-          new Notice("Normalized LaTeX delimiters across active note.");
+-        }
+-      },
+-    });
+-
+-    this.addRibbonIcon("calculator", "STEM LaTeX Builder", () => (this.api.openBuilder as () => void)());
+-    this.addSettingTab(new LatexToolboxSettingTab(this.app, this));
+-  }
+-
+-  onunload(): void {
+-    document.body.removeClass("lt-glassmorphic");
+-    const win = window as unknown as Record<string, unknown>;
+-    if (win.LatexToolboxAPI === this.api) delete win.LatexToolboxAPI;
+-  }
+-
+-  applyThemePreferences(): void {
+-    document.body.toggleClass("lt-glassmorphic", this.settings.glassmorphism !== false);
+-  }
+-
+-  async loadSettings(): Promise<void> {
+-    const raw = ((await this.loadData()) ?? {}) as Partial<LaTeXSettings>;
+-    this.settings = Object.assign({}, DEFAULT_SETTINGS, raw);
+-  }
+-
+-  async saveSettings(): Promise<void> {
+-    await safeSaveSettings(this, this.settings);
+-  }
+-}
+-
+-class LatexToolboxSettingTab extends PluginSettingTab {
+-  constructor(app: App, private plugin: LatexToolboxPlugin) {
+-    super(app, plugin);
+-  }
+-  display(): void {
+-    const { containerEl } = this;
+-    containerEl.empty();
+-    new Setting(containerEl).setName("Mathematical tools & builder configuration").setHeading();
+-
+-    const companions = detectCompanionLatexPlugins(this.app);
+-    containerEl.createEl("p", {
+-      text: `Detected companions: LaTeX Suite (${companions.hasLatexSuite ? "Active" : "Off"}), Quick LaTeX (${companions.hasQuickLatex ? "Active" : "Off"}).`,
+-    });
+-
+-    new Setting(containerEl)
+-      .setName("Enable Slot Highlighting in MathLive")
+-      .setDesc("Highlights interactive template placeholders for Tab-jumping.")
+-      .addToggle((t) =>
+-        t.setValue(this.plugin.settings.enableSlotHighlighting).onChange(async (v) => {
+-          this.plugin.settings.enableSlotHighlighting = v;
+-          await this.plugin.saveSettings();
+-        })
+-      );
+-
+-    new Setting(containerEl)
+-      .setName("Enable Local CAS (CortexJS Compute Engine)")
+-      .setDesc("Enables offline Simplify, Expand, Solve, and Derivative buttons in the builder.")
+-      .addToggle((t) =>
+-        t.setValue(this.plugin.settings.enableLocalCAS).onChange(async (v) => {
+-          this.plugin.settings.enableLocalCAS = v;
+-          await this.plugin.saveSettings();
+-        })
+-      );
+-
+-    new Setting(containerEl)
+-      .setName("Defer inline shortcuts to Obsidian LaTeX Suite / Quick LaTeX")
+-      .setDesc("Avoids hotkey conflicts when companion LaTeX plugins are active.")
+-      .addToggle((t) =>
+-        t.setValue(this.plugin.settings.deferToLatexSuite).onChange(async (v) => {
+-          this.plugin.settings.deferToLatexSuite = v;
+-          await this.plugin.saveSettings();
+-        })
+-      );
+-  }
+-}
++import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
++import type { MathfieldElement } from "mathlive";
++import { DEFAULT_SETTINGS, getMergedLibrary, safeSaveSettings } from "./settings";
++import type { CASOperation, CASResult, DerivationLine, LaTeXSettings, RationaleType } from "./types";
++import { normalizeDelimiters, wrapMath } from "./core/delimiters";
++import {
++  casDifferentiate,
++  casExpand,
++  casFactor,
++  casIntegrate,
++  casSimplify,
++  casSolve,
++  detectPrimaryVariable,
++  runCASOperation,
++} from "./core/cas-engine";
++import { checkSymPyStatus } from "./core/sympy-bridge";
++import { balanceChemicalEquation } from "./core/chem-engine";
++import { detectStemDomain, getNaturalSuggestions, naturalLanguageToLatex } from "./core/natural-language";
++import {
++  exportDerivationToInteractiveBlock,
++  exportDerivationToPureLatex,
++  hasRichRationales,
++  registerDerivationBlockProcessor,
++} from "./core/derivation-renderer";
++import { searchFormulaDatabase } from "./core/formula-db";
++import { detectCompanionLatexPlugins, isCursorInMathZone } from "./core/editor-interop";
++import { mountMathLiveField, stripMathLivePlaceholders, templateToMathLivePlaceholders } from "./ui/mathlive-field";
++import { applyMathLiveKeyboardConfig } from "./ui/stem-keyboards";
++import { ScientificCalculatorModal } from "./ui/scientific-calculator-modal";
++import { normalizeChemicalFormulaInput, TAXONOMY } from "./taxonomy";
++
++function makeLineId(): string {
++  return `line_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
++}
++
++class MathLiveBuilderModal extends Modal {
++  private lines: DerivationLine[] = [];
++  private activeLineIdx = 0;
++  private fieldRefs: MathfieldElement[] = [];
++  private linesContainer!: HTMLElement;
++  private varInput!: HTMLInputElement;
++  private casPreviewEl!: HTMLElement;
++  private lastCasResult: { label: string; res: CASResult } | null = null;
++  private showFormulaBrowser = false;
++  private formulaBrowserEl!: HTMLElement;
++
++  constructor(
++    app: App,
++    private plugin: LatexToolboxPlugin,
++    private editor: Editor | null,
++    initialText = ""
++  ) {
++    super(app);
++    const initialLines = initialText
++      ? initialText.split(/\s*\\\\\s*/).filter(Boolean)
++      : [""];
++    this.lines = initialLines.map((l) => ({ id: makeLineId(), latex: l.trim() }));
++    if (this.lines.length === 0) this.lines.push({ id: makeLineId(), latex: "" });
++  }
++
++  onOpen(): void {
++    const { contentEl } = this;
++    contentEl.empty();
++    contentEl.addClass("lt-modal");
++    applyMathLiveKeyboardConfig(this.plugin.settings);
++
++    const header = contentEl.createDiv({ cls: "lt-cas-header" });
++    header.createEl("h2", { text: "STEM LaTeX Builder v5.5 (MathLive + Full CAS)" });
++
++    const headerActions = header.createDiv({ cls: "lt-cas-preview-actions" });
++    const dbToggleBtn = headerActions.createEl("button", { text: "Formula DB" });
++    dbToggleBtn.onclick = () => {
++      this.showFormulaBrowser = !this.showFormulaBrowser;
++      this.formulaBrowserEl.style.display = this.showFormulaBrowser ? "block" : "none";
++    };
++    const calcBtn = headerActions.createEl("button", { text: "Calculator" });
++    calcBtn.onclick = () => {
++      new ScientificCalculatorModal(this.app, this.plugin.settings.eeImaginaryUnit, {
++        onInsertLatex: (ltx) => this.insertIntoActiveLine(ltx),
++        onSendToBuilder: (ltx) => this.insertIntoActiveLine(ltx),
++      }).open();
++    };
++
++    // 1. Natural Language / Wolfram / MATLAB / Symbolab bar
++    this.renderNaturalLanguageBar(contentEl);
++
++    // 2. Multiline Derivation Editor (line numbers + clickable MathLive slots + per-line rich rationales)
++    this.linesContainer = contentEl.createDiv({ cls: "lt-derivation-lines" });
++    this.renderDerivationLines();
++
++    const lineControls = contentEl.createDiv({ cls: "lt-cas-toolbar" });
++    lineControls.createEl("button", { text: "+ Add Line" }).onclick = () => {
++      this.addLineAfter(this.activeLineIdx, "");
++    };
++    const lineNumBtn = lineControls.createEl("button", {
++      text: this.plugin.settings.enableLineNumbering ? "Line Numbers: ON" : "Line Numbers: OFF",
++    });
++    lineNumBtn.onclick = async () => {
++      this.plugin.settings.enableLineNumbering = !this.plugin.settings.enableLineNumbering;
++      await this.plugin.saveSettings();
++      lineNumBtn.setText(this.plugin.settings.enableLineNumbering ? "Line Numbers: ON" : "Line Numbers: OFF");
++      this.renderDerivationLines();
++    };
++
++    // 3. Expanded Two-Tier CAS Toolbar + Non-Destructive Live Preview
++    if (this.plugin.settings.enableLocalCAS) {
++      this.renderCASToolbar(contentEl);
++    }
++
++    // 4. Collapsible Read-Only STEM Formula Database Browser
++    this.formulaBrowserEl = contentEl.createDiv({ cls: "lt-formula-browser" });
++    this.formulaBrowserEl.style.display = "none";
++    this.renderFormulaBrowser(this.formulaBrowserEl);
++
++    // 5. Footer Insert Actions (Pure LaTeX vs Interactive Rationale Block)
++    const actions = contentEl.createDiv({ cls: "modal-button-container" });
++    const insertLatexBtn = actions.createEl("button", { text: "Insert Pure LaTeX", cls: "mod-cta" });
++    insertLatexBtn.onclick = () => {
++      const pure = exportDerivationToPureLatex(
++        this.lines.map((l) => ({ ...l, latex: stripMathLivePlaceholders(l.latex) })),
++        this.plugin.settings.enableLineNumbering && this.lines.length > 1
++      );
++      this.commitToEditor(pure, false);
++    };
++
++    const insertRichBtn = actions.createEl("button", { text: "Insert Interactive Derivation" });
++    insertRichBtn.onclick = () => {
++      const cleanedLines = this.lines.map((l) => ({ ...l, latex: stripMathLivePlaceholders(l.latex) }));
++      const block = exportDerivationToInteractiveBlock(cleanedLines, this.plugin.settings.enableLineNumbering);
++      this.commitToEditor(block, true);
++    };
++
++    actions.createEl("button", { text: "Cancel" }).onclick = () => this.close();
++  }
++
++  private renderNaturalLanguageBar(parent: HTMLElement): void {
++    const bar = parent.createDiv({ cls: "lt-nl-bar" });
++    const nlInput = bar.createEl("input", {
++      type: "text",
++      placeholder: "Natural typing: integrate sin(x) from 0 to pi | H2SO4 + NaOH -> Na2SO4 + H2O | [1 2; 3 4] | laplace(e^(-a*t))",
++      cls: "lt-nl-input",
++    });
++    const domainBadge = bar.createSpan({ text: "MATH", cls: "lt-nl-badge" });
++    const convertBtn = bar.createEl("button", { text: "Convert" });
++    const suggWrap = parent.createDiv({ cls: "lt-nl-suggestions" });
++
++    const refreshSuggestions = () => {
++      const dom = detectStemDomain(nlInput.value);
++      domainBadge.setText(dom.toUpperCase());
++      suggWrap.empty();
++      const items = getNaturalSuggestions(nlInput.value, 5);
++      for (const item of items) {
++        const chip = suggWrap.createEl("button", {
++          text: `${item.label} (${item.domain.toUpperCase()})`,
++          cls: "lt-nl-chip",
++        });
++        chip.title = item.description;
++        chip.onclick = () => {
++          this.insertIntoActiveLine(item.latex);
++        };
++      }
++    };
++
++    const runConvert = () => {
++      const parsed = naturalLanguageToLatex(nlInput.value, this.plugin.settings.eeImaginaryUnit);
++      if (!parsed.latex) return;
++      this.insertIntoActiveLine(parsed.latex);
++      new Notice(parsed.note);
++      nlInput.value = "";
++      refreshSuggestions();
++    };
++
++    nlInput.addEventListener("input", refreshSuggestions);
++    nlInput.addEventListener("keydown", (ev) => {
++      if (ev.key === "Enter") {
++        ev.preventDefault();
++        runConvert();
++      }
++    });
++    convertBtn.onclick = runConvert;
++    refreshSuggestions();
++  }
++
++  private renderDerivationLines(): void {
++    this.linesContainer.empty();
++    this.fieldRefs = [];
++    const showNums = this.plugin.settings.enableLineNumbering;
++
++    this.lines.forEach((line, idx) => {
++      const row = this.linesContainer.createDiv({
++        cls: `lt-derivation-row${showNums ? "" : " lt-no-line-numbers"}${idx === this.activeLineIdx ? " lt-row-active" : ""}`,
++      });
++
++      if (showNums) {
++        row.createSpan({ text: `${idx + 1}.`, cls: "lt-line-num" });
++      }
++
++      const fieldHost = row.createDiv({ cls: "lt-mathlive-host" });
++      const mf = mountMathLiveField(fieldHost, {
++        initialLatex: line.latex,
++        enableSlotHighlighting: this.plugin.settings.enableSlotHighlighting,
++        autoResize: this.plugin.settings.autoResizeEditor,
++        settings: this.plugin.settings,
++        onChange: (clean) => {
++          line.latex = clean;
++          if (idx === this.activeLineIdx && this.varInput) {
++            this.varInput.value = detectPrimaryVariable(clean);
++          }
++        },
++        onEnter: () => this.addLineAfter(idx, ""),
++        onBackspaceEmpty: () => {
++          if (this.lines.length > 1) this.removeLine(idx);
++        },
++      });
++      mf.addEventListener("focus", () => {
++        this.activeLineIdx = idx;
++        if (this.varInput) this.varInput.value = detectPrimaryVariable(line.latex);
++      });
++      this.fieldRefs.push(mf);
++
++      // Per-line Rationale Box (text / audio / link / app)
++      const ratBox = row.createDiv({ cls: "lt-rationale-box" });
++      const ratControls = ratBox.createDiv({ cls: "lt-rationale-controls" });
++      const typeSel = ratControls.createEl("select", { cls: "dropdown lt-rationale-type" });
++      const types: Array<[RationaleType, string]> = [
++        ["text", "Text"],
++        ["audio", "Audio"],
++        ["link", "Web Link"],
++        ["app", "App URI"],
++      ];
++      for (const [val, lbl] of types) {
++        typeSel.createEl("option", { value: val, text: lbl });
++      }
++      typeSel.value = line.rationale?.type ?? "text";
++
++      const valInput = ratControls.createEl("input", {
++        type: "text",
++        cls: "lt-rationale-input",
++        value: line.rationale?.value ?? "",
++        placeholder: this.getRationalePlaceholder(typeSel.value as RationaleType),
++      });
++
++      const labelInput = ratBox.createEl("input", {
++        type: "text",
++        cls: "lt-rationale-input",
++        value: line.rationale?.label ?? "",
++        placeholder: "Optional display label (for link/app/audio)",
++      });
++      labelInput.style.display = typeSel.value === "text" ? "none" : "block";
++
++      // Quick helper bar for Audio recording or App scheme presets
++      const helperBar = ratBox.createDiv({ cls: "lt-rationale-controls" });
++      const renderRationaleHelpers = () => {
++        helperBar.empty();
++        const curType = typeSel.value as RationaleType;
++        labelInput.style.display = curType === "text" ? "none" : "block";
++        valInput.placeholder = this.getRationalePlaceholder(curType);
++
++        if (curType === "app") {
++          const schemeSel = helperBar.createEl("select", { cls: "dropdown" });
++          schemeSel.createEl("option", { value: "", text: "Preset App..." });
++          for (const [appName, uri] of Object.entries(this.plugin.settings.externalAppSchemes ?? {})) {
++            schemeSel.createEl("option", { value: uri, text: appName });
++          }
++          schemeSel.onchange = () => {
++            if (!schemeSel.value) return;
++            valInput.value = schemeSel.value;
++            if (!labelInput.value) labelInput.value = schemeSel.options[schemeSel.selectedIndex]?.text ?? "";
++            syncRationale();
++          };
++        } else if (curType === "audio") {
++          const recBtn = helperBar.createEl("button", { text: "🎙️ Record Voice Note" });
++          let recorder: MediaRecorder | null = null;
++          let chunks: BlobPart[] = [];
++          recBtn.onclick = async () => {
++            if (recorder && recorder.state === "recording") {
++              recorder.stop();
++              recBtn.setText("🎙️ Record Voice Note");
++              return;
++            }
++            try {
++              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
++              recorder = new MediaRecorder(stream);
++              chunks = [];
++              recorder.ondataavailable = (ev) => {
++                if (ev.data.size > 0) chunks.push(ev.data);
++              };
++              recorder.onstop = async () => {
++                stream.getTracks().forEach((t) => t.stop());
++                const blob = new Blob(chunks, { type: "audio/webm" });
++                const buf = await blob.arrayBuffer();
++                const folder = this.plugin.settings.audioNoteFolder || "Attachments/MathAudio";
++                if (!(await this.app.vault.adapter.exists(folder))) {
++                  await this.app.vault.createFolder(folder);
++                }
++                const path = `${folder}/rationale-${Date.now()}.webm`;
++                await this.app.vault.createBinary(path, buf);
++                valInput.value = path;
++                if (!labelInput.value) labelInput.value = `Voice note (line ${idx + 1})`;
++                syncRationale();
++                new Notice(`Saved audio rationale to ${path}`);
++              };
++              recorder.start();
++              recBtn.setText("⏹ Stop Recording");
++            } catch (e) {
++              new Notice(`Microphone error: ${String(e)}`);
++            }
++          };
++        }
++      };
++
++      const syncRationale = () => {
++        const v = valInput.value.trim();
++        const t = typeSel.value as RationaleType;
++        const lbl = labelInput.value.trim();
++        line.rationale = v ? { type: t, value: v, label: lbl || (t === "text" ? v : "") } : undefined;
++      };
++
++      typeSel.onchange = () => {
++        renderRationaleHelpers();
++        syncRationale();
++      };
++      valInput.addEventListener("input", syncRationale);
++      labelInput.addEventListener("input", syncRationale);
++      renderRationaleHelpers();
++
++      // Row actions (+, ✕)
++      const rowBtns = row.createDiv({ cls: "lt-row-actions" });
++      rowBtns.createEl("button", { text: "+" }).onclick = () => this.addLineAfter(idx, "");
++      if (this.lines.length > 1) {
++        rowBtns.createEl("button", { text: "✕" }).onclick = () => this.removeLine(idx);
++      }
++    });
++  }
++
++  private getRationalePlaceholder(type: RationaleType): string {
++    if (type === "audio") return "Vault audio path (e.g. Attachments/MathAudio/note.webm)";
++    if (type === "link") return "https://en.wikipedia.org/wiki/...";
++    if (type === "app") return "obsidian://open?file=... or matlab://...";
++    return "Rationale (e.g. By KVL, Integration by parts)";
++  }
++
++  private renderCASToolbar(parent: HTMLElement): void {
++    const sec = parent.createDiv({ cls: "lt-cas-section" });
++    const head = sec.createDiv({ cls: "lt-cas-header" });
++    head.createSpan({
++      text: `Full CAS (${this.plugin.settings.casBackend === "hybrid-python" ? "JS + Python SymPy" : "Local JS"})`,
++    });
++
++    const varWrap = head.createDiv({ cls: "lt-cas-var-wrap" });
++    varWrap.createSpan({ text: "Var:" });
++    this.varInput = varWrap.createEl("input", {
++      type: "text",
++      value: detectPrimaryVariable(this.lines[this.activeLineIdx]?.latex ?? ""),
++      cls: "lt-cas-var-input",
++    });
++    const lowerIn = varWrap.createEl("input", { type: "text", placeholder: "a=0", cls: "lt-cas-var-input" });
++    const upperIn = varWrap.createEl("input", { type: "text", placeholder: "b=1", cls: "lt-cas-var-input" });
++
++    const btnBar = sec.createDiv({ cls: "lt-cas-toolbar" });
++    const ops: Array<[string, CASOperation]> = [
++      ["Simplify", "simplify"],
++      ["Expand", "expand"],
++      ["Factor", "factor"],
++      ["Solve", "solve"],
++      ["d/dv", "diff"],
++      ["∫ dv", "integrate"],
++      ["Def ∫", "defint"],
++      ["Limit", "limit"],
++      ["PartFrac", "apart"],
++      ["Numeric", "numeric"],
++      ["Phasor ∠", "phasor"],
++      ["Units", "units"],
++      ["Det(M)", "matrix_det"],
++      ["Inv(M)", "matrix_inv"],
++      ["Laplace", "laplace"],
++      ["InvLaplace", "ilaplace"],
++      ["Fourier", "fourier"],
++      ["ODE", "dsolve"],
++      ["Series", "series"],
++    ];
++
++    for (const [label, op] of ops) {
++      btnBar.createEl("button", { text: label }).onclick = async () => {
++        const activeLatex = stripMathLivePlaceholders(this.lines[this.activeLineIdx]?.latex ?? "");
++        if (!activeLatex) return;
++        const variable = this.varInput.value.trim() || detectPrimaryVariable(activeLatex);
++        const res = await runCASOperation(op, activeLatex, {
++          variable,
++          lower: lowerIn.value.trim() || "0",
++          upper: upperIn.value.trim() || "1",
++          point: lowerIn.value.trim() || "0",
++          backend: this.plugin.settings.casBackend,
++          pythonExecutable: this.plugin.settings.pythonExecutable,
++          imagUnit: this.plugin.settings.eeImaginaryUnit,
++        });
++        this.showCasPreview(`${label} (${variable})`, res);
++      };
++    }
++
++    btnBar.createEl("button", { text: "Balance Chem" }).onclick = () => {
++      const activeLatex = stripMathLivePlaceholders(this.lines[this.activeLineIdx]?.latex ?? "");
++      const bal = balanceChemicalEquation(activeLatex);
++      this.showCasPreview("Balance Chemistry", {
++        ok: bal.ok,
++        latex: bal.latex,
++        engine: "Nullspace Stoichiometry",
++        error: bal.error,
++      });
++    };
++
++    this.casPreviewEl = sec.createDiv({ cls: "lt-cas-output" });
++  }
++
++  private showCasPreview(label: string, res: CASResult): void {
++    this.casPreviewEl.empty();
++    this.lastCasResult = { label, res };
++
++    if (!res.ok) {
++      this.casPreviewEl.createSpan({ text: `${label} error: ${res.error}`, cls: "lt-cas-error" });
++      return;
++    }
++
++    const box = this.casPreviewEl.createDiv({ cls: "lt-cas-preview" });
++    box.createSpan({
++      text: `${label} [${res.engine ?? "CAS"}]: ${res.latex}${res.numeric ? `  (≈ ${res.numeric})` : ""}`,
++      cls: "lt-cas-preview-expr",
++    });
++
++    const act = box.createDiv({ cls: "lt-cas-preview-actions" });
++    act.createEl("button", { text: "Replace Line" }).onclick = () => {
++      this.insertIntoActiveLine(res.latex, true);
++    };
++    act.createEl("button", { text: "Append Next Line", cls: "mod-cta" }).onclick = () => {
++      this.addLineAfter(this.activeLineIdx, res.latex, {
++        type: "text",
++        label: label,
++        value: label,
++      });
++    };
++  }
++
++  private renderFormulaBrowser(container: HTMLElement): void {
++    container.empty();
++    const filters = container.createDiv({ cls: "lt-formula-filters" });
++    const searchIn = filters.createEl("input", {
++      type: "text",
++      placeholder: "Search Grade 11-12, EEE Y1-Y2, Engineering formulas & definitions...",
++      cls: "lt-nl-input",
++    });
++    const branchSel = filters.createEl("select", { cls: "dropdown" });
++    const branches = [
++      ["all", "All Branches"],
++      ["eee", "EEE (Y1-Y2)"],
++      ["physics", "Physics"],
++      ["chemistry", "Chemistry"],
++      ["math", "Mathematics"],
++      ["mechanical", "Mechanical"],
++      ["civil", "Civil"],
++      ["cs", "Computer Science"],
++    ];
++    for (const [val, lbl] of branches) branchSel.createEl("option", { value: val, text: lbl });
++
++    const levelSel = filters.createEl("select", { cls: "dropdown" });
++    const levels = [
++      ["all", "All Levels"],
++      ["grade-11-12", "Grade 11–12"],
++      ["eee-y1-y2", "EEE Year 1–2"],
++      ["engineering-basics", "Engineering Basics"],
++    ];
++    for (const [val, lbl] of levels) levelSel.createEl("option", { value: val, text: lbl });
++
++    const listEl = container.createDiv({ cls: "lt-formula-list" });
++    const refresh = () => {
++      listEl.empty();
++      const results = searchFormulaDatabase({
++        query: searchIn.value,
++        branch: branchSel.value,
++        level: levelSel.value,
++      });
++      for (const item of results) {
++        const card = listEl.createDiv({ cls: "lt-formula-card" });
++        card.createDiv({ text: item.name, cls: "lt-formula-title" });
++        card.createDiv({ text: `${item.branch.toUpperCase()} • ${item.topic} • ${item.level}`, cls: "lt-formula-meta" });
++        card.createDiv({ text: item.definition, cls: "lt-formula-def" });
++        if (item.variables && item.variables.length > 0) {
++          const varsText = item.variables.map((v) => `${v.symbol}: ${v.meaning}${v.unit ? ` (${v.unit})` : ""}`).join(" | ");
++          card.createDiv({ text: varsText, cls: "lt-formula-meta" });
++        }
++        card.onclick = () => {
++          const withSlots = templateToMathLivePlaceholders(item.latex);
++          this.insertIntoActiveLine(withSlots, true);
++          new Notice(`Inserted: ${item.name}`);
++        };
++      }
++    };
++
++    searchIn.addEventListener("input", refresh);
++    branchSel.onchange = refresh;
++    levelSel.onchange = refresh;
++    refresh();
++  }
++
++  private insertIntoActiveLine(latex: string, replaceAll = false): void {
++    const line = this.lines[this.activeLineIdx];
++    const mf = this.fieldRefs[this.activeLineIdx];
++    if (!line || !mf) return;
++    if (replaceAll || !line.latex.trim()) {
++      mf.value = latex;
++      line.latex = stripMathLivePlaceholders(latex);
++    } else {
++      mf.insert(latex);
++      line.latex = stripMathLivePlaceholders(mf.value);
++    }
++    mf.focus();
++  }
++
++  private addLineAfter(idx: number, latex: string, rationale?: DerivationLine["rationale"]): void {
++    this.lines.splice(idx + 1, 0, { id: makeLineId(), latex, rationale });
++    this.activeLineIdx = idx + 1;
++    this.renderDerivationLines();
++    this.fieldRefs[this.activeLineIdx]?.focus();
++  }
++
++  private removeLine(idx: number): void {
++    if (this.lines.length <= 1) return;
++    this.lines.splice(idx, 1);
++    this.activeLineIdx = Math.max(0, idx - 1);
++    this.renderDerivationLines();
++    this.fieldRefs[this.activeLineIdx]?.focus();
++  }
++
++  private commitToEditor(output: string, isRawBlock: boolean): void {
++    if (!output.trim()) {
++      this.close();
++      return;
++    }
++    const useInteractive = isRawBlock || hasRichRationales(this.lines);
++    const finalOutput = useInteractive && !isRawBlock
++      ? exportDerivationToInteractiveBlock(
++          this.lines.map((l) => ({ ...l, latex: stripMathLivePlaceholders(l.latex) })),
++          this.plugin.settings.enableLineNumbering
++        )
++      : output;
++
++    if (this.editor) {
++      if (useInteractive) {
++        this.editor.replaceSelection(`\n${finalOutput}\n`);
++      } else {
++        const zone = isCursorInMathZone(this.editor);
++        this.editor.replaceSelection(zone.inMath ? finalOutput : wrapMath(finalOutput, this.plugin.settings.wrapStyle));
++      }
++    } else {
++      void navigator.clipboard?.writeText(finalOutput);
++      new Notice("Copied output to clipboard.");
++    }
++    this.close();
++  }
++
++  onClose(): void {
++    this.contentEl.empty();
++  }
++}
++
++export default class LatexToolboxPlugin extends Plugin {
++  settings!: LaTeXSettings;
++  api!: Record<string, unknown>;
++
++  async onload(): Promise<void> {
++    await this.loadSettings();
++    this.applyThemePreferences();
++    registerDerivationBlockProcessor(this);
++
++    const companions = detectCompanionLatexPlugins(this.app);
++    this.api = {
++      version: "5.5.0",
++      normalizeDelimiters,
++      normalizeChemicalFormulaInput,
++      balanceChemicalEquation,
++      naturalLanguageToLatex,
++      searchFormulaDatabase,
++      casSimplify,
++      casExpand,
++      casFactor,
++      casSolve,
++      casDifferentiate,
++      casIntegrate,
++      runCASOperation,
++      getTaxonomy: () => TAXONOMY,
++      getMergedLibrary: () => getMergedLibrary(this.settings),
++      companions,
++      openBuilder: (initialText?: string) => {
++        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
++        const editor = view ? view.editor : null;
++        const text = initialText ?? (editor ? editor.getSelection() : "");
++        new MathLiveBuilderModal(this.app, this, editor, text).open();
++      },
++      openCalculator: () => {
++        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
++        const editor = view ? view.editor : null;
++        new ScientificCalculatorModal(this.app, this.settings.eeImaginaryUnit, {
++          onInsertLatex: (ltx) => {
++            if (editor) editor.replaceSelection(wrapMath(ltx, this.settings.wrapStyle));
++            else void navigator.clipboard?.writeText(ltx);
++          },
++          onSendToBuilder: (ltx) => (this.api.openBuilder as (t?: string) => void)(ltx),
++        }).open();
++      },
++    };
++    (window as unknown as Record<string, unknown>).LatexToolboxAPI = this.api;
++
++    // Auto-fix pasted AI LaTeX delimiters (\(...\), \[...\])
++    this.registerEvent(
++      this.app.workspace.on("editor-paste", (evt, editor) => {
++        if (!this.settings.autoFixOnPaste) return;
++        const text = evt.clipboardData?.getData("text/plain") ?? "";
++        if (text && (text.includes("\\(") || text.includes("\\["))) {
++          evt.preventDefault();
++          editor.replaceSelection(normalizeDelimiters(text));
++          new Notice("Normalized AI LaTeX delimiters.");
++        }
++      })
++    );
++
++    this.addCommand({
++      id: "open-stem-builder",
++      name: "Open interactive STEM builder (MathLive + Full CAS)",
++      callback: () => (this.api.openBuilder as () => void)(),
++    });
++
++    this.addCommand({
++      id: "open-scientific-calculator",
++      name: "Open STEM Scientific & Engineering Calculator",
++      callback: () => (this.api.openCalculator as () => void)(),
++    });
++
++    this.addCommand({
++      id: "fix-ai-latex-delimiters",
++      name: "Fix AI LaTeX delimiters in selection or active note",
++      editorCallback: (editor) => {
++        const sel = editor.getSelection();
++        if (sel) {
++          editor.replaceSelection(normalizeDelimiters(sel));
++          new Notice("Normalized LaTeX delimiters in selection.");
++        } else {
++          editor.setValue(normalizeDelimiters(editor.getValue()));
++          new Notice("Normalized LaTeX delimiters across active note.");
++        }
++      },
++    });
++
++    this.addRibbonIcon("calculator", "STEM LaTeX Builder", () => (this.api.openBuilder as () => void)());
++    this.addSettingTab(new LatexToolboxSettingTab(this.app, this));
++  }
++
++  onunload(): void {
++    document.body.removeClass("lt-glassmorphic");
++    const win = window as unknown as Record<string, unknown>;
++    if (win.LatexToolboxAPI === this.api) delete win.LatexToolboxAPI;
++  }
++
++  applyThemePreferences(): void {
++    document.body.toggleClass("lt-glassmorphic", this.settings.glassmorphism !== false);
++  }
++
++  async loadSettings(): Promise<void> {
++    const raw = ((await this.loadData()) ?? {}) as Partial<LaTeXSettings>;
++    this.settings = Object.assign({}, DEFAULT_SETTINGS, raw);
++  }
++
++  async saveSettings(): Promise<void> {
++    await safeSaveSettings(this, this.settings);
++    applyMathLiveKeyboardConfig(this.settings);
++  }
++}
++
++class LatexToolboxSettingTab extends PluginSettingTab {
++  constructor(app: App, private plugin: LatexToolboxPlugin) {
++    super(app, plugin);
++  }
++
++  display(): void {
++    const { containerEl } = this;
++    containerEl.empty();
++    new Setting(containerEl).setName("LaTeX Toolbox v5.5.0 — Virtual Keyboard & Editor").setHeading();
++
++    const companions = detectCompanionLatexPlugins(this.app);
++    containerEl.createEl("p", {
++      text: `Detected companions: LaTeX Suite (${companions.hasLatexSuite ? "Active" : "Off"}), Quick LaTeX (${companions.hasQuickLatex ? "Active" : "Off"}).`,
++    });
++
++    new Setting(containerEl)
++      .setName("Show numeric keyboard tab (123)")
++      .setDesc("Keep disabled if you prefer typing numbers on your physical keyboard. Re-enable anytime.")
++      .addToggle((t) =>
++        t.setValue(this.plugin.settings.showNumericKeyboard).onChange(async (v) => {
++          this.plugin.settings.showNumericKeyboard = v;
++          await this.plugin.saveSettings();
++        })
++      );
++
++    new Setting(containerEl)
++      .setName("Show alphabetic QWERTY keyboard tab (abc)")
++      .setDesc("Keep disabled to avoid duplicating your physical keyboard. Re-enable for touch/fallback input.")
++      .addToggle((t) =>
++        t.setValue(this.plugin.settings.showAlphabeticKeyboard).onChange(async (v) => {
++          this.plugin.settings.showAlphabeticKeyboard = v;
++          await this.plugin.saveSettings();
++        })
++      );
++
++    new Setting(containerEl)
++      .setName("Enable dedicated STEM keyboard tabs (che, ee, math, phy)")
++      .setDesc("Adds specialized virtual keyboard tabs for Chemistry, EEE, Mathematics, and Physics.")
++      .addToggle((t) =>
++        t.setValue(this.plugin.settings.enableStemKeyboardTabs).onChange(async (v) => {
++          this.plugin.settings.enableStemKeyboardTabs = v;
++          await this.plugin.saveSettings();
++        })
++      );
++
++    new Setting(containerEl)
++      .setName("Enable clickable slot highlighting in MathLive")
++      .setDesc("Outlines valid template input areas for direct mouse clicking and Tab jumping.")
++      .addToggle((t) =>
++        t.setValue(this.plugin.settings.enableSlotHighlighting).onChange(async (v) => {
++          this.plugin.settings.enableSlotHighlighting = v;
++          await this.plugin.saveSettings();
++        })
++      );
++
++    new Setting(containerEl)
++      .setName("Enable line numbering in multiline builder")
++      .setDesc("Displays 1., 2., 3. line numbers beside each derivation step.")
++      .addToggle((t) =>
++        t.setValue(this.plugin.settings.enableLineNumbering).onChange(async (v) => {
++          this.plugin.settings.enableLineNumbering = v;
++          await this.plugin.saveSettings();
++        })
++      );
++
++    new Setting(containerEl)
++      .setName("Auto-resize multiline MathLive fields")
++      .setDesc("Allows equation fields to expand vertically for multiline LaTeX.")
++      .addToggle((t) =>
++        t.setValue(this.plugin.settings.autoResizeEditor).onChange(async (v) => {
++          this.plugin.settings.autoResizeEditor = v;
++          await this.plugin.saveSettings();
++        })
++      );
++
++    new Setting(containerEl).setName("Computer Algebra System (CAS) & Engineering").setHeading();
++
++    new Setting(containerEl)
++      .setName("Enable Local CAS toolbar")
++      .setDesc("Enables Simplify, Expand, Factor, Solve, d/dx, Integration, Phasors, Units, and Matrices.")
++      .addToggle((t) =>
++        t.setValue(this.plugin.settings.enableLocalCAS).onChange(async (v) => {
++          this.plugin.settings.enableLocalCAS = v;
++          await this.plugin.saveSettings();
++        })
++      );
++
++    new Setting(containerEl)
++      .setName("CAS Backend Mode")
++      .setDesc("Use 'Hybrid Python/SymPy' on Desktop for full CAS (Laplace, Fourier, ODEs, Series, Eigenvalues).")
++      .addDropdown((d) =>
++        d
++          .addOption("js-only", "Bundled JS Only (Compute Engine + Nerdamer + Math.js)")
++          .addOption("hybrid-python", "Hybrid JS + Local Python/SymPy (Full Desktop CAS)")
++          .setValue(this.plugin.settings.casBackend)
++          .onChange(async (v) => {
++            this.plugin.settings.casBackend = v as LaTeXSettings["casBackend"];
++            await this.plugin.saveSettings();
++          })
++      );
++
++    new Setting(containerEl)
++      .setName("Python Executable Path")
++      .setDesc("Path or command for Python 3 with SymPy installed (e.g. python, python3, or full venv path).")
++      .addText((txt) =>
++        txt
++          .setPlaceholder("python")
++          .setValue(this.plugin.settings.pythonExecutable)
++          .onChange(async (v) => {
++            this.plugin.settings.pythonExecutable = v.trim() || "python";
++            await this.plugin.saveSettings();
++          })
++      )
++      .addButton((btn) =>
++        btn.setButtonText("Test SymPy").onClick(async () => {
++          const st = await checkSymPyStatus(this.plugin.settings.pythonExecutable);
++          if (st.available) {
++            new Notice(`SymPy ${st.sympyVersion} ready (Python ${st.pythonVersion}).`);
++          } else {
++            new Notice(`SymPy unavailable: ${st.error}`);
++          }
++        })
++      );
++
++    new Setting(containerEl)
++      .setName("EEE Imaginary Unit Notation")
++      .setDesc("Choose j (electrical engineering standard) or i (mathematics standard).")
++      .addDropdown((d) =>
++        d
++          .addOption("j", "j (EEE standard)")
++          .addOption("i", "i (Math standard)")
++          .setValue(this.plugin.settings.eeImaginaryUnit)
++          .onChange(async (v) => {
++            this.plugin.settings.eeImaginaryUnit = v as "j" | "i";
++            await this.plugin.saveSettings();
++          })
++      );
++
++    new Setting(containerEl)
++      .setName("Audio Rationale Vault Folder")
++      .setDesc("Folder where recorded voice-note rationales are saved.")
++      .addText((txt) =>
++        txt
++          .setPlaceholder("Attachments/MathAudio")
++          .setValue(this.plugin.settings.audioNoteFolder)
++          .onChange(async (v) => {
++            this.plugin.settings.audioNoteFolder = v.trim() || "Attachments/MathAudio";
++            await this.plugin.saveSettings();
++          })
++      );
++
++    new Setting(containerEl)
++      .setName("Defer inline shortcuts to Obsidian LaTeX Suite / Quick LaTeX")
++      .setDesc("Avoids hotkey conflicts when companion LaTeX plugins are active.")
++      .addToggle((t) =>
++        t.setValue(this.plugin.settings.deferToLatexSuite).onChange(async (v) => {
++          this.plugin.settings.deferToLatexSuite = v;
++          await this.plugin.saveSettings();
++        })
++      );
++  }
++}
+diff --git a/src/ui/scientific-calculator-modal.ts b/src/ui/scientific-calculator-modal.ts
+new file mode 100644
+index 0000000..dd7d2c8
+--- /dev/null
++++ b/src/ui/scientific-calculator-modal.ts
+@@ -0,0 +1,351 @@
++import { App, Modal, Notice } from "obsidian";
++import * as math from "mathjs";
++import { casPhasorConvert } from "../core/cas-engine";
++
++type CalcTab = "scientific" | "eee" | "basen" | "graph";
++
++export interface ScientificCalculatorCallbacks {
++  onInsertLatex?: (latex: string) => void;
++  onSendToBuilder?: (latex: string) => void;
++}
++
++export class ScientificCalculatorModal extends Modal {
++  private activeTab: CalcTab = "scientific";
++  private angleMode: "DEG" | "RAD" = "DEG";
++  private expr = "";
++  private lastAns = "0";
++  private history: Array<{ expr: string; result: string }> = [];
++
++  constructor(
++    app: App,
++    private imagUnit: "j" | "i" = "j",
++    private callbacks: ScientificCalculatorCallbacks = {}
++  ) {
++    super(app);
++  }
++
++  onOpen(): void {
++    const { contentEl } = this;
++    contentEl.empty();
++    contentEl.addClass("lt-calc-modal");
++    this.render();
++  }
++
++  private render(): void {
++    const { contentEl } = this;
++    contentEl.empty();
++
++    const header = contentEl.createDiv({ cls: "lt-cas-header" });
++    header.createEl("h2", { text: "STEM Scientific & Engineering Calculator" });
++
++    const tabs = contentEl.createDiv({ cls: "lt-calc-tabs" });
++    const tabDefs: Array<[CalcTab, string]> = [
++      ["scientific", "Scientific"],
++      ["eee", "EEE Phasors & Circuits"],
++      ["basen", "Base-N / Bitwise"],
++      ["graph", "2D Function Plotter"],
++    ];
++    for (const [id, label] of tabDefs) {
++      const btn = tabs.createEl("button", {
++        text: label,
++        cls: this.activeTab === id ? "lt-calc-tab-active" : "",
++      });
++      btn.onclick = () => {
++        this.activeTab = id;
++        this.render();
++      };
++    }
++
++    const body = contentEl.createDiv();
++    if (this.activeTab === "scientific") this.renderScientificTab(body);
++    else if (this.activeTab === "eee") this.renderEEETab(body);
++    else if (this.activeTab === "basen") this.renderBaseNTab(body);
++    else this.renderGraphTab(body);
++  }
++
++  private renderScientificTab(container: HTMLElement): void {
++    const display = container.createDiv({ cls: "lt-calc-display" });
++    const input = display.createEl("input", {
++      type: "text",
++      value: this.expr,
++      placeholder: "e.g. sin(30 deg)^2 + log10(1000) or 5 kOhm * 2 mA to V",
++    });
++    input.style.width = "100%";
++    const resultEl = display.createDiv({ cls: "lt-calc-result", text: `= ${this.lastAns}` });
++
++    const modeBar = container.createDiv({ cls: "lt-cas-toolbar" });
++    const angleBtn = modeBar.createEl("button", { text: `Angle: ${this.angleMode}` });
++    angleBtn.onclick = () => {
++      this.angleMode = this.angleMode === "DEG" ? "RAD" : "DEG";
++      angleBtn.setText(`Angle: ${this.angleMode}`);
++    };
++
++    const evaluate = () => {
++      this.expr = input.value.trim();
++      if (!this.expr) return;
++      try {
++        let evalSrc = this.expr.replace(/\bAns\b/g, `(${this.lastAns})`);
++        if (this.angleMode === "DEG") {
++          evalSrc = evalSrc.replace(/\b(sin|cos|tan)\(([^)]+)\)/g, "$1(($2) deg)");
++        }
++        const val = math.evaluate(evalSrc);
++        const formatted = math.format(val, { precision: 10 });
++        this.lastAns = formatted;
++        resultEl.setText(`= ${formatted}`);
++        this.history.unshift({ expr: this.expr, result: formatted });
++        if (this.history.length > 8) this.history.pop();
++      } catch (e) {
++        resultEl.setText(`Error: ${String(e)}`);
++      }
++    };
++
++    input.addEventListener("keydown", (ev) => {
++      if (ev.key === "Enter") {
++        ev.preventDefault();
++        evaluate();
++      }
++    });
++
++    const evalBtn = modeBar.createEl("button", { text: "= Evaluate", cls: "mod-cta" });
++    evalBtn.onclick = evaluate;
++
++    const sendBtn = modeBar.createEl("button", { text: "Send to Builder" });
++    sendBtn.onclick = () => {
++      this.callbacks.onSendToBuilder?.(this.lastAns);
++      this.close();
++    };
++
++    const insertBtn = modeBar.createEl("button", { text: "Insert Result" });
++    insertBtn.onclick = () => {
++      this.callbacks.onInsertLatex?.(this.lastAns);
++      this.close();
++    };
++
++    const keys = [
++      "sin(", "cos(", "tan(", "asin(", "acos(", "atan(",
++      "log10(", "log(", "exp(", "sqrt(", "^", "!",
++      "pi", "e", "i", "(", ")", "Ans",
++      "7", "8", "9", "/", " to ", "Clear",
++      "4", "5", "6", "*", "det(", "inv(",
++      "1", "2", "3", "-", "abs(", "arg(",
++      "0", ".", "e-3", "+", "e3", "=",
++    ];
++
++    const keypad = container.createDiv({ cls: "lt-calc-keypad" });
++    keypad.style.marginTop = "8px";
++    for (const k of keys) {
++      const b = keypad.createEl("button", { text: k });
++      b.onclick = () => {
++        if (k === "Clear") {
++          input.value = "";
++          this.expr = "";
++          resultEl.setText("= 0");
++        } else if (k === "=") {
++          evaluate();
++        } else {
++          input.value += k;
++          input.focus();
++        }
++      };
++    }
++  }
++
++  private renderEEETab(container: HTMLElement): void {
++    container.createEl("p", {
++      text: "Quick AC Phasor conversion, parallel impedance (Z1 || Z2), and RLC resonance.",
++    });
++
++    const phasorRow = container.createDiv({ cls: "lt-nl-bar" });
++    const phasorIn = phasorRow.createEl("input", {
++      type: "text",
++      placeholder: `Rectangular (3 + 4${this.imagUnit}) or Polar (5∠53.13)`,
++      cls: "lt-nl-input",
++    });
++    const phasorOut = container.createDiv({ cls: "lt-cas-output" });
++    phasorRow.createEl("button", { text: "Convert Phasor", cls: "mod-cta" }).onclick = () => {
++      const res = casPhasorConvert(phasorIn.value, this.imagUnit);
++      phasorOut.setText(res.ok ? `Result: ${res.latex}` : `Error: ${res.error}`);
++    };
++
++    const parRow = container.createDiv({ cls: "lt-nl-bar" });
++    const z1In = parRow.createEl("input", { type: "text", placeholder: "Z1 (e.g. 100 or 10+5i)" });
++    const z2In = parRow.createEl("input", { type: "text", placeholder: "Z2 (e.g. 200 or 20-10i)" });
++    const parOut = container.createDiv({ cls: "lt-cas-output" });
++    parRow.createEl("button", { text: "Z1 || Z2" }).onclick = () => {
++      try {
++        const a = z1In.value.replace(/j/g, "i");
++        const b = z2In.value.replace(/j/g, "i");
++        const val = math.evaluate(`((${a}) * (${b})) / ((${a}) + (${b}))`);
++        parOut.setText(`Z_eq = ${math.format(val, { precision: 6 })}`);
++      } catch (e) {
++        parOut.setText(`Error: ${String(e)}`);
++      }
++    };
++
++    const rlcRow = container.createDiv({ cls: "lt-nl-bar" });
++    const lIn = rlcRow.createEl("input", { type: "text", placeholder: "L in Henry (e.g. 10e-3)" });
++    const cIn = rlcRow.createEl("input", { type: "text", placeholder: "C in Farad (e.g. 100e-6)" });
++    const rlcOut = container.createDiv({ cls: "lt-cas-output" });
++    rlcRow.createEl("button", { text: "Resonant f₀" }).onclick = () => {
++      const L = parseFloat(lIn.value);
++      const C = parseFloat(cIn.value);
++      if (!Number.isFinite(L) || !Number.isFinite(C) || L <= 0 || C <= 0) {
++        rlcOut.setText("Enter positive numeric L and C values.");
++        return;
++      }
++      const f0 = 1 / (2 * Math.PI * Math.sqrt(L * C));
++      const w0 = 2 * Math.PI * f0;
++      rlcOut.setText(`f₀ = ${f0.toFixed(4)} Hz   |   ω₀ = ${w0.toFixed(4)} rad/s`);
++    };
++  }
++
++  private renderBaseNTab(container: HTMLElement): void {
++    const row = container.createDiv({ cls: "lt-nl-bar" });
++    const decIn = row.createEl("input", { type: "text", placeholder: "Enter integer (e.g. 255 or 0xFF or 0b1010)", cls: "lt-nl-input" });
++    const out = container.createDiv({ cls: "lt-calc-display" });
++    out.setText("DEC: 0 | HEX: 0x0 | BIN: 0b0 | OCT: 0o0");
++
++    const update = () => {
++      const raw = decIn.value.trim();
++      if (!raw) return;
++      const n = Number(raw);
++      if (!Number.isInteger(n)) {
++        out.setText("Enter a valid integer (prefix 0x for hex, 0b for binary, 0o for octal).");
++        return;
++      }
++      const u = n >>> 0;
++      out.setText(
++        `DEC: ${n}  |  HEX: 0x${u.toString(16).toUpperCase()}  |  BIN: 0b${u.toString(2)}  |  OCT: 0o${u.toString(8)}`
++      );
++    };
++    decIn.addEventListener("input", update);
++  }
++
++  private renderGraphTab(container: HTMLElement): void {
++    const controls = container.createDiv({ cls: "lt-nl-bar" });
++    const fnIn = controls.createEl("input", {
++      type: "text",
++      value: "sin(x) * exp(-0.1 * x)",
++      placeholder: "f(x) e.g. sin(x) + 0.5*cos(2*x)",
++      cls: "lt-nl-input",
++    });
++    const minIn = controls.createEl("input", { type: "text", value: "-10", cls: "lt-cas-var-input" });
++    const maxIn = controls.createEl("input", { type: "text", value: "10", cls: "lt-cas-var-input" });
++    const plotBtn = controls.createEl("button", { text: "Plot", cls: "mod-cta" });
++
++    const canvas = container.createEl("canvas", { cls: "lt-calc-canvas" });
++    canvas.width = 680;
++    canvas.height = 280;
++
++    const draw = () => {
++      const ctx = canvas.getContext("2d");
++      if (!ctx) return;
++      const xmin = parseFloat(minIn.value) || -10;
++      const xmax = parseFloat(maxIn.value) || 10;
++      if (xmax <= xmin) {
++        new Notice("xmax must be greater than xmin.");
++        return;
++      }
++
++      let compiled: math.EvalFunction;
++      try {
++        compiled = math.compile(fnIn.value);
++      } catch (e) {
++        new Notice(`Invalid function: ${String(e)}`);
++        return;
++      }
++
++      const samples = 400;
++      const pts: Array<{ x: number; y: number }> = [];
++      let ymin = Infinity;
++      let ymax = -Infinity;
++      for (let i = 0; i <= samples; i++) {
++        const x = xmin + (i / samples) * (xmax - xmin);
++        try {
++          const y = Number(compiled.evaluate({ x }));
++          if (Number.isFinite(y) && Math.abs(y) < 1e6) {
++            pts.push({ x, y });
++            if (y < ymin) ymin = y;
++            if (y > ymax) ymax = y;
++          } else {
++            pts.push({ x, y: NaN });
++          }
++        } catch {
++          pts.push({ x, y: NaN });
++        }
++      }
++      if (!Number.isFinite(ymin) || !Number.isFinite(ymax) || ymin === ymax) {
++        ymin = -5;
++        ymax = 5;
++      }
++      const pad = (ymax - ymin) * 0.12;
++      ymin -= pad;
++      ymax += pad;
++
++      const W = canvas.width;
++      const H = canvas.height;
++      ctx.clearRect(0, 0, W, H);
++
++      const toPx = (x: number) => ((x - xmin) / (xmax - xmin)) * W;
++      const toPy = (y: number) => H - ((y - ymin) / (ymax - ymin)) * H;
++
++      // Grid & axes
++      ctx.strokeStyle = "rgba(128,128,128,0.25)";
++      ctx.lineWidth = 1;
++      for (let g = 1; g < 10; g++) {
++        ctx.beginPath();
++        ctx.moveTo((W * g) / 10, 0);
++        ctx.lineTo((W * g) / 10, H);
++        ctx.stroke();
++        ctx.beginPath();
++        ctx.moveTo(0, (H * g) / 10);
++        ctx.lineTo(W, (H * g) / 10);
++        ctx.stroke();
++      }
++      ctx.strokeStyle = "rgba(160,160,160,0.7)";
++      ctx.lineWidth = 1.5;
++      if (xmin <= 0 && xmax >= 0) {
++        const x0 = toPx(0);
++        ctx.beginPath();
++        ctx.moveTo(x0, 0);
++        ctx.lineTo(x0, H);
++        ctx.stroke();
++      }
++      if (ymin <= 0 && ymax >= 0) {
++        const y0 = toPy(0);
++        ctx.beginPath();
++        ctx.moveTo(0, y0);
++        ctx.lineTo(W, y0);
++        ctx.stroke();
++      }
++
++      // Curve
++      ctx.strokeStyle = "#14b8a6";
++      ctx.lineWidth = 2.2;
++      ctx.beginPath();
++      let started = false;
++      for (const p of pts) {
++        if (!Number.isFinite(p.y)) {
++          started = false;
++          continue;
++        }
++        const px = toPx(p.x);
++        const py = toPy(p.y);
++        if (!started) {
++          ctx.moveTo(px, py);
++          started = true;
++        } else {
++          ctx.lineTo(px, py);
++        }
++      }
++      ctx.stroke();
++    };
++
++    plotBtn.onclick = draw;
++    draw();
++  }
++
++  onClose(): void {
++    this.contentEl.empty();
++  }
++}
+diff --git a/versions.json b/versions.json
+index 5b85bca..9b78a7c 100644
+--- a/versions.json
++++ b/versions.json
+@@ -1,10 +1,11 @@
+-{
+-  "1.1.0": "1.5.0",
+-  "1.2.0": "1.5.0",
+-  "1.3.0": "1.5.0",
+-  "1.4.0": "1.5.0",
+-  "1.5.0": "1.5.0",
+-  "1.6.0": "1.5.0",
+-  "1.8.0": "1.5.0",
+-  "5.0.0": "0.15.0"
+-}
++{
++  "1.1.0": "1.5.0",
++  "1.2.0": "1.5.0",
++  "1.3.0": "1.5.0",
++  "1.4.0": "1.5.0",
++  "1.5.0": "1.5.0",
++  "1.6.0": "1.5.0",
++  "1.8.0": "1.5.0",
++  "5.0.0": "0.15.0",
++  "5.5.0": "0.15.0"
++}

@@ -1,5 +1,7 @@
 import "mathlive";
 import { MathfieldElement } from "mathlive";
+import type { LaTeXSettings } from "../types";
+import { applyMathLiveKeyboardConfig } from "./stem-keyboards";
 
 let mathLiveConfigured = false;
 function configureMathLiveForObsidian(): void {
@@ -12,7 +14,7 @@ function configureMathLiveForObsidian(): void {
 /**
  * Converts template slot syntax (e.g. ${1:numerator} or {#slot}) into
  * MathLive native interactive placeholders \placeholder[slot_1]{numerator}
- * so slot-highlighting and Tab-jumping work seamlessly inside <math-field>.
+ * so slot-highlighting, mouse click-to-select, and Tab-jumping work seamlessly.
  */
 export function templateToMathLivePlaceholders(template: string): string {
   let idx = 0;
@@ -29,10 +31,40 @@ export function stripMathLivePlaceholders(latex: string): string {
   return latex.replace(/\\placeholder(?:\[[^\]]*\])?\{([^}]*)\}/g, "$1");
 }
 
+/**
+ * Fast STEM physical-keyboard inline shortcuts (active when not deferred to LaTeX Suite).
+ */
+export const STEM_INLINE_SHORTCUTS: Record<string, string> = {
+  dint: "\\int_{\\placeholder[lower]{0}}^{\\placeholder[upper]{\\infty}} \\placeholder[expr]{} \\, dx",
+  iint: "\\iint_{\\placeholder[dom]{D}} \\placeholder[expr]{} \\, dA",
+  oint: "\\oint_{\\placeholder[path]{C}} \\placeholder[expr]{} \\, d\\mathbf{r}",
+  pdiff: "\\frac{\\partial \\placeholder[num]{}}{\\partial \\placeholder[den]{}}",
+  ddx: "\\frac{d}{dx}\\left(\\placeholder[expr]{}\\right)",
+  ddt: "\\frac{d}{dt}\\left(\\placeholder[expr]{}\\right)",
+  lim: "\\lim_{\\placeholder[var]{x} \\to \\placeholder[val]{0}} \\placeholder[expr]{}",
+  ohm: "\\Omega",
+  ang: "\\angle ",
+  jw: "j\\omega",
+  par: "\\parallel ",
+  lap: "\\mathcal{L}\\left\\{\\placeholder[expr]{}\\right\\}",
+  ilap: "\\mathcal{L}^{-1}\\left\\{\\placeholder[expr]{}\\right\\}",
+  ce: "\\ce{\\placeholder[chem]{}}",
+  eqarr: "\\rightleftharpoons ",
+  rxn: "\\rightarrow ",
+  deg: "^{\\circ}",
+  hbar: "\\hbar",
+  eps0: "\\varepsilon_0",
+  mu0: "\\mu_0",
+};
+
 export interface MathLiveSlotHostOptions {
   initialLatex?: string;
   enableSlotHighlighting?: boolean;
+  settings?: LaTeXSettings;
+  autoResize?: boolean;
   onChange?: (cleanLatex: string, rawLatex: string) => void;
+  onEnter?: () => void;
+  onBackspaceEmpty?: () => void;
 }
 
 export function mountMathLiveField(
@@ -45,14 +77,60 @@ export function mountMathLiveField(
   if (opts.enableSlotHighlighting !== false) {
     mf.classList.add("lt-slot-highlighting-enabled");
   }
+  if (opts.autoResize !== false) {
+    mf.classList.add("lt-mathlive-autoresize");
+  }
   mf.setAttribute("smart-fence", "true");
   mf.setAttribute("smart-superscript", "true");
+
+  // Register STEM physical-keyboard inline shortcuts unless user defers to LaTeX Suite
+  if (!opts.settings?.deferToLatexSuite) {
+    const existing = (mf.inlineShortcuts ?? {}) as Record<string, string>;
+    mf.inlineShortcuts = { ...existing, ...STEM_INLINE_SHORTCUTS };
+  }
+
+  // Apply customized virtual keyboard layouts (hides 123/abc if toggled off, adds che/ee/math/phy)
+  const syncKeyboard = () => {
+    if (opts.settings) {
+      applyMathLiveKeyboardConfig(opts.settings);
+    }
+  };
+  mf.addEventListener("focus", syncKeyboard);
+  mf.addEventListener("focusin", syncKeyboard);
 
   if (opts.initialLatex) {
     mf.value = opts.enableSlotHighlighting !== false
       ? templateToMathLivePlaceholders(opts.initialLatex)
       : opts.initialLatex;
   }
+
+  // Direct mouse-click selection on highlighted placeholder slots
+  mf.addEventListener("pointerup", (ev: PointerEvent) => {
+    const target = ev.composedPath?.()[0] as HTMLElement | undefined;
+    if (!target) return;
+    const promptEl = target.closest?.("[data-atom-id], .ML__prompt, .ML__placeholder");
+    if (promptEl) {
+      // Ensure the mathfield gets focus and selects the placeholder immediately for typing
+      mf.focus();
+    }
+  });
+
+  // Tab / Shift+Tab slot jumping + Enter for new derivation line + Backspace on empty line
+  mf.addEventListener("keydown", (ev: KeyboardEvent) => {
+    if (ev.key === "Tab") {
+      const hasPrompt = mf.value.includes("\\placeholder");
+      if (hasPrompt) {
+        ev.preventDefault();
+        mf.executeCommand(ev.shiftKey ? "moveToPreviousPlaceholder" : "moveToNextPlaceholder");
+      }
+    } else if (ev.key === "Enter" && !ev.shiftKey && opts.onEnter) {
+      ev.preventDefault();
+      opts.onEnter();
+    } else if (ev.key === "Backspace" && !mf.value.trim() && opts.onBackspaceEmpty) {
+      ev.preventDefault();
+      opts.onBackspaceEmpty();
+    }
+  });
 
   mf.addEventListener("input", () => {
     const raw = mf.value;

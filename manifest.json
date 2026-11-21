@@ -1,7 +1,7 @@
 {
   "id": "latex-toolbox",
   "name": "LaTeX Toolbox",
-  "version": "5.0.0",
+  "version": "5.5.0",
   "minAppVersion": "0.15.0",
   "description": "STEM LaTeX Companion with visual builder, presets, shortcuts, and AI delimiter fixer.",
   "author": "Mostakim2005",

@@ -27,9 +27,10 @@ flowchart TB
 
 | Layer | Tool / Library | Plain-English Reason Why |
 | --- | --- | --- |
-| Host / UI | Obsidian Plugin API | Deep cursor and selection insertion into active Markdown editor. |
+| Host / UI | Obsidian Plugin API & MathLive | Deep cursor and selection insertion into active Markdown editor with high-contrast virtual keyboards and slots. |
 | Language | TypeScript 5+ | Strict typings for AST and taxonomy structures. |
-| Presets | `data.json` (480KB JSON) | Shipped directly inside the app to eliminate external network requirements. |
+| Presets | `data.json` & `stem-formula-db.json` | Shipped directly inside the app to eliminate external network requirements. |
+| CAS Engine | CortexJS + Nerdamer + Math.js + SymPy | Tier 1 local offline symbolic math with optional Tier 2 Python/SymPy desktop bridge. |
 
 ## 3. Core Subsystems & Engineering Tricks
 

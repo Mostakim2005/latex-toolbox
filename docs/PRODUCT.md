@@ -20,11 +20,25 @@
   * `src/main.ts` -> `normalizeLatexDelimiters`
 
 ### [FEATURE: Curriculum-Formula-Presets] | Aliases: physics equations, chemistry symbols, math presets
-> **1-Line Summary:** Bundled library of 480+ KB formula definitions in `data.json` spanning high school, college, and university STEM.
+> **1-Line Summary:** Bundled library of 480+ KB formula definitions in `data.json` and read-only preloaded STEM curriculum database in `src/data/stem-formula-db.json` spanning high school, college, and university STEM.
 * **Code Anchors (Grep Targets):**
   * `src/taxonomy.ts` -> `loadFormulaTaxonomy`
+  * `src/core/formula-db.ts` -> `FormulaDatabase`
 
-## 3. Planned Features & App-Merge Wishlist
+### [FEATURE: Multi-Tier-CAS-And-SymPy-Bridge] | Aliases: cas engine, compute engine, mathjs, sympy bridge
+> **1-Line Summary:** Tier 1 offline CAS (simplify, expand, factor, solve, derivative, integral, limits, partial fractions, complex phasors, SI units, matrix operations) with optional Tier 2 Python/SymPy desktop bridge.
+* **Code Anchors (Grep Targets):**
+  * `src/core/cas-engine.ts` -> `evaluateCAS`
+  * `src/core/sympy-bridge.ts` -> `runSymPyOperation`
 
-### [WISHLIST: Symbolic-CAS-Integration] | Aliases: mathjs solver, sympy bridge
-> **1-Line Summary:** Lightweight local symbolic step-by-step solver integration directly in the equation view.
+### [FEATURE: Scientific-Calculator-And-Plotter] | Aliases: scientific calculator, eee phasor converter, 2d plotter
+> **1-Line Summary:** Multi-mode scientific & engineering calculator modal with real-time AC phasor conversions, Base-N/bitwise tools, and 2D canvas function plotting.
+* **Code Anchors (Grep Targets):**
+  * `src/ui/scientific-calculator-modal.ts` -> `ScientificCalculatorModal`
+
+### [FEATURE: Natural-Language-And-Chemistry-Balancer] | Aliases: wolfram parser, natural language math, mhchem balancer
+> **1-Line Summary:** Natural language math parsing (Wolfram/MATLAB/Symbolab style) and rational nullspace chemical equation balancing emitting MathJax `\ce{}`.
+* **Code Anchors (Grep Targets):**
+  * `src/core/natural-language.ts` -> `parseNaturalLanguage`
+  * `src/core/chem-engine.ts` -> `balanceChemicalEquation`
+  * `src/core/derivation-renderer.ts` -> `DerivationRenderer`

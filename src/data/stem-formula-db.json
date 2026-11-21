@@ -1,0 +1,452 @@
+[
+  {
+    "id": "phy-kin-1",
+    "name": "Uniform Acceleration (Displacement)",
+    "branch": "physics",
+    "level": "grade-11-12",
+    "topic": "Kinematics",
+    "latex": "s = ${1:u}t + \\frac{1}{2}${2:a}t^2",
+    "definition": "Displacement of an object moving with constant acceleration a from initial velocity u over time t.",
+    "variables": [
+      { "symbol": "s", "meaning": "Displacement", "unit": "m" },
+      { "symbol": "u", "meaning": "Initial velocity", "unit": "m/s" },
+      { "symbol": "a", "meaning": "Constant acceleration", "unit": "m/s^2" },
+      { "symbol": "t", "meaning": "Time elapsed", "unit": "s" }
+    ],
+    "tags": ["kinematics", "motion", "suvat"]
+  },
+  {
+    "id": "phy-kin-2",
+    "name": "Velocity-Displacement Equation",
+    "branch": "physics",
+    "level": "grade-11-12",
+    "topic": "Kinematics",
+    "latex": "v^2 = ${1:u}^2 + 2${2:a}${3:s}",
+    "definition": "Relates final velocity, initial velocity, acceleration, and displacement without time.",
+    "variables": [
+      { "symbol": "v", "meaning": "Final velocity", "unit": "m/s" },
+      { "symbol": "u", "meaning": "Initial velocity", "unit": "m/s" },
+      { "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2" },
+      { "symbol": "s", "meaning": "Displacement", "unit": "m" }
+    ],
+    "tags": ["kinematics", "suvat"]
+  },
+  {
+    "id": "phy-dyn-1",
+    "name": "Newton's Second Law",
+    "branch": "physics",
+    "level": "grade-11-12",
+    "topic": "Dynamics",
+    "latex": "\\sum \\vec{F} = ${1:m}\\vec{a} = \\frac{d\\vec{p}}{dt}",
+    "definition": "Net force equals mass times acceleration, or the time rate of change of linear momentum.",
+    "variables": [
+      { "symbol": "F", "meaning": "Net force", "unit": "N" },
+      { "symbol": "m", "meaning": "Mass", "unit": "kg" },
+      { "symbol": "a", "meaning": "Acceleration", "unit": "m/s^2" },
+      { "symbol": "p", "meaning": "Momentum", "unit": "kg·m/s" }
+    ],
+    "tags": ["newton", "force", "momentum"]
+  },
+  {
+    "id": "phy-grav-1",
+    "name": "Universal Law of Gravitation",
+    "branch": "physics",
+    "level": "grade-11-12",
+    "topic": "Gravitation",
+    "latex": "F = G\\frac{${1:m_1}${2:m_2}}{${3:r}^2}",
+    "definition": "Gravitational attraction between two point masses separated by distance r.",
+    "variables": [
+      { "symbol": "G", "meaning": "Gravitational constant (6.674e-11)", "unit": "N·m^2/kg^2" },
+      { "symbol": "m_1, m_2", "meaning": "Masses", "unit": "kg" },
+      { "symbol": "r", "meaning": "Center-to-center distance", "unit": "m" }
+    ],
+    "tags": ["gravity", "newton"]
+  },
+  {
+    "id": "phy-shm-1",
+    "name": "Simple Harmonic Motion (SHM)",
+    "branch": "physics",
+    "level": "grade-11-12",
+    "topic": "Oscillations & Waves",
+    "latex": "x(t) = ${1:A}\\cos(${2:\\omega} t + ${3:\\phi}), \\quad \\omega = \\sqrt{\\frac{k}{m}}",
+    "definition": "Sinusoidal displacement of a harmonic oscillator with amplitude A, angular frequency ω, and phase φ.",
+    "variables": [
+      { "symbol": "A", "meaning": "Amplitude", "unit": "m" },
+      { "symbol": "\\omega", "meaning": "Angular frequency", "unit": "rad/s" },
+      { "symbol": "\\phi", "meaning": "Phase constant", "unit": "rad" }
+    ],
+    "tags": ["shm", "oscillation", "spring"]
+  },
+  {
+    "id": "phy-thermo-1",
+    "name": "First Law of Thermodynamics",
+    "branch": "physics",
+    "level": "grade-11-12",
+    "topic": "Thermodynamics",
+    "latex": "\\Delta U = ${1:Q} - ${2:W}",
+    "definition": "Change in internal energy equals heat added to the system minus work done by the system.",
+    "variables": [
+      { "symbol": "\\Delta U", "meaning": "Internal energy change", "unit": "J" },
+      { "symbol": "Q", "meaning": "Heat added", "unit": "J" },
+      { "symbol": "W", "meaning": "Work done by system", "unit": "J" }
+    ],
+    "tags": ["thermodynamics", "energy", "heat"]
+  },
+  {
+    "id": "phy-em-1",
+    "name": "Coulomb's Law",
+    "branch": "physics",
+    "level": "grade-11-12",
+    "topic": "Electrostatics",
+    "latex": "F = \\frac{1}{4\\pi\\varepsilon_0}\\frac{${1:q_1}${2:q_2}}{${3:r}^2}",
+    "definition": "Electrostatic force between two stationary point charges in vacuum.",
+    "variables": [
+      { "symbol": "\\varepsilon_0", "meaning": "Vacuum permittivity (8.854e-12)", "unit": "F/m" },
+      { "symbol": "q_1, q_2", "meaning": "Charges", "unit": "C" },
+      { "symbol": "r", "meaning": "Separation distance", "unit": "m" }
+    ],
+    "tags": ["electrostatics", "coulomb", "charge"]
+  },
+  {
+    "id": "phy-em-2",
+    "name": "Lorentz Force Law",
+    "branch": "physics",
+    "level": "grade-11-12",
+    "topic": "Magnetism",
+    "latex": "\\vec{F} = ${1:q}\\left(\\vec{E} + \\vec{v} \\times \\vec{B}\\right)",
+    "definition": "Total electromagnetic force on a charge q moving with velocity v in electric field E and magnetic field B.",
+    "variables": [
+      { "symbol": "q", "meaning": "Electric charge", "unit": "C" },
+      { "symbol": "\\vec{E}", "meaning": "Electric field", "unit": "V/m" },
+      { "symbol": "\\vec{B}", "meaning": "Magnetic flux density", "unit": "T" }
+    ],
+    "tags": ["lorentz", "magnetism", "em"]
+  },
+  {
+    "id": "phy-opt-1",
+    "name": "Snell's Law & Thin Lens Equation",
+    "branch": "physics",
+    "level": "grade-11-12",
+    "topic": "Optics",
+    "latex": "${1:n_1}\\sin\\theta_1 = ${2:n_2}\\sin\\theta_2, \\quad \\frac{1}{f} = \\frac{1}{d_o} + \\frac{1}{d_i}",
+    "definition": "Governs refraction at an interface and image formation for thin spherical lenses.",
+    "tags": ["optics", "snell", "lens"]
+  },
+  {
+    "id": "phy-mod-1",
+    "name": "Photoelectric Effect & de Broglie Wavelength",
+    "branch": "physics",
+    "level": "grade-11-12",
+    "topic": "Modern Physics",
+    "latex": "K_{\\max} = h${1:\\nu} - ${2:\\phi_0}, \\quad \\lambda = \\frac{h}{${3:p}}",
+    "definition": "Maximum kinetic energy of emitted photoelectrons and matter-wave wavelength.",
+    "tags": ["quantum", "photoelectric", "debroglie"]
+  },
+  {
+    "id": "chem-gas-1",
+    "name": "Ideal Gas Law",
+    "branch": "chemistry",
+    "level": "grade-11-12",
+    "topic": "States of Matter",
+    "latex": "${1:P}${2:V} = ${3:n}RT",
+    "definition": "Equation of state for an ideal gas relating pressure P, volume V, moles n, and temperature T.",
+    "variables": [
+      { "symbol": "R", "meaning": "Gas constant (8.314 J/(mol·K) or 0.08206 L·atm/(mol·K))" }
+    ],
+    "tags": ["gas", "ideal", "stoichiometry"]
+  },
+  {
+    "id": "chem-thermo-1",
+    "name": "Gibbs Free Energy",
+    "branch": "chemistry",
+    "level": "grade-11-12",
+    "topic": "Chemical Thermodynamics",
+    "latex": "\\Delta G^{\\circ} = ${1:\\Delta H^{\\circ}} - ${2:T}\\Delta S^{\\circ} = -RT\\ln K",
+    "definition": "Determines reaction spontaneity (ΔG < 0 spontaneous) and links to the equilibrium constant K.",
+    "tags": ["gibbs", "enthalpy", "entropy", "equilibrium"]
+  },
+  {
+    "id": "chem-kin-1",
+    "name": "Arrhenius Rate Equation",
+    "branch": "chemistry",
+    "level": "grade-11-12",
+    "topic": "Chemical Kinetics",
+    "latex": "k = ${1:A}\\exp\\left(-\\frac{${2:E_a}}{R${3:T}}\\right)",
+    "definition": "Temperature dependence of a chemical reaction rate constant k with activation energy Ea.",
+    "tags": ["kinetics", "arrhenius", "rate"]
+  },
+  {
+    "id": "chem-acid-1",
+    "name": "Henderson-Hasselbalch Equation",
+    "branch": "chemistry",
+    "level": "grade-11-12",
+    "topic": "Acid-Base Equilibrium",
+    "latex": "\\text{pH} = \\text{p}K_a + \\log_{10}\\left(\\frac{[${1:\\text{A}^-}]}{[${2:\\text{HA}}]}\\right)",
+    "definition": "Estimates the pH of a weak acid / conjugate base buffer solution.",
+    "tags": ["ph", "buffer", "acid-base"]
+  },
+  {
+    "id": "chem-elec-1",
+    "name": "Nernst Equation",
+    "branch": "chemistry",
+    "level": "grade-11-12",
+    "topic": "Electrochemistry",
+    "latex": "E_{\\text{cell}} = E^{\\circ}_{\\text{cell}} - \\frac{RT}{${1:n}F}\\ln ${2:Q}",
+    "definition": "Calculates non-standard electrochemical cell potential from reaction quotient Q and electrons transferred n.",
+    "tags": ["nernst", "electrochemistry", "redox"]
+  },
+  {
+    "id": "chem-rxn-1",
+    "name": "Acid-Base Neutralization (mhchem)",
+    "branch": "chemistry",
+    "level": "grade-11-12",
+    "topic": "Stoichiometry",
+    "latex": "\\ce{${1:H2SO4} + ${2:2NaOH} -> ${3:Na2SO4} + ${4:2H2O}}",
+    "definition": "Template for balanced mhchem reactions with automatic subscripts and arrows.",
+    "tags": ["mhchem", "reaction", "neutralization"]
+  },
+  {
+    "id": "math-alg-1",
+    "name": "Quadratic Formula",
+    "branch": "math",
+    "level": "grade-11-12",
+    "topic": "Algebra",
+    "latex": "x = \\frac{-${1:b} \\pm \\sqrt{${1:b}^2 - 4${2:a}${3:c}}}{2${2:a}}",
+    "definition": "Closed-form roots of the quadratic equation ax² + bx + c = 0.",
+    "tags": ["quadratic", "roots", "algebra"]
+  },
+  {
+    "id": "math-calc-1",
+    "name": "Integration by Parts",
+    "branch": "math",
+    "level": "grade-11-12",
+    "topic": "Calculus",
+    "latex": "\\int ${1:u}\\,d${2:v} = ${1:u}${2:v} - \\int ${2:v}\\,d${1:u}",
+    "definition": "Transforms the integral of a product of functions into a simpler integral.",
+    "tags": ["integral", "calculus", "parts"]
+  },
+  {
+    "id": "math-calc-2",
+    "name": "Taylor Series Expansion",
+    "branch": "math",
+    "level": "grade-11-12",
+    "topic": "Calculus",
+    "latex": "f(x) = \\sum_{n=0}^{\\infty} \\frac{f^{(n)}(${1:a})}{n!}(x - ${1:a})^n",
+    "definition": "Power series representation of an infinitely differentiable function around x = a.",
+    "tags": ["taylor", "maclaurin", "series"]
+  },
+  {
+    "id": "math-ode-1",
+    "name": "First-Order Linear ODE (Integrating Factor)",
+    "branch": "math",
+    "level": "grade-11-12",
+    "topic": "Differential Equations",
+    "latex": "\\frac{dy}{dx} + ${1:P(x)}y = ${2:Q(x)}, \\quad \\mu(x) = e^{\\int ${1:P(x)}\\,dx}",
+    "definition": "Standard integrating factor solution for first-order linear differential equations.",
+    "tags": ["ode", "differential", "integrating-factor"]
+  },
+  {
+    "id": "math-prob-1",
+    "name": "Bayes' Theorem",
+    "branch": "math",
+    "level": "grade-11-12",
+    "topic": "Probability & Statistics",
+    "latex": "P(${1:A}\\mid ${2:B}) = \\frac{P(${2:B}\\mid ${1:A})P(${1:A})}{P(${2:B})}",
+    "definition": "Updates conditional probability of event A given observed evidence B.",
+    "tags": ["bayes", "probability", "statistics"]
+  },
+  {
+    "id": "eee-ckt-1",
+    "name": "Ohm's Law & Complex Impedance",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "Circuit Analysis",
+    "latex": "\\mathbf{V} = \\mathbf{I}\\mathbf{Z}, \\quad \\mathbf{Z}_{\\text{RLC}} = ${1:R} + j\\left(\\omega ${2:L} - \\frac{1}{\\omega ${3:C}}\\right)",
+    "definition": "Phasor Ohm's Law and series RLC complex impedance in sinusoidal steady state.",
+    "variables": [
+      { "symbol": "\\mathbf{Z}", "meaning": "Complex impedance", "unit": "Ω" },
+      { "symbol": "\\omega", "meaning": "Angular frequency (2πf)", "unit": "rad/s" }
+    ],
+    "tags": ["ohm", "impedance", "rlc", "phasor"]
+  },
+  {
+    "id": "eee-ckt-2",
+    "name": "Inductor & Capacitor V-I Relations",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "Circuit Analysis",
+    "latex": "v_L(t) = ${1:L}\\frac{di_L}{dt}, \\qquad i_C(t) = ${2:C}\\frac{dv_C}{dt}",
+    "definition": "Fundamental time-domain differential equations for ideal inductors and capacitors.",
+    "tags": ["inductor", "capacitor", "transient"]
+  },
+  {
+    "id": "eee-pwr-1",
+    "name": "AC Complex Power Triangle",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "AC Power & 3-Phase",
+    "latex": "\\mathbf{S} = \\mathbf{V}_{\\text{rms}}\\mathbf{I}_{\\text{rms}}^* = ${1:P} + j${2:Q}, \\quad \\text{pf} = \\cos\\theta",
+    "definition": "Relates apparent power S (VA), real power P (W), reactive power Q (VAR), and power factor.",
+    "tags": ["power", "ac", "phasor", "pf"]
+  },
+  {
+    "id": "eee-pwr-2",
+    "name": "Balanced Three-Phase Power",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "AC Power & 3-Phase",
+    "latex": "P_{3\\phi} = \\sqrt{3}\\,${1:V_L}${2:I_L}\\cos${3:\\theta}",
+    "definition": "Total real power delivered in a balanced three-phase Y or Δ system.",
+    "tags": ["three-phase", "power", "machines"]
+  },
+  {
+    "id": "eee-res-1",
+    "name": "RLC Resonant Frequency & Quality Factor",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "Filters & Resonance",
+    "latex": "f_0 = \\frac{1}{2\\pi\\sqrt{${1:L}${2:C}}}, \\quad Q = \\frac{1}{${3:R}}\\sqrt{\\frac{${1:L}}{${2:C}}}",
+    "definition": "Resonant frequency f0 where inductive and capacitive reactances cancel, plus series Q-factor.",
+    "tags": ["resonance", "filter", "rlc", "q-factor"]
+  },
+  {
+    "id": "eee-semi-1",
+    "name": "MOSFET Saturation Drain Current",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "Electronics",
+    "latex": "I_D = \\frac{1}{2}\\mu_n C_{ox}\\frac{${1:W}}{${2:L}}\\left(V_{GS} - V_{th}\\right)^2\\left(1 + \\lambda V_{DS}\\right)",
+    "definition": "Square-law drain current model for an n-channel MOSFET in saturation with channel-length modulation.",
+    "tags": ["mosfet", "electronics", "transistor"]
+  },
+  {
+    "id": "eee-semi-2",
+    "name": "Shockley Ideal Diode Equation",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "Electronics",
+    "latex": "I_D = ${1:I_S}\\left(e^{\\frac{V_D}{${2:n}V_T}} - 1\\right)",
+    "definition": "Exponential I-V characteristic of a p-n junction diode (thermal voltage VT ≈ 25.85 mV at 300 K).",
+    "tags": ["diode", "shockley", "semiconductor"]
+  },
+  {
+    "id": "eee-opamp-1",
+    "name": "Op-Amp Inverting & Non-Inverting Gain",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "Electronics",
+    "latex": "A_{v,\\text{inv}} = -\\frac{${1:R_f}}{${2:R_{\\text{in}}}}, \\qquad A_{v,\\text{non-inv}} = 1 + \\frac{${1:R_f}}{${2:R_1}}",
+    "definition": "Closed-loop voltage gains for ideal inverting and non-inverting operational amplifier topologies.",
+    "tags": ["opamp", "amplifier", "gain"]
+  },
+  {
+    "id": "eee-sig-1",
+    "name": "Unilateral Laplace Transform",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "Signals & Systems",
+    "latex": "F(s) = \\mathcal{L}\\{${1:f(t)}\\} = \\int_{0^-}^{\\infty} ${1:f(t)} e^{-st}\\,dt",
+    "definition": "Transforms a causal time-domain signal f(t) into the complex s-domain for circuit/system analysis.",
+    "tags": ["laplace", "signals", "control"]
+  },
+  {
+    "id": "eee-sig-2",
+    "name": "Continuous-Time Fourier Transform",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "Signals & Systems",
+    "latex": "X(j\\omega) = \\int_{-\\infty}^{\\infty} ${1:x(t)} e^{-j\\omega t}\\,dt",
+    "definition": "Decomposes an aperiodic time-domain signal into its continuous frequency spectrum.",
+    "tags": ["fourier", "spectrum", "signals"]
+  },
+  {
+    "id": "eee-ctrl-1",
+    "name": "Standard 2nd-Order Transfer Function",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "Control Systems",
+    "latex": "H(s) = \\frac{${1:\\omega_n}^2}{s^2 + 2${2:\\zeta}${1:\\omega_n}s + ${1:\\omega_n}^2}",
+    "definition": "Canonical second-order system characterized by natural frequency ωn and damping ratio ζ.",
+    "tags": ["control", "transfer-function", "damping"]
+  },
+  {
+    "id": "eee-em-1",
+    "name": "Maxwell's Equations (Differential Form)",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "Electromagnetics",
+    "latex": "\\nabla\\cdot\\vec{E}=\\frac{\\rho}{\\varepsilon_0},\\; \\nabla\\cdot\\vec{B}=0,\\; \\nabla\\times\\vec{E}=-\\frac{\\partial\\vec{B}}{\\partial t},\\; \\nabla\\times\\vec{B}=\\mu_0\\vec{J}+\\mu_0\\varepsilon_0\\frac{\\partial\\vec{E}}{\\partial t}",
+    "definition": "Four foundational differential equations of classical electromagnetism.",
+    "tags": ["maxwell", "electromagnetics", "fields"]
+  },
+  {
+    "id": "eee-mach-1",
+    "name": "Ideal Transformer & Synchronous Speed",
+    "branch": "eee",
+    "level": "eee-y1-y2",
+    "topic": "Electrical Machines",
+    "latex": "\\frac{V_1}{V_2} = \\frac{${1:N_1}}{${2:N_2}} = \\frac{I_2}{I_1}, \\qquad n_s = \\frac{120 ${3:f}}{${4:P}}\\text{ RPM}",
+    "definition": "Turns ratio relations for an ideal transformer and synchronous speed of an AC machine with P poles.",
+    "tags": ["transformer", "motor", "machines"]
+  },
+  {
+    "id": "mech-1",
+    "name": "Axial Stress, Strain & Hooke's Law",
+    "branch": "mechanical",
+    "level": "engineering-basics",
+    "topic": "Mechanics of Materials",
+    "latex": "\\sigma = \\frac{${1:F}}{${2:A}}, \\quad \\varepsilon = \\frac{\\Delta L}{L_0}, \\quad \\sigma = ${3:E}\\varepsilon",
+    "definition": "Relates axial force, cross-sectional area, elongation, and Young's modulus E in the elastic regime.",
+    "tags": ["stress", "strain", "hooke", "mechanical"]
+  },
+  {
+    "id": "mech-2",
+    "name": "Bernoulli's Equation (Incompressible Flow)",
+    "branch": "mechanical",
+    "level": "engineering-basics",
+    "topic": "Fluid Mechanics",
+    "latex": "${1:P} + \\frac{1}{2}\\rho ${2:v}^2 + \\rho g ${3:h} = \\text{const}",
+    "definition": "Conservation of mechanical energy along a streamline for steady, inviscid, incompressible flow.",
+    "tags": ["bernoulli", "fluid", "pressure"]
+  },
+  {
+    "id": "mech-3",
+    "name": "Fourier's Law of Heat Conduction",
+    "branch": "mechanical",
+    "level": "engineering-basics",
+    "topic": "Heat Transfer",
+    "latex": "\\dot{Q} = -${1:k}${2:A}\\frac{dT}{dx}",
+    "definition": "Rate of conductive heat transfer proportional to thermal conductivity k, area A, and temperature gradient.",
+    "tags": ["heat", "conduction", "fourier"]
+  },
+  {
+    "id": "civil-1",
+    "name": "Flexural (Bending) Stress in a Beam",
+    "branch": "civil",
+    "level": "engineering-basics",
+    "topic": "Structural Mechanics",
+    "latex": "\\sigma = -\\frac{${1:M}${2:y}}{${3:I}}",
+    "definition": "Normal bending stress at distance y from the neutral axis for bending moment M and moment of inertia I.",
+    "tags": ["beam", "bending", "civil", "structures"]
+  },
+  {
+    "id": "cs-1",
+    "name": "Shannon Information Entropy",
+    "branch": "cs",
+    "level": "engineering-basics",
+    "topic": "Information Theory",
+    "latex": "H(X) = -\\sum_{i=1}^{${1:n}} p(x_i)\\log_2 p(x_i)",
+    "definition": "Average information content (in bits) of a discrete random variable X.",
+    "tags": ["entropy", "shannon", "information", "cs"]
+  },
+  {
+    "id": "cs-2",
+    "name": "Amdahl's Law (Parallel Speedup)",
+    "branch": "cs",
+    "level": "engineering-basics",
+    "topic": "Computer Architecture",
+    "latex": "S_{\\text{latency}}(s) = \\frac{1}{(1 - ${1:p}) + \\frac{${1:p}}{${2:s}}}",
+    "definition": "Maximum theoretical speedup when parallelizable fraction p is accelerated by factor s.",
+    "tags": ["amdahl", "parallel", "architecture", "cs"]
+  }
+]

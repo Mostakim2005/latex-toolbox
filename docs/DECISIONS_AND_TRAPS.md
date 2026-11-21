@@ -8,6 +8,16 @@
 * **Decision Maker:** `[DECIDED BY: HUMAN]`
 * **Original User Intention:** The 480+ KB curriculum formulas are essential out-of-the-box knowledge and must never be stripped or left to empty user initialization.
 
+### [DECISION: Hybrid-Two-Tier-CAS-Architecture] | Aliases: local js cas, sympy desktop bridge
+> **1-Line Summary:** Tier 1 (CortexJS + Nerdamer + Math.js) runs offline everywhere; Tier 2 (SymPy) runs via local Python CLI subprocess on Desktop only.
+* **Decision Maker:** `[DECIDED BY: HUMAN]`
+* **Original User Intention:** Allow rich mobile and desktop mathematics without requiring Python, while offering Laplace/Fourier/ODE symbolic power on full desktop environments.
+
+### [DECISION: Decouple-User-Presets-From-Static-Curriculum] | Aliases: data.json vs stem-formula-db
+> **1-Line Summary:** User customization and settings live in `data.json`, while static preloaded curriculum definitions live in `src/data/stem-formula-db.json`.
+* **Decision Maker:** `[DECIDED BY: HUMAN]`
+* **Original User Intention:** Prevents plugin updates or settings saves from overwriting user customizations.
+
 ## 2. Do-Not-Touch Engineering Landmines (Traps)
 
 ### [TRAP: Greedy-Dollar-Delimiter-Capture] | Aliases: currency collision, inline math corruption

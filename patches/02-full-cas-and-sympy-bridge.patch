@@ -1,0 +1,799 @@
+diff --git a/package.json b/package.json
+index 7c7e3ae..0367e96 100644
+--- a/package.json
++++ b/package.json
+@@ -36,6 +36,7 @@
+   },
+   "dependencies": {
+     "@cortex-js/compute-engine": "^0.26.0",
++    "mathjs": "^15.2.0",
+     "mathlive": "^0.101.0",
+     "nerdamer": "^1.1.13"
+   }
+diff --git a/src/core/cas-engine.ts b/src/core/cas-engine.ts
+index f7ecabe..9dd3493 100644
+--- a/src/core/cas-engine.ts
++++ b/src/core/cas-engine.ts
+@@ -1,89 +1,466 @@
+-import { ComputeEngine } from "@cortex-js/compute-engine";
+-import type { CASResult } from "../types";
+-
+-let engineSingleton: ComputeEngine | null = null;
+-
+-function getEngine(): ComputeEngine {
+-  if (!engineSingleton) {
+-    engineSingleton = new ComputeEngine();
+-  }
+-  return engineSingleton;
+-}
+-
+-export function casSimplify(latex: string): CASResult {
+-  try {
+-    const ce = getEngine();
+-    const expr = ce.parse(latex);
+-    const simplified = expr.simplify();
+-    const numeric = expr.N();
+-    return {
+-      ok: true,
+-      latex: simplified.latex,
+-      numeric: numeric.latex !== simplified.latex ? numeric.latex : undefined,
+-      steps: [
+-        { rel: "\\text{Input:}", expr: latex, note: "Parsed expression" },
+-        { rel: "=", expr: simplified.latex, note: "Simplified (CortexJS Compute Engine)" },
+-      ],
+-    };
+-  } catch (err) {
+-    return { ok: false, latex, error: String(err) };
+-  }
+-}
+-
+-export function casExpand(latex: string): CASResult {
+-  try {
+-    const ce = getEngine();
+-    const expr = ce.parse(latex);
+-    const expanded = ce.box(["Expand", expr]).evaluate();
+-    return {
+-      ok: true,
+-      latex: expanded.latex,
+-      steps: [
+-        { rel: "\\text{Input:}", expr: latex, note: "Original expression" },
+-        { rel: "=", expr: expanded.latex, note: "Expanded form" },
+-      ],
+-    };
+-  } catch (err) {
+-    return { ok: false, latex, error: String(err) };
+-  }
+-}
+-
+-export function casSolve(latex: string, variable = "x"): CASResult {
+-  try {
+-    const ce = getEngine();
+-    const expr = ce.parse(latex);
+-    const roots = expr.solve(variable);
+-    if (!roots || roots.length === 0) {
+-      return { ok: false, latex, error: `No symbolic solution found for ${variable}.` };
+-    }
+-    const solLatex = roots.map((r) => `${variable} = ${r.latex}`).join(",\\quad ");
+-    return {
+-      ok: true,
+-      latex: solLatex,
+-      steps: [
+-        { rel: "\\text{Equation:}", expr: latex, note: `Solve for ${variable}` },
+-        { rel: "\\implies", expr: solLatex, note: "Symbolic solution" },
+-      ],
+-    };
+-  } catch (err) {
+-    return { ok: false, latex, error: String(err) };
+-  }
+-}
+-
+-export function casDifferentiate(latex: string, variable = "x"): CASResult {
+-  try {
+-    const ce = getEngine();
+-    const expr = ce.parse(latex);
+-    const deriv = ce.box(["D", expr, variable]).evaluate();
+-    return {
+-      ok: true,
+-      latex: deriv.latex,
+-      steps: [
+-        { rel: "\\text{Given:}", expr: latex, note: `Differentiate w.r.t. ${variable}` },
+-        { rel: "\\implies", expr: `\\frac{d}{d${variable}}\\left(${latex}\\right) = ${deriv.latex}`, note: "Derivative" },
+-      ],
+-    };
+-  } catch (err) {
+-    return { ok: false, latex, error: String(err) };
+-  }
+-}
++import { ComputeEngine } from "@cortex-js/compute-engine";
++import * as math from "mathjs";
++import type { CASBackendMode, CASOperation, CASResult } from "../types";
++import { runSymPyOperation } from "./sympy-bridge";
++
++// Lazy-loaded Nerdamer with Algebra, Calculus, and Solve modules
++interface NerdamerExpr {
++  toTeX: () => string;
++  text: () => string;
++  evaluate: () => NerdamerExpr;
++}
++interface NerdamerLib {
++  (expr: string): NerdamerExpr;
++  convertFromLaTeX: (latex: string) => NerdamerExpr;
++  integrate: (expr: string, variable: string) => NerdamerExpr;
++  diff: (expr: string, variable: string) => NerdamerExpr;
++  solve: (expr: string, variable: string) => NerdamerExpr;
++  factor: (expr: string) => NerdamerExpr;
++  expand: (expr: string) => NerdamerExpr;
++  partfrac: (expr: string, variable: string) => NerdamerExpr;
++  limit: (expr: string, variable: string, point: string) => NerdamerExpr;
++}
++
++let engineSingleton: ComputeEngine | null = null;
++let nerdamerSingleton: NerdamerLib | null = null;
++
++function getEngine(): ComputeEngine {
++  if (!engineSingleton) {
++    engineSingleton = new ComputeEngine();
++  }
++  return engineSingleton;
++}
++
++function getNerdamer(): NerdamerLib | null {
++  if (nerdamerSingleton) return nerdamerSingleton;
++  try {
++    // eslint-disable-next-line @typescript-eslint/no-require-imports
++    const nerdamer = require("nerdamer") as NerdamerLib;
++    // eslint-disable-next-line @typescript-eslint/no-require-imports
++    require("nerdamer/Algebra");
++    // eslint-disable-next-line @typescript-eslint/no-require-imports
++    require("nerdamer/Calculus");
++    // eslint-disable-next-line @typescript-eslint/no-require-imports
++    require("nerdamer/Solve");
++    nerdamerSingleton = nerdamer;
++    return nerdamerSingleton;
++  } catch {
++    return null;
++  }
++}
++
++/**
++ * Smart variable detector: inspects LaTeX and returns the most likely independent variable
++ * (e.g., t, s, x, y, theta, omega) instead of hardcoding x.
++ */
++export function detectPrimaryVariable(latex: string): string {
++  const cleaned = (latex || "")
++    .replace(/\\(?:sin|cos|tan|cot|sec|csc|log|ln|exp|sqrt|frac|left|right|text|operatorname|cdot|times|pi|infty|int|sum|prod|lim|partial|mathrm|mathbf|ce)\b/g, " ")
++    .replace(/\\(?:alpha|beta|gamma|delta|epsilon|theta|lambda|omega|phi|psi|sigma|tau)\b/g, (m) => ` ${m.slice(1)} `);
++
++  // Check differential dx / dt / ds first
++  const diffMatch = cleaned.match(/\bd([a-zA-Z])\b/);
++  if (diffMatch?.[1] && !["e", "i", "j"].includes(diffMatch[1])) {
++    return diffMatch[1];
++  }
++
++  const preferredOrder = ["x", "t", "s", "y", "z", "u", "v", "n", "k", "theta", "omega"];
++  const tokens = cleaned.match(/\b[a-zA-Z]+\b/g) ?? [];
++  const tokenSet = new Set(tokens);
++  for (const v of preferredOrder) {
++    if (tokenSet.has(v)) return v;
++  }
++  for (const tok of tokens) {
++    if (tok.length === 1 && !["e", "i", "j", "d"].includes(tok)) return tok;
++  }
++  return "x";
++}
++
++function latexToNerdamerText(latex: string): string {
++  const nerdamer = getNerdamer();
++  if (!nerdamer) return latex;
++  try {
++    return nerdamer.convertFromLaTeX(latex).text();
++  } catch {
++    return latex
++      .replace(/\\cdot/g, "*")
++      .replace(/\\times/g, "*")
++      .replace(/\\left|\\right/g, "")
++      .replace(/\\pi/g, "pi");
++  }
++}
++
++export function casSimplify(latex: string): CASResult {
++  try {
++    const ce = getEngine();
++    const expr = ce.parse(latex);
++    const simplified = expr.simplify();
++    const numeric = expr.N();
++    return {
++      ok: true,
++      latex: simplified.latex,
++      numeric: numeric.latex !== simplified.latex ? numeric.latex : undefined,
++      engine: "CortexJS Compute Engine",
++      steps: [
++        { rel: "\\text{Input:}", expr: latex, note: "Parsed expression" },
++        { rel: "=", expr: simplified.latex, note: "Simplified (CortexJS Compute Engine)" },
++      ],
++    };
++  } catch (err) {
++    return { ok: false, latex, error: String(err) };
++  }
++}
++
++export function casExpand(latex: string): CASResult {
++  try {
++    const ce = getEngine();
++    const expr = ce.parse(latex);
++    const expanded = ce.box(["Expand", expr]).evaluate();
++    return {
++      ok: true,
++      latex: expanded.latex,
++      engine: "CortexJS Compute Engine",
++      steps: [
++        { rel: "\\text{Input:}", expr: latex, note: "Original expression" },
++        { rel: "=", expr: expanded.latex, note: "Expanded form" },
++      ],
++    };
++  } catch (err) {
++    return { ok: false, latex, error: String(err) };
++  }
++}
++
++export function casFactor(latex: string): CASResult {
++  const nerdamer = getNerdamer();
++  if (!nerdamer) return { ok: false, latex, error: "Nerdamer CAS module unavailable." };
++  try {
++    const src = latexToNerdamerText(latex);
++    const factored = nerdamer.factor(src);
++    return {
++      ok: true,
++      latex: factored.toTeX(),
++      engine: "Nerdamer Algebra",
++      steps: [
++        { rel: "\\text{Input:}", expr: latex, note: "Original expression" },
++        { rel: "=", expr: factored.toTeX(), note: "Factored form" },
++      ],
++    };
++  } catch (err) {
++    return { ok: false, latex, error: String(err) };
++  }
++}
++
++export function casSolve(latex: string, variable = "x"): CASResult {
++  try {
++    const ce = getEngine();
++    const expr = ce.parse(latex);
++    const roots = expr.solve(variable);
++    if (roots && roots.length > 0) {
++      const solLatex = roots.map((r) => `${variable} = ${r.latex}`).join(",\\quad ");
++      return {
++        ok: true,
++        latex: solLatex,
++        engine: "CortexJS Compute Engine",
++        steps: [
++          { rel: "\\text{Equation:}", expr: latex, note: `Solve for ${variable}` },
++          { rel: "\\implies", expr: solLatex, note: "Symbolic solution" },
++        ],
++      };
++    }
++  } catch {
++    // Fall through to Nerdamer solver
++  }
++
++  const nerdamer = getNerdamer();
++  if (nerdamer) {
++    try {
++      const src = latexToNerdamerText(latex);
++      const sol = nerdamer.solve(src, variable);
++      return {
++        ok: true,
++        latex: `${variable} = ${sol.toTeX()}`,
++        engine: "Nerdamer Solve",
++      };
++    } catch (err) {
++      return { ok: false, latex, error: String(err) };
++    }
++  }
++  return { ok: false, latex, error: `No symbolic solution found for ${variable}.` };
++}
++
++export function casDifferentiate(latex: string, variable = "x"): CASResult {
++  try {
++    const ce = getEngine();
++    const expr = ce.parse(latex);
++    const deriv = ce.box(["D", expr, variable]).evaluate();
++    return {
++      ok: true,
++      latex: deriv.latex,
++      engine: "CortexJS Compute Engine",
++      steps: [
++        { rel: "\\text{Given:}", expr: latex, note: `Differentiate w.r.t. ${variable}` },
++        { rel: "\\implies", expr: `\\frac{d}{d${variable}}\\left(${latex}\\right) = ${deriv.latex}`, note: "Derivative" },
++      ],
++    };
++  } catch (err) {
++    return { ok: false, latex, error: String(err) };
++  }
++}
++
++export function casIntegrate(latex: string, variable = "x", bounds?: { lower: string; upper: string }): CASResult {
++  const nerdamer = getNerdamer();
++  if (!nerdamer) {
++    return { ok: false, latex, error: "Nerdamer Calculus module unavailable." };
++  }
++  try {
++    const src = latexToNerdamerText(latex);
++    if (bounds && bounds.lower.trim() && bounds.upper.trim()) {
++      const defCmd = `defint(${src}, ${bounds.lower.trim()}, ${bounds.upper.trim()}, ${variable})`;
++      const res = nerdamer(defCmd);
++      const num = res.evaluate().text();
++      return {
++        ok: true,
++        latex: res.toTeX(),
++        numeric: num !== res.text() ? num : undefined,
++        engine: "Nerdamer Calculus",
++        steps: [
++          { rel: "\\text{Definite Integral:}", expr: `\\int_{${bounds.lower}}^{${bounds.upper}} ${latex}\\,d${variable}`, note: `Integrate w.r.t. ${variable}` },
++          { rel: "=", expr: res.toTeX(), note: "Evaluated definite integral" },
++        ],
++      };
++    }
++
++    const anti = nerdamer.integrate(src, variable);
++    const outLatex = `${anti.toTeX()} + C`;
++    return {
++      ok: true,
++      latex: outLatex,
++      engine: "Nerdamer Calculus",
++      steps: [
++        { rel: "\\text{Integral:}", expr: `\\int ${latex}\\,d${variable}`, note: `Indefinite integral w.r.t. ${variable}` },
++        { rel: "=", expr: outLatex, note: "Antiderivative" },
++      ],
++    };
++  } catch (err) {
++    return { ok: false, latex, error: String(err) };
++  }
++}
++
++export function casPartialFractions(latex: string, variable = "x"): CASResult {
++  const nerdamer = getNerdamer();
++  if (!nerdamer) return { ok: false, latex, error: "Nerdamer Algebra module unavailable." };
++  try {
++    const src = latexToNerdamerText(latex);
++    const res = nerdamer.partfrac(src, variable);
++    return { ok: true, latex: res.toTeX(), engine: "Nerdamer Algebra" };
++  } catch (err) {
++    return { ok: false, latex, error: String(err) };
++  }
++}
++
++export function casLimit(latex: string, variable = "x", point = "0"): CASResult {
++  const nerdamer = getNerdamer();
++  if (!nerdamer) return { ok: false, latex, error: "Nerdamer Calculus module unavailable." };
++  try {
++    const src = latexToNerdamerText(latex);
++    const res = nerdamer.limit(src, variable, point);
++    return { ok: true, latex: res.toTeX(), engine: "Nerdamer Calculus" };
++  } catch (err) {
++    return { ok: false, latex, error: String(err) };
++  }
++}
++
++export function casNumeric(latex: string): CASResult {
++  try {
++    const ce = getEngine();
++    const num = ce.parse(latex).N();
++    return { ok: true, latex: num.latex, numeric: num.latex, engine: "CortexJS Compute Engine" };
++  } catch {
++    try {
++      const val = math.evaluate(latexToNerdamerText(latex));
++      const str = math.format(val, { precision: 10 });
++      return { ok: true, latex: str, numeric: str, engine: "Math.js" };
++    } catch (err) {
++      return { ok: false, latex, error: String(err) };
++    }
++  }
++}
++
++/**
++ * EEE Phasor Converter: converts rectangular (3 + 4j) <-> polar (5∠53.13°)
++ */
++export function casPhasorConvert(input: string, imagUnit: "j" | "i" = "j"): CASResult {
++  try {
++    const cleaned = input.replace(/\\angle/g, "∠").replace(/\^?\\circ|°/g, "").trim();
++    const polarMatch = cleaned.match(/^([-+]?\d*\.?\d+)\s*(?:∠|<)\s*([-+]?\d*\.?\d+)$/);
++    if (polarMatch?.[1] && polarMatch[2]) {
++      const r = parseFloat(polarMatch[1]);
++      const deg = parseFloat(polarMatch[2]);
++      const rad = (deg * Math.PI) / 180;
++      const re = Number((r * Math.cos(rad)).toFixed(4));
++      const im = Number((r * Math.sin(rad)).toFixed(4));
++      const sign = im >= 0 ? "+" : "-";
++      const rectLatex = `${re} ${sign} ${imagUnit}${Math.abs(im)}`;
++      return { ok: true, latex: rectLatex, engine: "Math.js Phasor" };
++    }
++
++    // Parse rectangular a + bj or a + jb
++    const normalized = cleaned.replace(/j(\d)/g, "$1i").replace(/j\b/g, "i");
++    const evaluated = math.evaluate(normalized) as math.Complex | number;
++    const c = typeof evaluated === "number" ? math.complex(evaluated, 0) : math.complex(evaluated);
++    const polar = c.toPolar();
++    const mag = Number(polar.r.toFixed(4));
++    const deg = Number(((polar.phi * 180) / Math.PI).toFixed(2));
++    return {
++      ok: true,
++      latex: `${mag}\\angle ${deg}^{\\circ}`,
++      numeric: `${c.re.toFixed(4)} ${c.im >= 0 ? "+" : "-"} ${imagUnit}${Math.abs(c.im).toFixed(4)}`,
++      engine: "Math.js Phasor",
++    };
++  } catch (err) {
++    return { ok: false, latex: input, error: `Phasor parse error: ${String(err)}` };
++  }
++}
++
++/**
++ * Unit evaluator / converter using Math.js (e.g. "5 kOhm * 2 mA to V" or "100 km/h to m/s")
++ */
++export function casUnitConvert(input: string): CASResult {
++  try {
++    const res = math.evaluate(input);
++    const formatted = math.format(res, { precision: 6 });
++    return { ok: true, latex: `\\text{${formatted}}`, numeric: formatted, engine: "Math.js Units" };
++  } catch (err) {
++    return { ok: false, latex: input, error: `Unit evaluation error: ${String(err)}` };
++  }
++}
++
++/**
++ * Matrix operations (det, inv) from LaTeX matrix or MATLAB syntax [[1,2],[3,4]]
++ */
++export function casMatrixOp(input: string, op: "matrix_det" | "matrix_inv"): CASResult {
++  try {
++    let rows: number[][];
++    if (input.includes("\\begin{")) {
++      const inner = input.replace(/\\begin\{[pbvB]?matrix\}/g, "").replace(/\\end\{[pbvB]?matrix\}/g, "").trim();
++      rows = inner.split("\\\\").map((r) => r.split("&").map((c) => Number(math.evaluate(c.trim()))));
++    } else {
++      rows = math.evaluate(input) as number[][];
++    }
++
++    if (op === "matrix_det") {
++      const d = math.det(rows);
++      return { ok: true, latex: String(Number(d.toFixed(6))), engine: "Math.js Matrix" };
++    }
++    const inv = math.inv(rows) as number[][];
++    const latexRows = inv.map((r) => r.map((v) => Number(v.toFixed(4))).join(" & ")).join(" \\\\ ");
++    return { ok: true, latex: `\\begin{pmatrix} ${latexRows} \\end{pmatrix}`, engine: "Math.js Matrix" };
++  } catch (err) {
++    return { ok: false, latex: input, error: `Matrix error: ${String(err)}` };
++  }
++}
++
++export interface RunCASOptions {
++  variable?: string;
++  lower?: string;
++  upper?: string;
++  point?: string;
++  order?: number;
++  backend?: CASBackendMode;
++  pythonExecutable?: string;
++  imagUnit?: "j" | "i";
++}
++
++const SYMPY_ONLY_OPS = new Set<CASOperation>(["laplace", "ilaplace", "fourier", "dsolve", "series", "matrix_eig"]);
++
++/**
++ * Unified Two-Tier CAS Dispatcher:
++ * - Tier 1 (Bundled JS): Instant offline evaluation via Compute Engine + Nerdamer + Math.js
++ * - Tier 2 (Local Python/SymPy): Full university/engineering CAS for Laplace, Fourier, ODEs, Series, Eigenvalues
++ */
++export async function runCASOperation(
++  op: CASOperation,
++  latex: string,
++  opts: RunCASOptions = {}
++): Promise<CASResult> {
++  const variable = opts.variable || detectPrimaryVariable(latex);
++  const backend = opts.backend ?? "js-only";
++
++  if (SYMPY_ONLY_OPS.has(op)) {
++    if (backend !== "hybrid-python") {
++      return {
++        ok: false,
++        latex,
++        error: `'${op}' requires the Full Desktop CAS (Python + SymPy). Enable 'Hybrid Python/SymPy' in LaTeX Toolbox Settings.`,
++      };
++    }
++    return runSymPyOperation(op, latex, {
++      pythonExecutable: opts.pythonExecutable,
++      variable,
++      lower: opts.lower,
++      upper: opts.upper,
++      point: opts.point,
++      order: opts.order,
++    });
++  }
++
++  let res: CASResult;
++  switch (op) {
++    case "simplify":
++      res = casSimplify(latex);
++      break;
++    case "expand":
++      res = casExpand(latex);
++      break;
++    case "factor":
++      res = casFactor(latex);
++      break;
++    case "solve":
++      res = casSolve(latex, variable);
++      break;
++    case "diff":
++      res = casDifferentiate(latex, variable);
++      break;
++    case "integrate":
++      res = casIntegrate(latex, variable);
++      break;
++    case "defint":
++      res = casIntegrate(latex, variable, { lower: opts.lower ?? "0", upper: opts.upper ?? "1" });
++      break;
++    case "limit":
++      res = casLimit(latex, variable, opts.point ?? "0");
++      break;
++    case "apart":
++      res = casPartialFractions(latex, variable);
++      break;
++    case "numeric":
++      res = casNumeric(latex);
++      break;
++    case "phasor":
++      res = casPhasorConvert(latex, opts.imagUnit ?? "j");
++      break;
++    case "units":
++      res = casUnitConvert(latex);
++      break;
++    case "matrix_det":
++    case "matrix_inv":
++      res = casMatrixOp(latex, op);
++      break;
++    default:
++      res = casSimplify(latex);
++      break;
++  }
++
++  // Fallback to Python/SymPy if Tier 1 JS failed and hybrid-python is enabled
++  if (!res.ok && backend === "hybrid-python") {
++    return runSymPyOperation(op, latex, {
++      pythonExecutable: opts.pythonExecutable,
++      variable,
++      lower: opts.lower,
++      upper: opts.upper,
++      point: opts.point,
++      order: opts.order,
++    });
++  }
++  return res;
++}
+diff --git a/src/core/sympy-bridge.ts b/src/core/sympy-bridge.ts
+new file mode 100644
+index 0000000..0b0264d
+--- /dev/null
++++ b/src/core/sympy-bridge.ts
+@@ -0,0 +1,221 @@
++import { Platform } from "obsidian";
++import type { CASOperation, CASResult } from "../types";
++
++export interface SymPyStatus {
++  available: boolean;
++  pythonVersion?: string;
++  sympyVersion?: string;
++  error?: string;
++}
++
++const SYMPY_RUNNER_SCRIPT = `
++import json, sys
++import sympy as sp
++from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application, convert_xor
++
++payload = json.loads(sys.stdin.read())
++op = payload.get("op", "simplify")
++raw = payload.get("expr", "")
++var_name = payload.get("variable", "x") or "x"
++lower = payload.get("lower", "")
++upper = payload.get("upper", "")
++point = payload.get("point", "0") or "0"
++order = int(payload.get("order", 6) or 6)
++
++try:
++    from sympy.parsing.latex import parse_latex
++    try:
++        expr = parse_latex(raw)
++    except Exception:
++        expr = None
++except Exception:
++    expr = None
++
++if expr is None:
++    trans = standard_transformations + (implicit_multiplication_application, convert_xor)
++    expr = parse_expr(raw, transformations=trans)
++
++x = sp.Symbol(var_name)
++t = sp.Symbol("t", positive=True)
++s = sp.Symbol("s")
++w = sp.Symbol("w", real=True)
++
++if op == "simplify":
++    res = sp.simplify(expr)
++elif op == "expand":
++    res = sp.expand(expr)
++elif op == "factor":
++    res = sp.factor(expr)
++elif op == "solve":
++    res = sp.solve(expr, x)
++elif op == "diff":
++    res = sp.diff(expr, x)
++elif op == "integrate":
++    res = sp.integrate(expr, x)
++elif op == "defint":
++    a = sp.sympify(lower) if lower else 0
++    b = sp.sympify(upper) if upper else 1
++    res = sp.integrate(expr, (x, a, b))
++elif op == "limit":
++    res = sp.limit(expr, x, sp.sympify(point))
++elif op == "series":
++    res = sp.series(expr, x, sp.sympify(point), order).removeO()
++elif op == "apart":
++    res = sp.apart(expr, x)
++elif op == "laplace":
++    target = expr.subs(x, t) if var_name != "t" else expr
++    res = sp.laplace_transform(target, t, s, noconds=True)
++elif op == "ilaplace":
++    target = expr.subs(x, s) if var_name != "s" else expr
++    res = sp.inverse_laplace_transform(target, s, t)
++elif op == "fourier":
++    target = expr.subs(x, t) if var_name != "t" else expr
++    res = sp.fourier_transform(target, t, w)
++elif op == "dsolve":
++    y = sp.Function("y")
++    res = sp.dsolve(expr, y(x))
++elif op == "numeric":
++    res = sp.N(expr, 10)
++else:
++    res = sp.simplify(expr)
++
++num_val = None
++try:
++    if hasattr(res, "evalf"):
++        ev = res.evalf(8)
++        if ev.is_number:
++            num_val = sp.latex(ev)
++except Exception:
++    num_val = None
++
++print(json.dumps({
++    "ok": True,
++    "latex": sp.latex(res),
++    "numeric": num_val,
++    "engine": f"Python SymPy {sp.__version__}"
++}))
++`;
++
++function getChildProcess(): {
++  spawn?: (cmd: string, args: string[], opts?: Record<string, unknown>) => {
++    stdin: { write: (d: string) => void; end: () => void };
++    stdout: { on: (ev: string, cb: (chunk: Buffer | string) => void) => void };
++    stderr: { on: (ev: string, cb: (chunk: Buffer | string) => void) => void };
++    on: (ev: string, cb: (arg: unknown) => void) => void;
++    kill: () => void;
++  };
++} | null {
++  if (!Platform.isDesktopApp) return null;
++  try {
++    // eslint-disable-next-line @typescript-eslint/no-require-imports
++    return require("child_process");
++  } catch {
++    return null;
++  }
++}
++
++export async function checkSymPyStatus(pythonExecutable = "python"): Promise<SymPyStatus> {
++  const cp = getChildProcess();
++  if (!cp?.spawn) {
++    return { available: false, error: "Desktop Obsidian required for local Python/SymPy bridge." };
++  }
++
++  return new Promise((resolve) => {
++    const proc = cp.spawn!(pythonExecutable, [
++      "-c",
++      "import sys, json, sympy; print(json.dumps({'py': sys.version.split()[0], 'sympy': sympy.__version__}))",
++    ]);
++    let out = "";
++    let err = "";
++    const timer = setTimeout(() => {
++      proc.kill();
++      resolve({ available: false, error: "Timed out checking Python/SymPy." });
++    }, 6000);
++
++    proc.stdout.on("data", (d) => (out += String(d)));
++    proc.stderr.on("data", (d) => (err += String(d)));
++    proc.on("error", (e) => {
++      clearTimeout(timer);
++      resolve({ available: false, error: String(e) });
++    });
++    proc.on("close", (code) => {
++      clearTimeout(timer);
++      if (code !== 0) {
++        resolve({ available: false, error: err.trim() || `Exit code ${String(code)}` });
++        return;
++      }
++      try {
++        const parsed = JSON.parse(out.trim()) as { py?: string; sympy?: string };
++        resolve({ available: true, pythonVersion: parsed.py, sympyVersion: parsed.sympy });
++      } catch {
++        resolve({ available: false, error: out.trim() || err.trim() });
++      }
++    });
++  });
++}
++
++export async function runSymPyOperation(
++  op: CASOperation,
++  expr: string,
++  opts: {
++    pythonExecutable?: string;
++    variable?: string;
++    lower?: string;
++    upper?: string;
++    point?: string;
++    order?: number;
++  } = {}
++): Promise<CASResult> {
++  const cp = getChildProcess();
++  if (!cp?.spawn) {
++    return {
++      ok: false,
++      latex: expr,
++      error: "Local Python/SymPy bridge is only available on Desktop Obsidian. Switch CAS backend to JS-only on mobile.",
++    };
++  }
++
++  return new Promise((resolve) => {
++    const py = opts.pythonExecutable || "python";
++    const proc = cp.spawn!(py, ["-c", SYMPY_RUNNER_SCRIPT]);
++    let out = "";
++    let err = "";
++    const timer = setTimeout(() => {
++      proc.kill();
++      resolve({ ok: false, latex: expr, error: "SymPy computation timed out (15s)." });
++    }, 15000);
++
++    proc.stdout.on("data", (d) => (out += String(d)));
++    proc.stderr.on("data", (d) => (err += String(d)));
++    proc.on("error", (e) => {
++      clearTimeout(timer);
++      resolve({ ok: false, latex: expr, error: `Could not launch '${py}': ${String(e)}` });
++    });
++    proc.on("close", (code) => {
++      clearTimeout(timer);
++      if (code !== 0) {
++        resolve({ ok: false, latex: expr, error: err.trim() || `SymPy exited with code ${String(code)}` });
++        return;
++      }
++      try {
++        const parsed = JSON.parse(out.trim()) as CASResult;
++        resolve(parsed);
++      } catch (e) {
++        resolve({ ok: false, latex: expr, error: `Invalid SymPy JSON: ${String(e)}` });
++      }
++    });
++
++    proc.stdin.write(
++      JSON.stringify({
++        op,
++        expr,
++        variable: opts.variable ?? "x",
++        lower: opts.lower ?? "",
++        upper: opts.upper ?? "",
++        point: opts.point ?? "0",
++        order: opts.order ?? 6,
++      })
++    );
++    proc.stdin.end();
++  });
++}

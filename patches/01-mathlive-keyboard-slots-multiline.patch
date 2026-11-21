@@ -1,0 +1,1166 @@
+diff --git a/src/settings.ts b/src/settings.ts
+index b73c2b3..507f59e 100644
+--- a/src/settings.ts
++++ b/src/settings.ts
+@@ -1,57 +1,77 @@
+-import type { Plugin } from "obsidian";
+-import type { LaTeXSettings, PresetItem } from "./types";
+-import defaultPresets from "./presets/default-presets.json";
+-
+-export const DEFAULT_SETTINGS: LaTeXSettings = {
+-  wrapStyle: "block",
+-  convertParens: true,
+-  autoFixOnPaste: true,
+-  defaultDomain: "math",
+-  filterLayout: "bar",
+-  uiScale: "115",
+-  enableHistory: true,
+-  autocompleteEnabled: true,
+-  autocompleteMaxResults: 12,
+-  livePreview: true,
+-  glassmorphism: true,
+-  useMathLiveBuilder: true,
+-  enableSlotHighlighting: true,
+-  enableLocalCAS: true,
+-  deferToLatexSuite: true,
+-  recentEquations: [],
+-  favoriteEquations: [],
+-  customShortcuts: [],
+-  customSnippets: [],
+-  customTemplates: [],
+-};
+-
+-export function getBundledPresets(): {
+-  shortcuts: PresetItem[];
+-  snippets: PresetItem[];
+-  templates: PresetItem[];
+-} {
+-  return {
+-    shortcuts: defaultPresets.shortcuts ?? [],
+-    snippets: defaultPresets.snippets ?? [],
+-    templates: defaultPresets.templates ?? [],
+-  };
+-}
+-
+-export function getMergedLibrary(settings: LaTeXSettings): {
+-  shortcuts: PresetItem[];
+-  snippets: PresetItem[];
+-  templates: PresetItem[];
+-} {
+-  const bundled = getBundledPresets();
+-  return {
+-    shortcuts: [...bundled.shortcuts, ...(settings.customShortcuts ?? [])],
+-    snippets: [...bundled.snippets, ...(settings.customSnippets ?? [])],
+-    templates: [...bundled.templates, ...(settings.customTemplates ?? [])],
+-  };
+-}
+-
+-export async function safeSaveSettings(plugin: Plugin, next: LaTeXSettings): Promise<void> {
+-  const existing = ((await plugin.loadData()) ?? {}) as Partial<LaTeXSettings>;
+-  const merged = Object.assign({}, DEFAULT_SETTINGS, existing, next);
+-  await plugin.saveData(merged);
+-}
++import type { Plugin } from "obsidian";
++import type { LaTeXSettings, PresetItem } from "./types";
++import defaultPresets from "./presets/default-presets.json";
++
++export const DEFAULT_EXTERNAL_APP_SCHEMES: Record<string, string> = {
++  "Obsidian Note": "obsidian://open?file=",
++  "WolframAlpha": "https://www.wolframalpha.com/input?i=",
++  "Symbolab": "https://www.symbolab.com/solver/step-by-step/",
++  "Desmos": "https://www.desmos.com/calculator",
++  "MATLAB": "matlab://",
++  "LTspice / Circuit": "ltspice://",
++  "GeoGebra": "https://www.geogebra.org/calculator",
++};
++
++export const DEFAULT_SETTINGS: LaTeXSettings = {
++  wrapStyle: "block",
++  convertParens: true,
++  autoFixOnPaste: true,
++  defaultDomain: "math",
++  filterLayout: "bar",
++  uiScale: "115",
++  enableHistory: true,
++  autocompleteEnabled: true,
++  autocompleteMaxResults: 12,
++  livePreview: true,
++  glassmorphism: true,
++  useMathLiveBuilder: true,
++  enableSlotHighlighting: true,
++  enableLocalCAS: true,
++  deferToLatexSuite: true,
++  showNumericKeyboard: false,
++  showAlphabeticKeyboard: false,
++  enableStemKeyboardTabs: true,
++  enableLineNumbering: true,
++  autoResizeEditor: true,
++  casBackend: "js-only",
++  pythonExecutable: "python",
++  eeImaginaryUnit: "j",
++  audioNoteFolder: "Attachments/MathAudio",
++  externalAppSchemes: { ...DEFAULT_EXTERNAL_APP_SCHEMES },
++  recentEquations: [],
++  favoriteEquations: [],
++  customShortcuts: [],
++  customSnippets: [],
++  customTemplates: [],
++};
++
++export function getBundledPresets(): {
++  shortcuts: PresetItem[];
++  snippets: PresetItem[];
++  templates: PresetItem[];
++} {
++  return {
++    shortcuts: defaultPresets.shortcuts ?? [],
++    snippets: defaultPresets.snippets ?? [],
++    templates: defaultPresets.templates ?? [],
++  };
++}
++
++export function getMergedLibrary(settings: LaTeXSettings): {
++  shortcuts: PresetItem[];
++  snippets: PresetItem[];
++  templates: PresetItem[];
++} {
++  const bundled = getBundledPresets();
++  return {
++    shortcuts: [...bundled.shortcuts, ...(settings.customShortcuts ?? [])],
++    snippets: [...bundled.snippets, ...(settings.customSnippets ?? [])],
++    templates: [...bundled.templates, ...(settings.customTemplates ?? [])],
++  };
++}
++
++export async function safeSaveSettings(plugin: Plugin, next: LaTeXSettings): Promise<void> {
++  const existing = ((await plugin.loadData()) ?? {}) as Partial<LaTeXSettings>;
++  const merged = Object.assign({}, DEFAULT_SETTINGS, existing, next);
++  await plugin.saveData(merged);
++}
+diff --git a/src/types.ts b/src/types.ts
+index dc08734..c417c38 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -1,56 +1,127 @@
+-export interface PresetItem {
+-  id?: string;
+-  name?: string;
+-  trigger?: string;
+-  latex?: string;
+-  replacement?: string;
+-  domain?: string;
+-  topic?: string;
+-  subtopic?: string;
+-  description?: string;
+-  aliases?: string[];
+-  [key: string]: unknown;
+-}
+-
+-export interface LaTeXSettings {
+-  wrapStyle: "inline" | "block";
+-  convertParens: boolean;
+-  autoFixOnPaste: boolean;
+-  defaultDomain: string;
+-  filterLayout: "bar" | "pills";
+-  uiScale: string;
+-  enableHistory: boolean;
+-  autocompleteEnabled: boolean;
+-  autocompleteMaxResults: number;
+-  livePreview: boolean;
+-  glassmorphism: boolean;
+-  useMathLiveBuilder: boolean;
+-  enableSlotHighlighting: boolean;
+-  enableLocalCAS: boolean;
+-  deferToLatexSuite: boolean;
+-  recentEquations: Array<Record<string, unknown>>;
+-  favoriteEquations: Array<Record<string, unknown>>;
+-  customShortcuts: PresetItem[];
+-  customSnippets: PresetItem[];
+-  customTemplates: PresetItem[];
+-}
+-
+-export interface SolverStep {
+-  rel: string;
+-  expr: string;
+-  note: string;
+-}
+-
+-export interface SolverPreset {
+-  id: string;
+-  name: string;
+-  steps: SolverStep[];
+-}
+-
+-export interface CASResult {
+-  ok: boolean;
+-  latex: string;
+-  numeric?: string;
+-  steps?: SolverStep[];
+-  error?: string;
+-}
++export interface PresetItem {
++  id?: string;
++  name?: string;
++  trigger?: string;
++  latex?: string;
++  replacement?: string;
++  domain?: string;
++  topic?: string;
++  subtopic?: string;
++  description?: string;
++  aliases?: string[];
++  [key: string]: unknown;
++}
++
++export type RationaleType = "text" | "audio" | "link" | "app";
++
++export interface LineRationale {
++  type: RationaleType;
++  label: string;
++  /** Plain text justification, vault audio path, web URL, or external app URI (e.g. matlab://, obsidian://). */
++  value: string;
++}
++
++export interface DerivationLine {
++  id: string;
++  latex: string;
++  rationale?: LineRationale;
++}
++
++export type CASBackendMode = "js-only" | "hybrid-python";
++
++export type CASOperation =
++  | "simplify"
++  | "expand"
++  | "factor"
++  | "solve"
++  | "diff"
++  | "integrate"
++  | "defint"
++  | "limit"
++  | "series"
++  | "apart"
++  | "laplace"
++  | "ilaplace"
++  | "fourier"
++  | "dsolve"
++  | "numeric"
++  | "phasor"
++  | "units"
++  | "matrix_det"
++  | "matrix_inv"
++  | "matrix_eig";
++
++export interface FormulaVariable {
++  symbol: string;
++  meaning: string;
++  unit?: string;
++}
++
++export interface FormulaEntry {
++  id: string;
++  name: string;
++  branch: "math" | "physics" | "chemistry" | "eee" | "mechanical" | "civil" | "cs" | "general";
++  level: "grade-11-12" | "eee-y1-y2" | "engineering-basics";
++  topic: string;
++  latex: string;
++  definition: string;
++  variables?: FormulaVariable[];
++  tags?: string[];
++}
++
++export interface LaTeXSettings {
++  wrapStyle: "inline" | "block";
++  convertParens: boolean;
++  autoFixOnPaste: boolean;
++  defaultDomain: string;
++  filterLayout: "bar" | "pills";
++  uiScale: string;
++  enableHistory: boolean;
++  autocompleteEnabled: boolean;
++  autocompleteMaxResults: number;
++  livePreview: boolean;
++  glassmorphism: boolean;
++  useMathLiveBuilder: boolean;
++  enableSlotHighlighting: boolean;
++  enableLocalCAS: boolean;
++  deferToLatexSuite: boolean;
++  /** v5.5.0 Virtual Keyboard & Multiline UX */
++  showNumericKeyboard: boolean;
++  showAlphabeticKeyboard: boolean;
++  enableStemKeyboardTabs: boolean;
++  enableLineNumbering: boolean;
++  autoResizeEditor: boolean;
++  /** v5.5.0 Full CAS & EEE options */
++  casBackend: CASBackendMode;
++  pythonExecutable: string;
++  eeImaginaryUnit: "j" | "i";
++  /** v5.5.0 Rich Rationales & External App Links */
++  audioNoteFolder: string;
++  externalAppSchemes: Record<string, string>;
++  recentEquations: Array<Record<string, unknown>>;
++  favoriteEquations: Array<Record<string, unknown>>;
++  customShortcuts: PresetItem[];
++  customSnippets: PresetItem[];
++  customTemplates: PresetItem[];
++}
++
++export interface SolverStep {
++  rel: string;
++  expr: string;
++  note: string;
++}
++
++export interface SolverPreset {
++  id: string;
++  name: string;
++  steps: SolverStep[];
++}
++
++export interface CASResult {
++  ok: boolean;
++  latex: string;
++  numeric?: string;
++  engine?: string;
++  steps?: SolverStep[];
++  error?: string;
++}
+diff --git a/src/ui/mathlive-field.ts b/src/ui/mathlive-field.ts
+index f431ef6..626196d 100644
+--- a/src/ui/mathlive-field.ts
++++ b/src/ui/mathlive-field.ts
+@@ -1,65 +1,143 @@
+-import "mathlive";
+-import { MathfieldElement } from "mathlive";
+-
+-let mathLiveConfigured = false;
+-function configureMathLiveForObsidian(): void {
+-  if (mathLiveConfigured) return;
+-  mathLiveConfigured = true;
+-  MathfieldElement.fontsDirectory = null;
+-  MathfieldElement.soundsDirectory = null;
+-}
+-
+-/**
+- * Converts template slot syntax (e.g. ${1:numerator} or {#slot}) into
+- * MathLive native interactive placeholders \placeholder[slot_1]{numerator}
+- * so slot-highlighting and Tab-jumping work seamlessly inside <math-field>.
+- */
+-export function templateToMathLivePlaceholders(template: string): string {
+-  let idx = 0;
+-  return template
+-    .replace(/\$\{(\d+):([^}]+)\}/g, (_m, id, label) => `\\placeholder[slot_${id}]{${label}}`)
+-    .replace(/\$\{(\d+)\}/g, (_m, id) => `\\placeholder[slot_${id}]{}`)
+-    .replace(/\{\s*#?slot\s*\}/gi, () => {
+-      idx += 1;
+-      return `\\placeholder[slot_${idx}]{}`;
+-    });
+-}
+-
+-export function stripMathLivePlaceholders(latex: string): string {
+-  return latex.replace(/\\placeholder(?:\[[^\]]*\])?\{([^}]*)\}/g, "$1");
+-}
+-
+-export interface MathLiveSlotHostOptions {
+-  initialLatex?: string;
+-  enableSlotHighlighting?: boolean;
+-  onChange?: (cleanLatex: string, rawLatex: string) => void;
+-}
+-
+-export function mountMathLiveField(
+-  container: HTMLElement,
+-  opts: MathLiveSlotHostOptions = {}
+-): MathfieldElement {
+-  configureMathLiveForObsidian();
+-  const mf = document.createElement("math-field") as MathfieldElement;
+-  mf.classList.add("lt-mathlive-field");
+-  if (opts.enableSlotHighlighting !== false) {
+-    mf.classList.add("lt-slot-highlighting-enabled");
+-  }
+-  mf.setAttribute("smart-fence", "true");
+-  mf.setAttribute("smart-superscript", "true");
+-
+-  if (opts.initialLatex) {
+-    mf.value = opts.enableSlotHighlighting !== false
+-      ? templateToMathLivePlaceholders(opts.initialLatex)
+-      : opts.initialLatex;
+-  }
+-
+-  mf.addEventListener("input", () => {
+-    const raw = mf.value;
+-    const clean = stripMathLivePlaceholders(raw);
+-    opts.onChange?.(clean, raw);
+-  });
+-
+-  container.appendChild(mf);
+-  return mf;
+-}
++import "mathlive";
++import { MathfieldElement } from "mathlive";
++import type { LaTeXSettings } from "../types";
++import { applyMathLiveKeyboardConfig } from "./stem-keyboards";
++
++let mathLiveConfigured = false;
++function configureMathLiveForObsidian(): void {
++  if (mathLiveConfigured) return;
++  mathLiveConfigured = true;
++  MathfieldElement.fontsDirectory = null;
++  MathfieldElement.soundsDirectory = null;
++}
++
++/**
++ * Converts template slot syntax (e.g. ${1:numerator} or {#slot}) into
++ * MathLive native interactive placeholders \placeholder[slot_1]{numerator}
++ * so slot-highlighting, mouse click-to-select, and Tab-jumping work seamlessly.
++ */
++export function templateToMathLivePlaceholders(template: string): string {
++  let idx = 0;
++  return template
++    .replace(/\$\{(\d+):([^}]+)\}/g, (_m, id, label) => `\\placeholder[slot_${id}]{${label}}`)
++    .replace(/\$\{(\d+)\}/g, (_m, id) => `\\placeholder[slot_${id}]{}`)
++    .replace(/\{\s*#?slot\s*\}/gi, () => {
++      idx += 1;
++      return `\\placeholder[slot_${idx}]{}`;
++    });
++}
++
++export function stripMathLivePlaceholders(latex: string): string {
++  return latex.replace(/\\placeholder(?:\[[^\]]*\])?\{([^}]*)\}/g, "$1");
++}
++
++/**
++ * Fast STEM physical-keyboard inline shortcuts (active when not deferred to LaTeX Suite).
++ */
++export const STEM_INLINE_SHORTCUTS: Record<string, string> = {
++  dint: "\\int_{\\placeholder[lower]{0}}^{\\placeholder[upper]{\\infty}} \\placeholder[expr]{} \\, dx",
++  iint: "\\iint_{\\placeholder[dom]{D}} \\placeholder[expr]{} \\, dA",
++  oint: "\\oint_{\\placeholder[path]{C}} \\placeholder[expr]{} \\, d\\mathbf{r}",
++  pdiff: "\\frac{\\partial \\placeholder[num]{}}{\\partial \\placeholder[den]{}}",
++  ddx: "\\frac{d}{dx}\\left(\\placeholder[expr]{}\\right)",
++  ddt: "\\frac{d}{dt}\\left(\\placeholder[expr]{}\\right)",
++  lim: "\\lim_{\\placeholder[var]{x} \\to \\placeholder[val]{0}} \\placeholder[expr]{}",
++  ohm: "\\Omega",
++  ang: "\\angle ",
++  jw: "j\\omega",
++  par: "\\parallel ",
++  lap: "\\mathcal{L}\\left\\{\\placeholder[expr]{}\\right\\}",
++  ilap: "\\mathcal{L}^{-1}\\left\\{\\placeholder[expr]{}\\right\\}",
++  ce: "\\ce{\\placeholder[chem]{}}",
++  eqarr: "\\rightleftharpoons ",
++  rxn: "\\rightarrow ",
++  deg: "^{\\circ}",
++  hbar: "\\hbar",
++  eps0: "\\varepsilon_0",
++  mu0: "\\mu_0",
++};
++
++export interface MathLiveSlotHostOptions {
++  initialLatex?: string;
++  enableSlotHighlighting?: boolean;
++  settings?: LaTeXSettings;
++  autoResize?: boolean;
++  onChange?: (cleanLatex: string, rawLatex: string) => void;
++  onEnter?: () => void;
++  onBackspaceEmpty?: () => void;
++}
++
++export function mountMathLiveField(
++  container: HTMLElement,
++  opts: MathLiveSlotHostOptions = {}
++): MathfieldElement {
++  configureMathLiveForObsidian();
++  const mf = document.createElement("math-field") as MathfieldElement;
++  mf.classList.add("lt-mathlive-field");
++  if (opts.enableSlotHighlighting !== false) {
++    mf.classList.add("lt-slot-highlighting-enabled");
++  }
++  if (opts.autoResize !== false) {
++    mf.classList.add("lt-mathlive-autoresize");
++  }
++  mf.setAttribute("smart-fence", "true");
++  mf.setAttribute("smart-superscript", "true");
++
++  // Register STEM physical-keyboard inline shortcuts unless user defers to LaTeX Suite
++  if (!opts.settings?.deferToLatexSuite) {
++    const existing = (mf.inlineShortcuts ?? {}) as Record<string, string>;
++    mf.inlineShortcuts = { ...existing, ...STEM_INLINE_SHORTCUTS };
++  }
++
++  // Apply customized virtual keyboard layouts (hides 123/abc if toggled off, adds che/ee/math/phy)
++  const syncKeyboard = () => {
++    if (opts.settings) {
++      applyMathLiveKeyboardConfig(opts.settings);
++    }
++  };
++  mf.addEventListener("focus", syncKeyboard);
++  mf.addEventListener("focusin", syncKeyboard);
++
++  if (opts.initialLatex) {
++    mf.value = opts.enableSlotHighlighting !== false
++      ? templateToMathLivePlaceholders(opts.initialLatex)
++      : opts.initialLatex;
++  }
++
++  // Direct mouse-click selection on highlighted placeholder slots
++  mf.addEventListener("pointerup", (ev: PointerEvent) => {
++    const target = ev.composedPath?.()[0] as HTMLElement | undefined;
++    if (!target) return;
++    const promptEl = target.closest?.("[data-atom-id], .ML__prompt, .ML__placeholder");
++    if (promptEl) {
++      // Ensure the mathfield gets focus and selects the placeholder immediately for typing
++      mf.focus();
++    }
++  });
++
++  // Tab / Shift+Tab slot jumping + Enter for new derivation line + Backspace on empty line
++  mf.addEventListener("keydown", (ev: KeyboardEvent) => {
++    if (ev.key === "Tab") {
++      const hasPrompt = mf.value.includes("\\placeholder");
++      if (hasPrompt) {
++        ev.preventDefault();
++        mf.executeCommand(ev.shiftKey ? "moveToPreviousPlaceholder" : "moveToNextPlaceholder");
++      }
++    } else if (ev.key === "Enter" && !ev.shiftKey && opts.onEnter) {
++      ev.preventDefault();
++      opts.onEnter();
++    } else if (ev.key === "Backspace" && !mf.value.trim() && opts.onBackspaceEmpty) {
++      ev.preventDefault();
++      opts.onBackspaceEmpty();
++    }
++  });
++
++  mf.addEventListener("input", () => {
++    const raw = mf.value;
++    const clean = stripMathLivePlaceholders(raw);
++    opts.onChange?.(clean, raw);
++  });
++
++  container.appendChild(mf);
++  return mf;
++}
+diff --git a/src/ui/stem-keyboards.ts b/src/ui/stem-keyboards.ts
+new file mode 100644
+index 0000000..c20242c
+--- /dev/null
++++ b/src/ui/stem-keyboards.ts
+@@ -0,0 +1,236 @@
++import type { LaTeXSettings } from "../types";
++
++export interface CustomKeyboardKey {
++  label?: string;
++  latex?: string;
++  insert?: string;
++  tooltip?: string;
++  class?: string;
++  width?: number;
++  variants?: Array<string | { label?: string; latex?: string; insert?: string }>;
++  command?: string | string[];
++}
++
++export interface CustomVirtualKeyboardLayout {
++  label: string;
++  tooltip?: string;
++  rows: Array<Array<string | CustomKeyboardKey>>;
++}
++
++/**
++ * Dedicated Chemistry virtual keyboard tab ("che")
++ */
++export const CHEM_KEYBOARD_LAYOUT: CustomVirtualKeyboardLayout = {
++  label: "che",
++  tooltip: "Chemistry symbols, reactions & mhchem",
++  rows: [
++    [
++      { label: "\\ce{}", insert: "\\ce{#?}", tooltip: "mhchem formula/equation" },
++      { label: "\\rightarrow", insert: "\\rightarrow ", tooltip: "Yields arrow", variants: ["\\xrightarrow{#?}", "\\xleftarrow{#?}", "\\longrightarrow"] },
++      { label: "\\rightleftharpoons", insert: "\\rightleftharpoons ", tooltip: "Equilibrium" },
++      { label: "\\xrightarrow{T}", insert: "\\xrightarrow{#?}", tooltip: "Reaction with condition" },
++      { label: "\\uparrow", insert: "\\uparrow", tooltip: "Gas evolved" },
++      { label: "\\downarrow", insert: "\\downarrow", tooltip: "Precipitate formed" },
++      { label: "^{A}_{Z}X", insert: "^{#?}_{#?}\\text{#?}", tooltip: "Isotope notation" },
++      { label: "[\\;]", insert: "[#0]", tooltip: "Molar concentration" },
++      { label: "e^{-}", insert: "e^{-}", tooltip: "Electron" },
++      { label: "H^{+}", insert: "H^{+}", tooltip: "Proton", variants: ["H_3O^{+}", "OH^{-}", "H_2O"] },
++    ],
++    [
++      { label: "\\Delta H^{\\circ}", insert: "\\Delta H^{\\circ}", tooltip: "Standard enthalpy" },
++      { label: "\\Delta G^{\\circ}", insert: "\\Delta G^{\\circ}", tooltip: "Gibbs free energy" },
++      { label: "\\Delta S^{\\circ}", insert: "\\Delta S^{\\circ}", tooltip: "Standard entropy" },
++      { label: "K_{eq}", insert: "K_{\\text{eq}}", tooltip: "Equilibrium constant", variants: ["K_a", "K_b", "K_{sp}", "K_w", "K_p", "K_c"] },
++      { label: "pH", insert: "\\text{pH} = -\\log[#?]", tooltip: "pH formula" },
++      { label: "PV=nRT", insert: "PV = nRT", tooltip: "Ideal gas law" },
++      { label: "E^{\\circ}", insert: "E^{\\circ}_{\\text{cell}}", tooltip: "Cell potential" },
++      { label: "k=Ae^{-E_a/RT}", insert: "k = A e^{-\\frac{E_a}{RT}}", tooltip: "Arrhenius equation" },
++      { label: "^{\\circ}\\text{C}", insert: "^{\\circ}\\text{C}", tooltip: "Celsius", variants: ["\\text{K}", "\\text{atm}", "\\text{bar}"] },
++      { label: "\\text{mol}", insert: "\\text{ mol}", tooltip: "Moles", variants: ["\\text{ M}", "\\text{ g/mol}", "\\text{ kJ/mol}"] },
++    ],
++    [
++      { label: "x^{#?}", insert: "^{#?}", tooltip: "Charge / Superscript" },
++      { label: "x_{#?}", insert: "_{#?}", tooltip: "Stoichiometric subscript" },
++      { label: "(s)", insert: "_{(s)}", tooltip: "Solid state", variants: ["_{(l)}", "_{(g)}", "_{(aq)}"] },
++      { label: "\\cdot", insert: "\\cdot ", tooltip: "Hydrate dot" },
++      { label: "\\approx", insert: "\\approx ", tooltip: "Approximately" },
++      { label: "\\propto", insert: "\\propto ", tooltip: "Proportional to" },
++      { label: "[left]", command: "moveToPreviousChar" },
++      { label: "[right]", command: "moveToNextChar" },
++      { label: "[backspace]", command: "deleteBackward" },
++      { label: "[return]", command: "commit" },
++    ],
++  ],
++};
++
++/**
++ * Dedicated Electrical & Electronic Engineering virtual keyboard tab ("ee")
++ */
++export function buildEEKeyboardLayout(imagUnit: "j" | "i" = "j"): CustomVirtualKeyboardLayout {
++  const j = imagUnit;
++  return {
++    label: "ee",
++    tooltip: "Electrical & Electronic Engineering (Phasors, Circuits, Signals, EM)",
++    rows: [
++      [
++        { label: `${j}\\omega`, insert: `${j}\\omega`, tooltip: "Complex angular frequency", variants: [`${j}\\omega L`, `\\frac{1}{${j}\\omega C}`, `s = \\sigma + ${j}\\omega`] },
++        { label: "\\angle", insert: "\\angle #?^{\\circ}", tooltip: "Phasor angle" },
++        { label: "\\Omega", insert: "\\Omega", tooltip: "Ohm", variants: ["\\text{k}\\Omega", "\\text{M}\\Omega", "\\text{m}\\Omega"] },
++        { label: "\\mu", insert: "\\mu", tooltip: "Micro / Permeability", variants: ["\\mu\\text{F}", "\\mu\\text{H}", "\\mu\\text{A}", "\\mu_0"] },
++        { label: "Z_{#?}", insert: "Z_{#?}", tooltip: "Impedance", variants: ["Z_{th}", "Z_L", "Z_C", "Z_0", "Y_{#?}"] },
++        { label: "X_L", insert: "X_L = \\omega L", tooltip: "Inductive reactance", variants: ["X_C = \\frac{1}{\\omega C}"] },
++        { label: "\\parallel", insert: "\\parallel ", tooltip: "Parallel impedance" },
++        { label: "H(s)", insert: "H(s) = \\frac{#?}{#?}", tooltip: "Transfer function", variants: [`H(${j}\\omega)`, "H(z)"] },
++        { label: "\\mathcal{L}", insert: "\\mathcal{L}\\left\\{#?\\right\\}", tooltip: "Laplace transform", variants: ["\\mathcal{L}^{-1}\\left\\{#?\\right\\}"] },
++        { label: "\\mathcal{F}", insert: "\\mathcal{F}\\left\\{#?\\right\\}", tooltip: "Fourier transform", variants: ["\\mathcal{F}^{-1}\\left\\{#?\\right\\}"] },
++      ],
++      [
++        { label: "V=IR", insert: "V = I\\,R", tooltip: "Ohm's Law", variants: ["V = I\\,Z", "P = V\\,I\\cos\\phi"] },
++        { label: "v=L\\frac{di}{dt}", insert: "v(t) = L\\frac{di}{dt}", tooltip: "Inductor V-I", variants: ["i(t) = C\\frac{dv}{dt}"] },
++        { label: "S=P+jQ", insert: `S = P + ${j}Q`, tooltip: "Complex power", variants: ["\\text{pf} = \\cos\\theta"] },
++        { label: "f_0", insert: "f_0 = \\frac{1}{2\\pi\\sqrt{LC}}", tooltip: "Resonant frequency" },
++        { label: "\\text{dB}", insert: "20\\log_{10}\\left|#?\\right|\\text{ dB}", tooltip: "Decibel gain" },
++        { label: "\\Phi", insert: "\\Phi", tooltip: "Magnetic flux", variants: ["\\mathbf{B}", "\\mathbf{E}", "\\mathbf{H}", "\\mathbf{J}"] },
++        { label: "\\nabla\\times", insert: "\\nabla \\times \\mathbf{#?}", tooltip: "Curl", variants: ["\\nabla \\cdot \\mathbf{#?}", "\\nabla #?"] },
++        { label: "\\oplus", insert: "\\oplus ", tooltip: "XOR gate", variants: ["\\odot ", "\\cdot ", "\\overline{#0}"] },
++        { label: "\\overline{A}", insert: "\\overline{#0}", tooltip: "Boolean NOT / Conjugate" },
++        { label: "v_{rms}", insert: "V_{\\text{rms}} = \\frac{V_m}{\\sqrt{2}}", tooltip: "RMS value" },
++      ],
++      [
++        { label: "x^{#?}", insert: "^{#?}", tooltip: "Superscript" },
++        { label: "x_{#?}", insert: "_{#?}", tooltip: "Subscript" },
++        { label: "\\frac{#?}{#?}", insert: "\\frac{#?}{#?}", tooltip: "Fraction" },
++        { label: "\\mathbf{#?}", insert: "\\mathbf{#?}", tooltip: "Bold vector/phasor" },
++        { label: "\\hat{#?}", insert: "\\hat{#?}", tooltip: "Unit vector / Phasor" },
++        { label: "\\text{mH}", insert: "\\text{ mH}", tooltip: "Millihenry", variants: ["\\text{ pF}", "\\text{ nF}", "\\text{ mA}", "\\text{ kV}", "\\text{ Hz}"] },
++        { label: "[left]", command: "moveToPreviousChar" },
++        { label: "[right]", command: "moveToNextChar" },
++        { label: "[backspace]", command: "deleteBackward" },
++        { label: "[return]", command: "commit" },
++      ],
++    ],
++  };
++}
++
++/**
++ * Dedicated Mathematics virtual keyboard tab ("math")
++ */
++export const MATH_KEYBOARD_LAYOUT: CustomVirtualKeyboardLayout = {
++  label: "math",
++  tooltip: "Calculus, Linear Algebra, Sets & Logic",
++  rows: [
++    [
++      { label: "\\int_{a}^{b}", insert: "\\int_{#?}^{#?} #? \\, d#?", tooltip: "Definite integral", variants: ["\\int #? \\, dx", "\\iint_{#?} #? \\, dA", "\\iiint_{#?} #? \\, dV", "\\oint_{#?} #? \\, d\\mathbf{r}"] },
++      { label: "\\frac{d}{dx}", insert: "\\frac{d#?}{d#?}", tooltip: "Derivative", variants: ["\\frac{d^2#?}{d#?^2}"] },
++      { label: "\\frac{\\partial}{\\partial x}", insert: "\\frac{\\partial #?}{\\partial #?}", tooltip: "Partial derivative" },
++      { label: "\\lim", insert: "\\lim_{#? \\to #?} #?", tooltip: "Limit" },
++      { label: "\\sum", insert: "\\sum_{#?=#?}^{#?} #?", tooltip: "Summation" },
++      { label: "\\prod", insert: "\\prod_{#?=#?}^{#?} #?", tooltip: "Product" },
++      { label: "\\frac{#?}{#?}", insert: "\\frac{#?}{#?}", tooltip: "Fraction" },
++      { label: "\\sqrt{#?}", insert: "\\sqrt{#?}", tooltip: "Square root", variants: ["\\sqrt[#?]{#?}"] },
++      { label: "x^{#?}", insert: "^{#?}", tooltip: "Exponent / Superscript" },
++      { label: "x_{#?}", insert: "_{#?}", tooltip: "Subscript" },
++    ],
++    [
++      { label: "\\begin{pmatrix}\\cdot\\end{pmatrix}", insert: "\\begin{pmatrix} #? & #? \\\\ #? & #? \\end{pmatrix}", tooltip: "2x2 Matrix", variants: ["\\begin{bmatrix} #? & #? \\\\ #? & #? \\end{bmatrix}", "\\begin{vmatrix} #? & #? \\\\ #? & #? \\end{vmatrix}"] },
++      { label: "\\cases", insert: "\\begin{cases} #? & \\text{if } #? \\\\ #? & \\text{if } #? \\end{cases}", tooltip: "Piecewise function" },
++      { label: "\\binom{n}{k}", insert: "\\binom{#?}{#?}", tooltip: "Binomial coefficient" },
++      { label: "\\infty", insert: "\\infty", tooltip: "Infinity" },
++      { label: "\\pm", insert: "\\pm ", tooltip: "Plus-minus", variants: ["\\mp "] },
++      { label: "\\neq", insert: "\\neq ", tooltip: "Not equal", variants: ["\\leq ", "\\geq ", "\\approx ", "\\equiv "] },
++      { label: "\\forall", insert: "\\forall ", tooltip: "For all", variants: ["\\exists ", "\\nexists "] },
++      { label: "\\in", insert: "\\in ", tooltip: "Element of", variants: ["\\notin ", "\\subset ", "\\subseteq ", "\\cup ", "\\cap "] },
++      { label: "\\mathbb{R}", insert: "\\mathbb{R}", tooltip: "Real numbers", variants: ["\\mathbb{C}", "\\mathbb{Z}", "\\mathbb{N}", "\\mathbb{Q}"] },
++      { label: "\\implies", insert: "\\implies ", tooltip: "Implies", variants: ["\\iff ", "\\therefore ", "\\because "] },
++    ],
++    [
++      { label: "\\sin", insert: "\\sin(#?)", variants: ["\\sin^{-1}(#?)", "\\sinh(#?)"] },
++      { label: "\\cos", insert: "\\cos(#?)", variants: ["\\cos^{-1}(#?)", "\\cosh(#?)"] },
++      { label: "\\tan", insert: "\\tan(#?)", variants: ["\\tan^{-1}(#?)", "\\tanh(#?)"] },
++      { label: "\\ln", insert: "\\ln(#?)", variants: ["\\log_{#?}(#?)", "\\exp(#?)"] },
++      { label: "|#?|", insert: "\\left|#?\\right|", tooltip: "Absolute value", variants: ["\\left\\|#?\\right\\|"] },
++      { label: "(#?)", insert: "\\left(#?\\right)", tooltip: "Auto-sized parens" },
++      { label: "[left]", command: "moveToPreviousChar" },
++      { label: "[right]", command: "moveToNextChar" },
++      { label: "[backspace]", command: "deleteBackward" },
++      { label: "[return]", command: "commit" },
++    ],
++  ],
++};
++
++/**
++ * Dedicated Physics virtual keyboard tab ("phy")
++ */
++export const PHYSICS_KEYBOARD_LAYOUT: CustomVirtualKeyboardLayout = {
++  label: "phy",
++  tooltip: "Physics vectors, constants, mechanics, EM & quantum",
++  rows: [
++    [
++      { label: "\\vec{v}", insert: "\\vec{#?}", tooltip: "Vector arrow" },
++      { label: "\\hat{u}", insert: "\\hat{#?}", tooltip: "Unit vector", variants: ["\\hat{i}", "\\hat{j}", "\\hat{k}"] },
++      { label: "\\dot{x}", insert: "\\dot{#?}", tooltip: "First time derivative", variants: ["\\ddot{#?}"] },
++      { label: "\\Delta", insert: "\\Delta ", tooltip: "Change / Delta" },
++      { label: "\\nabla", insert: "\\nabla ", tooltip: "Del / Gradient", variants: ["\\nabla^2 ", "\\nabla \\cdot ", "\\nabla \\times "] },
++      { label: "\\hbar", insert: "\\hbar", tooltip: "Reduced Planck constant" },
++      { label: "\\varepsilon_0", insert: "\\varepsilon_0", tooltip: "Vacuum permittivity", variants: ["\\mu_0", "k_B", "N_A", "G", "c"] },
++      { label: "\\lambda", insert: "\\lambda", tooltip: "Wavelength", variants: ["\\nu", "\\omega", "\\theta", "\\phi", "\\psi", "\\rho", "\\sigma", "\\tau"] },
++      { label: "\\langle\\psi|\\phi\\rangle", insert: "\\langle #? | #? \\rangle", tooltip: "Bra-Ket inner product", variants: ["|#?\\rangle", "\\langle #?|"] },
++      { label: "\\times", insert: "\\times ", tooltip: "Cross product", variants: ["\\cdot "] },
++    ],
++    [
++      { label: "F=ma", insert: "\\vec{F} = m\\vec{a}", tooltip: "Newton's 2nd Law" },
++      { label: "K=\\frac{1}{2}mv^2", insert: "K = \\frac{1}{2}mv^2", tooltip: "Kinetic energy" },
++      { label: "E=mc^2", insert: "E = mc^2", tooltip: "Mass-energy equivalence" },
++      { label: "F_e", insert: "F = \\frac{1}{4\\pi\\varepsilon_0}\\frac{q_1 q_2}{r^2}", tooltip: "Coulomb's Law" },
++      { label: "F_B", insert: "\\vec{F} = q(\\vec{E} + \\vec{v} \\times \\vec{B})", tooltip: "Lorentz Force" },
++      { label: "i\\hbar\\partial_t", insert: "i\\hbar\\frac{\\partial \\psi}{\\partial t} = \\hat{H}\\psi", tooltip: "Schrödinger Equation" },
++      { label: "\\text{m/s}^2", insert: "\\text{ m/s}^2", tooltip: "Acceleration unit", variants: ["\\text{ m/s}", "\\text{ N}", "\\text{ J}", "\\text{ W}", "\\text{ Pa}"] },
++      { label: "\\text{eV}", insert: "\\text{ eV}", tooltip: "Electron-volt", variants: ["\\text{ T}", "\\text{ Wb}", "\\text{ C}", "\\text{ K}"] },
++      { label: "x^{#?}", insert: "^{#?}", tooltip: "Superscript" },
++      { label: "x_{#?}", insert: "_{#?}", tooltip: "Subscript" },
++    ],
++    [
++      { label: "\\frac{#?}{#?}", insert: "\\frac{#?}{#?}", tooltip: "Fraction" },
++      { label: "\\int_{a}^{b}", insert: "\\int_{#?}^{#?} #? \\, d#?", tooltip: "Integral" },
++      { label: "\\frac{d}{dt}", insert: "\\frac{d#?}{dt}", tooltip: "Time derivative" },
++      { label: "\\frac{\\partial}{\\partial t}", insert: "\\frac{\\partial #?}{\\partial #?}", tooltip: "Partial derivative" },
++      { label: "\\sum \\vec{F}", insert: "\\sum \\vec{F} = #?", tooltip: "Net force" },
++      { label: "^{\\circ}", insert: "^{\\circ}", tooltip: "Degrees" },
++      { label: "[left]", command: "moveToPreviousChar" },
++      { label: "[right]", command: "moveToNextChar" },
++      { label: "[backspace]", command: "deleteBackward" },
++      { label: "[return]", command: "commit" },
++    ],
++  ],
++};
++
++/**
++ * Configures MathLive's global virtual keyboard layouts based on user settings.
++ * Hides redundant `numeric` (123) and `alphabetic` (abc) tabs when disabled,
++ * while always keeping `symbols`, `greek`, and optional STEM tabs (`che`, `ee`, `math`, `phy`).
++ */
++export function applyMathLiveKeyboardConfig(settings: LaTeXSettings): void {
++  const vk = (window as unknown as { mathVirtualKeyboard?: { layouts?: unknown } }).mathVirtualKeyboard;
++  if (!vk) return;
++
++  const layouts: Array<string | CustomVirtualKeyboardLayout> = [];
++  if (settings.showNumericKeyboard) {
++    layouts.push("numeric");
++  }
++  layouts.push("symbols");
++  if (settings.showAlphabeticKeyboard) {
++    layouts.push("alphabetic");
++  }
++  layouts.push("greek");
++
++  if (settings.enableStemKeyboardTabs !== false) {
++    layouts.push(
++      CHEM_KEYBOARD_LAYOUT,
++      buildEEKeyboardLayout(settings.eeImaginaryUnit ?? "j"),
++      MATH_KEYBOARD_LAYOUT,
++      PHYSICS_KEYBOARD_LAYOUT
++    );
++  }
++
++  vk.layouts = layouts;
++}
+diff --git a/styles.css b/styles.css
+index 8a8a310..b518d55 100644
+--- a/styles.css
++++ b/styles.css
+@@ -1029,3 +1029,379 @@ body:not(.lt-glassmorphic) {
+   font-size: var(--font-ui-small);
+   color: var(--text-muted);
+ }
++
++/* ==========================================================================
++   v5.5.0 — High-Contrast Clickable Slots, Multiline Gutter, CAS Preview,
++   Rich Rationales, Formula DB Browser & Integrated Scientific Calculator
++   ========================================================================== */
++
++.lt-modal {
++  min-width: min(92vw, 860px);
++  max-width: 96vw;
++  resize: both;
++  overflow: auto;
++}
++
++.lt-mathlive-autoresize {
++  min-height: 48px;
++  max-height: 360px;
++  overflow-y: auto;
++  resize: vertical;
++  transition: min-height 0.15s ease;
++}
++
++/* High-contrast clickable placeholder / prompt outlines */
++.lt-slot-highlighting-enabled::part(prompt),
++.lt-slot-highlighting-enabled::part(placeholder) {
++  background: rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.14);
++  border: 1.5px dashed var(--interactive-accent);
++  border-radius: 4px;
++  padding: 1px 5px;
++  margin: 0 2px;
++  cursor: pointer;
++  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
++}
++
++.lt-slot-highlighting-enabled::part(prompt):hover,
++.lt-slot-highlighting-enabled::part(placeholder):hover {
++  background: rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.28);
++  border-style: solid;
++  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.22);
++}
++
++/* Multiline Derivation Editor */
++.lt-derivation-lines {
++  display: flex;
++  flex-direction: column;
++  gap: 8px;
++  margin-top: 8px;
++}
++
++.lt-derivation-row {
++  display: grid;
++  grid-template-columns: auto 1fr minmax(210px, 280px) auto;
++  gap: 8px;
++  align-items: start;
++  padding: 6px 8px;
++  border-radius: var(--radius-m);
++  border: 1px solid var(--background-modifier-border);
++  background: var(--background-secondary);
++}
++
++.lt-derivation-row.lt-no-line-numbers {
++  grid-template-columns: 1fr minmax(210px, 280px) auto;
++}
++
++.lt-derivation-row.lt-row-active {
++  border-color: var(--interactive-accent);
++  box-shadow: 0 0 0 1px rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.35);
++}
++
++.lt-line-num {
++  min-width: 24px;
++  padding-top: 12px;
++  text-align: right;
++  font-family: var(--font-monospace);
++  font-size: var(--font-ui-small);
++  font-weight: 600;
++  color: var(--text-muted);
++  user-select: none;
++}
++
++.lt-rationale-box {
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++}
++
++.lt-rationale-controls {
++  display: flex;
++  gap: 4px;
++  align-items: center;
++}
++
++.lt-rationale-type {
++  width: 78px;
++  font-size: var(--font-ui-smaller);
++}
++
++.lt-rationale-input {
++  width: 100%;
++  font-size: var(--font-ui-smaller);
++}
++
++.lt-row-actions {
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++  padding-top: 4px;
++}
++
++.lt-row-actions button {
++  padding: 2px 6px;
++  font-size: var(--font-ui-smaller);
++  min-height: 24px;
++}
++
++/* Natural Language Bar & Suggestions */
++.lt-nl-bar {
++  display: flex;
++  gap: 6px;
++  align-items: center;
++  margin-bottom: 8px;
++  position: relative;
++}
++
++.lt-nl-input {
++  flex: 1;
++  font-family: var(--font-monospace);
++}
++
++.lt-nl-badge {
++  font-size: var(--font-ui-smaller);
++  padding: 2px 8px;
++  border-radius: 999px;
++  background: var(--background-modifier-hover);
++  color: var(--text-accent);
++  font-weight: 600;
++  white-space: nowrap;
++}
++
++.lt-nl-suggestions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px;
++  margin-bottom: 8px;
++}
++
++.lt-nl-chip {
++  font-size: var(--font-ui-smaller);
++  padding: 3px 9px;
++  border-radius: 999px;
++  border: 1px solid var(--background-modifier-border);
++  background: var(--background-primary);
++  cursor: pointer;
++}
++
++.lt-nl-chip:hover {
++  border-color: var(--interactive-accent);
++  background: var(--background-modifier-hover);
++}
++
++/* Expanded CAS Toolbar & Live Non-Destructive Preview */
++.lt-cas-section {
++  margin-top: 10px;
++  padding: 8px 10px;
++  border-radius: var(--radius-m);
++  border: 1px solid var(--background-modifier-border);
++  background: var(--background-secondary);
++}
++
++.lt-cas-header {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 8px;
++  align-items: center;
++  justify-content: space-between;
++  margin-bottom: 6px;
++}
++
++.lt-cas-var-wrap {
++  display: flex;
++  align-items: center;
++  gap: 6px;
++  font-size: var(--font-ui-smaller);
++}
++
++.lt-cas-var-input {
++  width: 64px;
++  text-align: center;
++  font-family: var(--font-monospace);
++}
++
++.lt-cas-preview {
++  margin-top: 8px;
++  padding: 8px 10px;
++  border-radius: var(--radius-s);
++  background: var(--background-primary);
++  border-left: 3px solid var(--interactive-accent);
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  justify-content: space-between;
++  gap: 8px;
++}
++
++.lt-cas-preview-expr {
++  font-family: var(--font-monospace);
++  font-size: var(--font-ui-small);
++  word-break: break-all;
++}
++
++.lt-cas-preview-actions {
++  display: flex;
++  gap: 6px;
++}
++
++.lt-cas-error {
++  color: var(--text-error);
++}
++
++/* Rendered Interactive Derivation Block in Obsidian Notes */
++.lt-rendered-derivation {
++  border: 1px solid var(--background-modifier-border);
++  border-radius: var(--radius-m);
++  padding: 10px 14px;
++  margin: 10px 0;
++  background: var(--background-secondary);
++}
++
++.lt-rendered-derivation-row {
++  display: grid;
++  grid-template-columns: 28px 1fr minmax(180px, 260px);
++  gap: 10px;
++  align-items: center;
++  padding: 6px 0;
++  border-bottom: 1px dashed var(--background-modifier-border);
++}
++
++.lt-rendered-derivation-row:last-child {
++  border-bottom: none;
++}
++
++.lt-rendered-rationale {
++  font-size: var(--font-ui-small);
++  color: var(--text-muted);
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++}
++
++.lt-rendered-rationale audio {
++  max-width: 100%;
++  height: 30px;
++}
++
++.lt-app-link-btn {
++  display: inline-flex;
++  align-items: center;
++  gap: 4px;
++  font-size: var(--font-ui-smaller);
++  padding: 3px 8px;
++  border-radius: var(--radius-s);
++  border: 1px solid var(--interactive-accent);
++  color: var(--text-accent);
++  text-decoration: none;
++  width: fit-content;
++}
++
++/* Read-Only STEM Formula Database Browser */
++.lt-formula-browser {
++  margin-top: 10px;
++  border: 1px solid var(--background-modifier-border);
++  border-radius: var(--radius-m);
++  padding: 8px 10px;
++  background: var(--background-secondary);
++}
++
++.lt-formula-filters {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px;
++  margin-bottom: 8px;
++}
++
++.lt-formula-list {
++  max-height: 220px;
++  overflow-y: auto;
++  display: grid;
++  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
++  gap: 8px;
++}
++
++.lt-formula-card {
++  padding: 8px 10px;
++  border-radius: var(--radius-s);
++  border: 1px solid var(--background-modifier-border);
++  background: var(--background-primary);
++  cursor: pointer;
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++}
++
++.lt-formula-card:hover {
++  border-color: var(--interactive-accent);
++}
++
++.lt-formula-title {
++  font-weight: 600;
++  font-size: var(--font-ui-small);
++}
++
++.lt-formula-meta {
++  font-size: var(--font-ui-smaller);
++  color: var(--text-muted);
++}
++
++.lt-formula-def {
++  font-size: var(--font-ui-smaller);
++  color: var(--text-normal);
++}
++
++/* Integrated Scientific & Graphing Calculator Modal */
++.lt-calc-modal {
++  min-width: min(92vw, 760px);
++}
++
++.lt-calc-tabs {
++  display: flex;
++  gap: 6px;
++  margin-bottom: 10px;
++}
++
++.lt-calc-tab-active {
++  background: var(--interactive-accent) !important;
++  color: var(--text-on-accent) !important;
++}
++
++.lt-calc-display {
++  padding: 10px 12px;
++  border-radius: var(--radius-m);
++  border: 1px solid var(--background-modifier-border);
++  background: var(--background-primary);
++  font-family: var(--font-monospace);
++  margin-bottom: 8px;
++}
++
++.lt-calc-result {
++  font-size: 1.25rem;
++  font-weight: 700;
++  text-align: right;
++  color: var(--text-accent);
++  margin-top: 4px;
++}
++
++.lt-calc-keypad {
++  display: grid;
++  grid-template-columns: repeat(6, 1fr);
++  gap: 6px;
++}
++
++.lt-calc-canvas {
++  width: 100%;
++  height: 280px;
++  border: 1px solid var(--background-modifier-border);
++  border-radius: var(--radius-s);
++  background: var(--background-primary);
++}
++
++@media (max-width: 720px) {
++  .lt-derivation-row,
++  .lt-rendered-derivation-row {
++    grid-template-columns: 1fr;
++  }
++  .lt-calc-keypad {
++    grid-template-columns: repeat(4, 1fr);
++  }
++}

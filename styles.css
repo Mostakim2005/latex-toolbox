@@ -1029,3 +1029,379 @@ body:not(.lt-glassmorphic) {
   font-size: var(--font-ui-small);
   color: var(--text-muted);
 }
+
+/* ==========================================================================
+   v5.5.0 — High-Contrast Clickable Slots, Multiline Gutter, CAS Preview,
+   Rich Rationales, Formula DB Browser & Integrated Scientific Calculator
+   ========================================================================== */
+
+.lt-modal {
+  min-width: min(92vw, 860px);
+  max-width: 96vw;
+  resize: both;
+  overflow: auto;
+}
+
+.lt-mathlive-autoresize {
+  min-height: 48px;
+  max-height: 360px;
+  overflow-y: auto;
+  resize: vertical;
+  transition: min-height 0.15s ease;
+}
+
+/* High-contrast clickable placeholder / prompt outlines */
+.lt-slot-highlighting-enabled::part(prompt),
+.lt-slot-highlighting-enabled::part(placeholder) {
+  background: rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.14);
+  border: 1.5px dashed var(--interactive-accent);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin: 0 2px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.lt-slot-highlighting-enabled::part(prompt):hover,
+.lt-slot-highlighting-enabled::part(placeholder):hover {
+  background: rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.28);
+  border-style: solid;
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.22);
+}
+
+/* Multiline Derivation Editor */
+.lt-derivation-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.lt-derivation-row {
+  display: grid;
+  grid-template-columns: auto 1fr minmax(210px, 280px) auto;
+  gap: 8px;
+  align-items: start;
+  padding: 6px 8px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.lt-derivation-row.lt-no-line-numbers {
+  grid-template-columns: 1fr minmax(210px, 280px) auto;
+}
+
+.lt-derivation-row.lt-row-active {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px rgba(var(--interactive-accent-rgb, 15, 118, 110), 0.35);
+}
+
+.lt-line-num {
+  min-width: 24px;
+  padding-top: 12px;
+  text-align: right;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.lt-rationale-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lt-rationale-controls {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.lt-rationale-type {
+  width: 78px;
+  font-size: var(--font-ui-smaller);
+}
+
+.lt-rationale-input {
+  width: 100%;
+  font-size: var(--font-ui-smaller);
+}
+
+.lt-row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 4px;
+}
+
+.lt-row-actions button {
+  padding: 2px 6px;
+  font-size: var(--font-ui-smaller);
+  min-height: 24px;
+}
+
+/* Natural Language Bar & Suggestions */
+.lt-nl-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.lt-nl-input {
+  flex: 1;
+  font-family: var(--font-monospace);
+}
+
+.lt-nl-badge {
+  font-size: var(--font-ui-smaller);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--background-modifier-hover);
+  color: var(--text-accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lt-nl-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.lt-nl-chip {
+  font-size: var(--font-ui-smaller);
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  cursor: pointer;
+}
+
+.lt-nl-chip:hover {
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+}
+
+/* Expanded CAS Toolbar & Live Non-Destructive Preview */
+.lt-cas-section {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.lt-cas-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.lt-cas-var-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-ui-smaller);
+}
+
+.lt-cas-var-input {
+  width: 64px;
+  text-align: center;
+  font-family: var(--font-monospace);
+}
+
+.lt-cas-preview {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  border-left: 3px solid var(--interactive-accent);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lt-cas-preview-expr {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+  word-break: break-all;
+}
+
+.lt-cas-preview-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.lt-cas-error {
+  color: var(--text-error);
+}
+
+/* Rendered Interactive Derivation Block in Obsidian Notes */
+.lt-rendered-derivation {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 10px 14px;
+  margin: 10px 0;
+  background: var(--background-secondary);
+}
+
+.lt-rendered-derivation-row {
+  display: grid;
+  grid-template-columns: 28px 1fr minmax(180px, 260px);
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--background-modifier-border);
+}
+
+.lt-rendered-derivation-row:last-child {
+  border-bottom: none;
+}
+
+.lt-rendered-rationale {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lt-rendered-rationale audio {
+  max-width: 100%;
+  height: 30px;
+}
+
+.lt-app-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-ui-smaller);
+  padding: 3px 8px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--interactive-accent);
+  color: var(--text-accent);
+  text-decoration: none;
+  width: fit-content;
+}
+
+/* Read-Only STEM Formula Database Browser */
+.lt-formula-browser {
+  margin-top: 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 8px 10px;
+  background: var(--background-secondary);
+}
+
+.lt-formula-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.lt-formula-list {
+  max-height: 220px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+
+.lt-formula-card {
+  padding: 8px 10px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lt-formula-card:hover {
+  border-color: var(--interactive-accent);
+}
+
+.lt-formula-title {
+  font-weight: 600;
+  font-size: var(--font-ui-small);
+}
+
+.lt-formula-meta {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.lt-formula-def {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-normal);
+}
+
+/* Integrated Scientific & Graphing Calculator Modal */
+.lt-calc-modal {
+  min-width: min(92vw, 760px);
+}
+
+.lt-calc-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.lt-calc-tab-active {
+  background: var(--interactive-accent) !important;
+  color: var(--text-on-accent) !important;
+}
+
+.lt-calc-display {
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  font-family: var(--font-monospace);
+  margin-bottom: 8px;
+}
+
+.lt-calc-result {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: right;
+  color: var(--text-accent);
+  margin-top: 4px;
+}
+
+.lt-calc-keypad {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.lt-calc-canvas {
+  width: 100%;
+  height: 280px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+}
+
+@media (max-width: 720px) {
+  .lt-derivation-row,
+  .lt-rendered-derivation-row {
+    grid-template-columns: 1fr;
+  }
+  .lt-calc-keypad {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
