@@ -1,14 +1,10 @@
-import "mathlive";
-import { MathfieldElement } from "mathlive";
+import type { MathfieldElement } from "mathlive";
 import type { LaTeXSettings } from "../types";
+import { ensureMathLiveLoaded } from "../core/lazy-engines";
 import { applyMathLiveKeyboardConfig } from "./stem-keyboards";
 
-let mathLiveConfigured = false;
 function configureMathLiveForObsidian(): void {
-  if (mathLiveConfigured) return;
-  mathLiveConfigured = true;
-  MathfieldElement.fontsDirectory = null;
-  MathfieldElement.soundsDirectory = null;
+  ensureMathLiveLoaded();
 }
 
 /**

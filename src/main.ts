@@ -743,17 +743,20 @@ class MathLiveBuilderModal extends Modal {
 }
 
 export default class LatexToolboxPlugin extends Plugin {
-  settings!: LaTeXSettings;
+  settings: LaTeXSettings = Object.assign({}, DEFAULT_SETTINGS);
   api!: Record<string, unknown>;
+  private settingsReady: Promise<void> = Promise.resolve();
 
-  async onload(): Promise<void> {
-    await this.loadSettings();
-    this.applyThemePreferences();
+  onload(): void {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS);
+    this.settingsReady = this.loadSettings().then(() => {
+      this.applyThemePreferences();
+    });
     registerDerivationBlockProcessor(this);
 
     const companions = detectCompanionLatexPlugins(this.app);
     this.api = {
-      version: "5.5.0",
+      version: this.manifest.version,
       normalizeDelimiters,
       normalizeChemicalFormulaInput,
       balanceChemicalEquation,
@@ -771,26 +774,30 @@ export default class LatexToolboxPlugin extends Plugin {
       getMergedLibrary: () => getMergedLibrary(this.settings),
       companions,
       openBuilder: (initialText?: string) => {
-        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-        const editor = view ? view.editor : null;
-        const text = initialText ?? (editor ? editor.getSelection() : "");
-        new MathLiveBuilderModal(this.app, this, editor, text).open();
+        void this.settingsReady.then(() => {
+          const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+          const editor = view ? view.editor : null;
+          const text = initialText ?? (editor ? editor.getSelection() : "");
+          new MathLiveBuilderModal(this.app, this, editor, text).open();
+        });
       },
       openCalculator: () => {
-        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-        const editor = view ? view.editor : null;
-        new ScientificCalculatorModal(
-          this.app,
-          this.settings.eeImaginaryUnit,
-          {
-            onInsertLatex: (ltx) => {
-              if (editor) editor.replaceSelection(wrapMath(ltx, this.settings.wrapStyle));
-              else void navigator.clipboard?.writeText(ltx);
+        void this.settingsReady.then(() => {
+          const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+          const editor = view ? view.editor : null;
+          new ScientificCalculatorModal(
+            this.app,
+            this.settings.eeImaginaryUnit,
+            {
+              onInsertLatex: (ltx) => {
+                if (editor) editor.replaceSelection(wrapMath(ltx, this.settings.wrapStyle));
+                else void navigator.clipboard?.writeText(ltx);
+              },
+              onSendToBuilder: (ltx) => (this.api.openBuilder as (t?: string) => void)(ltx),
             },
-            onSendToBuilder: (ltx) => (this.api.openBuilder as (t?: string) => void)(ltx),
-          },
-          this.settings.closeOnBackdropClick
-        ).open();
+            this.settings.closeOnBackdropClick
+          ).open();
+        });
       },
     };
     (window as unknown as Record<string, unknown>).LatexToolboxAPI = this.api;
@@ -894,6 +901,7 @@ export default class LatexToolboxPlugin extends Plugin {
   }
 
   async saveSettings(): Promise<void> {
+    await this.settingsReady;
     await safeSaveSettings(this, this.settings);
     applyMathLiveKeyboardConfig(this.settings);
   }

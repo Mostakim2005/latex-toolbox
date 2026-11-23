@@ -1,6 +1,7 @@
 import { App, Modal, Notice } from "obsidian";
-import * as math from "mathjs";
+import type { EvalFunction } from "mathjs";
 import { casPhasorConvert } from "../core/cas-engine";
+import { getMathJs } from "../core/lazy-engines";
 
 type CalcTab = "scientific" | "eee" | "basen" | "graph";
 
@@ -91,6 +92,7 @@ export function renderScientificCalculatorView(
         if (state.angleMode === "DEG") {
           evalSrc = evalSrc.replace(/\b(sin|cos|tan)\(([^)]+)\)/g, "$1(($2) deg)");
         }
+        const math = getMathJs();
         const val: unknown = math.evaluate(evalSrc);
         const formatted = math.format(val, { precision: 10 });
         state.lastAns = formatted;
@@ -177,6 +179,7 @@ export function renderScientificCalculatorView(
       try {
         const a = z1In.value.replace(/j/g, "i");
         const b = z2In.value.replace(/j/g, "i");
+        const math = getMathJs();
         const val: unknown = math.evaluate(`((${a}) * (${b})) / ((${a}) + (${b}))`);
         parOut.setText(`Z_eq = ${math.format(val, { precision: 6 })}`);
       } catch (e) {
@@ -252,9 +255,9 @@ export function renderScientificCalculatorView(
         return;
       }
 
-      let compiled: math.EvalFunction;
+      let compiled: EvalFunction;
       try {
-        compiled = math.compile(fnIn.value);
+        compiled = getMathJs().compile(fnIn.value);
       } catch (e) {
         new Notice(`Invalid function: ${String(e)}`);
         return;

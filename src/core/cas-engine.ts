@@ -1,6 +1,6 @@
-import { ComputeEngine } from "@cortex-js/compute-engine";
-import * as math from "mathjs";
+import type { Complex } from "mathjs";
 import type { CASBackendMode, CASOperation, CASResult } from "../types";
+import { getComputeEngine, getMathJs } from "./lazy-engines";
 import { runSymPyOperation } from "./sympy-bridge";
 
 // Lazy-loaded Nerdamer with Algebra, Calculus, and Solve modules
@@ -21,14 +21,10 @@ interface NerdamerLib {
   limit: (expr: string, variable: string, point: string) => NerdamerExpr;
 }
 
-let engineSingleton: ComputeEngine | null = null;
 let nerdamerSingleton: NerdamerLib | null = null;
 
-function getEngine(): ComputeEngine {
-  if (!engineSingleton) {
-    engineSingleton = new ComputeEngine();
-  }
-  return engineSingleton;
+function getEngine() {
+  return getComputeEngine();
 }
 
 function getNerdamer(): NerdamerLib | null {
@@ -277,6 +273,7 @@ export function casNumeric(latex: string): CASResult {
     return { ok: true, latex: num.latex, numeric: num.latex, engine: "CortexJS Compute Engine" };
   } catch {
     try {
+      const math = getMathJs();
       const val: unknown = math.evaluate(latexToNerdamerText(latex));
       const str = math.format(val, { precision: 10 });
       return { ok: true, latex: str, numeric: str, engine: "Math.js" };
@@ -305,8 +302,9 @@ export function casPhasorConvert(input: string, imagUnit: "j" | "i" = "j"): CASR
     }
 
     // Parse rectangular a + bj or a + jb
+    const math = getMathJs();
     const normalized = cleaned.replace(/j(\d)/g, "$1i").replace(/j\b/g, "i");
-    const evaluated = math.evaluate(normalized) as math.Complex | number;
+    const evaluated = math.evaluate(normalized) as Complex | number;
     const c = typeof evaluated === "number" ? math.complex(evaluated, 0) : math.complex(evaluated);
     const polar = c.toPolar();
     const mag = Number(polar.r.toFixed(4));
@@ -327,6 +325,7 @@ export function casPhasorConvert(input: string, imagUnit: "j" | "i" = "j"): CASR
  */
 export function casUnitConvert(input: string): CASResult {
   try {
+    const math = getMathJs();
     const res: unknown = math.evaluate(input);
     const formatted = math.format(res, { precision: 6 });
     return { ok: true, latex: `\\text{${formatted}}`, numeric: formatted, engine: "Math.js Units" };
@@ -340,6 +339,7 @@ export function casUnitConvert(input: string): CASResult {
  */
 export function casMatrixOp(input: string, op: "matrix_det" | "matrix_inv"): CASResult {
   try {
+    const math = getMathJs();
     let rows: number[][];
     if (input.includes("\\begin{")) {
       const inner = input.replace(/\\begin\{[pbvB]?matrix\}/g, "").replace(/\\end\{[pbvB]?matrix\}/g, "").trim();

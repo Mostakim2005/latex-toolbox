@@ -49,6 +49,13 @@ flowchart TB
   1. Add category enum in `src/types.ts` -> `StemCategory`.
   2. Append formula JSON entries to root `data.json`.
 
+### [SUBSYSTEM: Lazy-Engine-Loader] | Aliases: startup performance, deferred mathjs, deferred mathlive, non-blocking onload
+> **1-Line Summary:** Defers initialization of Math.js, Compute Engine, MathLive, Nerdamer, and the 600-formula JSON database until first modal or CAS invocation while `onload()` returns immediately with non-blocking settings hydration.
+* **Code Anchors (Grep Targets):**
+  * `src/core/lazy-engines.ts` -> `getMathJs`, `getComputeEngine`, `ensureMathLiveLoaded`
+  * `src/core/formula-db.ts` -> `getAllFormulas`
+  * `src/main.ts` -> `LatexToolboxPlugin.onload`
+
 ### [SUBSYSTEM: UI-UX-Parity-And-Accessibility] | Aliases: status bar, ribbon icon, confirm modal, focus-visible, reduced-motion
 > **1-Line Summary:** Integrates native Obsidian workspace UI touchpoints (ribbon launcher, live status bar pill, modal confirmation guardrails) and WCAG AA accessibility styles.
 * **Architecture / Subsystem Role:** Standardizes the plugin surface across desktop and mobile Obsidian clients with keyboard accessibility, reduced-motion safety, and high-visibility status telemetry.

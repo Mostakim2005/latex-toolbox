@@ -1,6 +1,5 @@
 import type { Plugin } from "obsidian";
 import type { LaTeXSettings, PresetItem } from "./types";
-import defaultPresets from "./presets/default-presets.json";
 
 export const DEFAULT_EXTERNAL_APP_SCHEMES: Record<string, string> = {
   "Obsidian Note": "obsidian://open?file=",
@@ -51,6 +50,12 @@ export function getBundledPresets(): {
   snippets: PresetItem[];
   templates: PresetItem[];
 } {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Deferred preset JSON load avoids startup heap allocation
+  const defaultPresets = require("./presets/default-presets.json") as {
+    shortcuts?: PresetItem[];
+    snippets?: PresetItem[];
+    templates?: PresetItem[];
+  };
   return {
     shortcuts: defaultPresets.shortcuts ?? [],
     snippets: defaultPresets.snippets ?? [],

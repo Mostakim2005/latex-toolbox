@@ -1,8 +1,5 @@
-import { ComputeEngine } from "@cortex-js/compute-engine";
-import * as math from "mathjs";
 import type { FormulaEntry, FormulaVariable } from "../types";
-import rawDb from "../data/stem-formula-db.json";
-import defaultPresets from "../presets/default-presets.json";
+import { getComputeEngine, getMathJs } from "./lazy-engines";
 
 export interface ExtendedFormulaEntry extends FormulaEntry {
   wolfram?: string;
@@ -68,7 +65,14 @@ function extractAutoVariables(latex: string): { outputSymbol: string; rhsLatex: 
 }
 
 function buildUnifiedDatabase(): readonly ExtendedFormulaEntry[] {
-  const curated: ExtendedFormulaEntry[] = (rawDb as FormulaEntry[]).map((e) => ({
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Deferred JSON load keeps Obsidian startup near-instant
+  const rawDb = require("../data/stem-formula-db.json") as FormulaEntry[];
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Deferred JSON load keeps Obsidian startup near-instant
+  const defaultPresets = require("../presets/default-presets.json") as {
+    snippets?: RawPresetSnippet[];
+    templates?: RawPresetSnippet[];
+  };
+  const curated: ExtendedFormulaEntry[] = rawDb.map((e) => ({
     ...e,
     source: "curated",
   }));
@@ -76,8 +80,8 @@ function buildUnifiedDatabase(): readonly ExtendedFormulaEntry[] {
   const seenNames = new Set(curated.map((c) => c.name.toLowerCase()));
   const seenIds = new Set(curated.map((c) => c.id.toLowerCase()));
 
-  const rawSnippets = (defaultPresets as { snippets?: RawPresetSnippet[]; templates?: RawPresetSnippet[] }).snippets ?? [];
-  const rawTemplates = (defaultPresets as { snippets?: RawPresetSnippet[]; templates?: RawPresetSnippet[] }).templates ?? [];
+  const rawSnippets = defaultPresets.snippets ?? [];
+  const rawTemplates = defaultPresets.templates ?? [];
   const allPresets = [...rawSnippets, ...rawTemplates];
 
   const merged: ExtendedFormulaEntry[] = [...curated];
@@ -133,7 +137,7 @@ function buildUnifiedDatabase(): readonly ExtendedFormulaEntry[] {
   return Object.freeze(merged.map((entry) => Object.freeze(entry)));
 }
 
-const READONLY_DB: readonly ExtendedFormulaEntry[] = buildUnifiedDatabase();
+let cachedReadonlyDb: readonly ExtendedFormulaEntry[] | null = null;
 
 export type FormulaVisualShape =
   | "all"
@@ -152,7 +156,10 @@ export type FormulaSortMode =
   | "visual";
 
 export function getAllFormulas(): readonly ExtendedFormulaEntry[] {
-  return READONLY_DB;
+  if (!cachedReadonlyDb) {
+    cachedReadonlyDb = buildUnifiedDatabase();
+  }
+  return cachedReadonlyDb;
 }
 
 /**
@@ -229,7 +236,7 @@ export function searchFormulaDatabase(filter: FormulaSearchFilter = {}): Extende
   const qLower = q.toLowerCase();
   const qCompact = qLower.replace(/\s+/g, "").replace(/\*\*/g, "^");
 
-  const scored = READONLY_DB.filter((item) => {
+  const scored = getAllFormulas().filter((item) => {
     if (filter.curatedOnly && item.source !== "curated") return false;
     if (branch !== "all" && item.branch !== branch) return false;
     if (level !== "all" && item.level !== level) return false;
@@ -312,12 +319,6 @@ export interface FormulaCalcResult {
   error?: string;
 }
 
-let ceEvalSingleton: ComputeEngine | null = null;
-function getCe(): ComputeEngine {
-  if (!ceEvalSingleton) ceEvalSingleton = new ComputeEngine();
-  return ceEvalSingleton;
-}
-
 /**
  * Evaluates both curated formulas (via Math.js calcExpr) and merged preset formulas
  * (dynamically via CortexJS Compute Engine substitution on the RHS LaTeX).
@@ -342,6 +343,7 @@ export function evaluateFormulaEntry(
     }
 
     if (entry.calcExpr) {
+      const math = getMathJs();
       const rawVal: unknown = math.evaluate(entry.calcExpr, scope);
       const formatted = math.format(rawVal, { precision: 6 });
       const unitPart = entry.outputUnit ? `\\text{ ${entry.outputUnit}}` : "";
@@ -351,7 +353,7 @@ export function evaluateFormulaEntry(
 
     // Dynamic symbolic evaluation for merged preset formulas via Compute Engine
     const { rhsLatex } = extractAutoVariables(entry.latex);
-    const ce = getCe();
+    const ce = getComputeEngine();
     const parsed = ce.parse(rhsLatex);
     const substituted = parsed.subs(scope).N();
     const formatted = substituted.latex;

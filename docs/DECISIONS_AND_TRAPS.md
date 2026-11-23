@@ -23,6 +23,15 @@
 * **Decision Maker:** `[DECIDED BY: HUMAN]`
 * **Original User Intention:** Prevent frustrating data loss when clicking outside the modal or dragging selection across the modal bounds.
 
+### [DECISION: Single-File-Lazy-Engine-Loading] | Aliases: startup optimization, lazy mathjs, lazy mathlive, deferred compute engine
+> **1-Line Summary:** Keeps a standard single-file `main.js` bundle while wrapping `mathjs`, `@cortex-js/compute-engine`, `mathlive`, `nerdamer`, and bundled JSON preset databases inside on-demand `require()` thunks and non-blocking `loadSettings()`.
+* **Decision Maker:** `[DECIDED BY: HUMAN]`
+* **Original User Intention:** Eliminate multi-second Obsidian startup latency without breaking Obsidian's standard 3-file (`main.js`, `manifest.json`, `styles.css`) release format.
+* **Protected Code Anchors (Grep Targets):**
+  * `src/core/lazy-engines.ts` -> `getMathJs`, `getComputeEngine`, `ensureMathLiveLoaded`
+  * `src/core/formula-db.ts` -> `getAllFormulas`
+  * `src/main.ts` -> `LatexToolboxPlugin.onload`
+
 ## 2. Do-Not-Touch Engineering Landmines (Traps)
 
 ### [TRAP: Greedy-Dollar-Delimiter-Capture] | Aliases: currency collision, inline math corruption
