@@ -49,12 +49,17 @@ flowchart TB
   1. Add category enum in `src/types.ts` -> `StemCategory`.
   2. Append formula JSON entries to root `data.json`.
 
-### [SUBSYSTEM: Lazy-Engine-Loader] | Aliases: startup performance, deferred mathjs, deferred mathlive, non-blocking onload
-> **1-Line Summary:** Defers initialization of Math.js, Compute Engine, MathLive, Nerdamer, and the 600-formula JSON database until first modal or CAS invocation while `onload()` returns immediately with non-blocking settings hydration.
+### [SUBSYSTEM: Lazy-Engine-Loader] | Aliases: startup performance, deferred mathjs, deferred mathlive, non-blocking onload, chunk splitting
+> **1-Line Summary:** Keeps `main.js` as a <20 KB shell with non-blocking `loadData()`, idle companion detection and snippet sidecar migration, and on-demand loading of `lt-engines.chunk.js` (ESM tree-shaken `mathjs`, Compute Engine, Nerdamer), `lt-builder.chunk.js` (MathLive), `lt-calculator.chunk.js`, and external JSON databases (`lt-default-presets.json`, `lt-stem-formula-db.json`, `custom-snippets.json`).
 * **Code Anchors (Grep Targets):**
-  * `src/core/lazy-engines.ts` -> `getMathJs`, `getComputeEngine`, `ensureMathLiveLoaded`
-  * `src/core/formula-db.ts` -> `getAllFormulas`
-  * `src/main.ts` -> `LatexToolboxPlugin.onload`
+  * `src/core/chunk-loader.ts :: loadPluginChunkAsync`
+  * `src/core/chunk-loader.ts :: loadPluginChunkSync`
+  * `src/core/chunk-loader.ts :: scheduleIdleTask`
+  * `src/core/preset-store.ts :: migrateSnippetsToSidecar`
+  * `src/core/lazy-engines.ts :: getMathJs`
+  * `src/core/formula-db.ts :: warmFormulaDatabase`
+  * `src/ui/builder-modal.ts :: MathLiveBuilderModal`
+  * `src/main.ts :: LatexToolboxPlugin.onload`
 
 ### [SUBSYSTEM: UI-UX-Parity-And-Accessibility] | Aliases: status bar, ribbon icon, confirm modal, focus-visible, reduced-motion
 > **1-Line Summary:** Integrates native Obsidian workspace UI touchpoints (ribbon launcher, live status bar pill, modal confirmation guardrails) and WCAG AA accessibility styles.

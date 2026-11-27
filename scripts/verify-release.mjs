@@ -11,7 +11,16 @@ if (!/^\d+\.\d+\.\d+$/.test(manifest.version)) errors.push(`Invalid semver: ${ma
 if (pkg.version !== manifest.version) errors.push(`package.json (${pkg.version}) != manifest.json (${manifest.version})`);
 if (!versions[manifest.version]) errors.push(`versions.json missing ${manifest.version}`);
 if (fs.existsSync('runtime')) errors.push('Legacy runtime/ folder still exists; src/ is the single source of truth.');
-if (!fs.existsSync('main.js')) errors.push('main.js is missing; run npm run build first.');
+for (const asset of [
+  'main.js',
+  'lt-engines.chunk.js',
+  'lt-builder.chunk.js',
+  'lt-calculator.chunk.js',
+  'lt-default-presets.json',
+  'lt-stem-formula-db.json',
+]) {
+  if (!fs.existsSync(asset)) errors.push(`${asset} is missing; run npm run build first.`);
+}
 
 if (errors.length) {
   console.error(errors.join('\n'));

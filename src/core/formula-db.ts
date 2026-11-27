@@ -1,5 +1,12 @@
+import type { Plugin } from "obsidian";
 import type { FormulaEntry, FormulaVariable } from "../types";
 import { getComputeEngine, getMathJs } from "./lazy-engines";
+import {
+  getBundledPresetsSync,
+  getStemFormulaDbSync,
+  loadBundledPresetsAsync,
+  loadStemFormulaDbAsync,
+} from "./preset-store";
 
 export interface ExtendedFormulaEntry extends FormulaEntry {
   wolfram?: string;
@@ -64,11 +71,20 @@ function extractAutoVariables(latex: string): { outputSymbol: string; rhsLatex: 
   return { outputSymbol, rhsLatex, vars };
 }
 
+let formulaDbPlugin: Plugin | null = null;
+
+export function setFormulaDbPlugin(plugin: Plugin): void {
+  formulaDbPlugin = plugin;
+}
+
+export async function warmFormulaDatabase(plugin: Plugin): Promise<void> {
+  formulaDbPlugin = plugin;
+  await Promise.all([loadStemFormulaDbAsync(plugin), loadBundledPresetsAsync(plugin)]);
+}
+
 function buildUnifiedDatabase(): readonly ExtendedFormulaEntry[] {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Deferred JSON load keeps Obsidian startup near-instant
-  const rawDb = require("../data/stem-formula-db.json") as FormulaEntry[];
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Deferred JSON load keeps Obsidian startup near-instant
-  const defaultPresets = require("../presets/default-presets.json") as {
+  const rawDb = getStemFormulaDbSync(formulaDbPlugin);
+  const defaultPresets = getBundledPresetsSync(formulaDbPlugin) as {
     snippets?: RawPresetSnippet[];
     templates?: RawPresetSnippet[];
   };

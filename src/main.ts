@@ -1,791 +1,92 @@
-import { App, Component, Editor, MarkdownRenderer, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
-import type { MathfieldElement } from "mathlive";
-import { DEFAULT_SETTINGS, getMergedLibrary, safeSaveSettings } from "./settings";
-import type { CASOperation, CASResult, DerivationLine, FormulaEntry, LaTeXSettings, RationaleType } from "./types";
+import { App, MarkdownView, Notice, Plugin, PluginSettingTab, Setting } from "obsidian";
+import type { LtBuilderChunk } from "./chunks/builder";
+import type { LtCalculatorChunk } from "./chunks/calculator";
+import type { LtEnginesModule } from "./chunks/engines";
+import { clearLoadedChunks, loadPluginChunkAsync, loadPluginChunkSync, scheduleIdleTask } from "./core/chunk-loader";
 import { normalizeDelimiters, wrapMath } from "./core/delimiters";
-import {
-  casDifferentiate,
-  casExpand,
-  casFactor,
-  casIntegrate,
-  casSimplify,
-  casSolve,
-  detectPrimaryVariable,
-  runCASOperation,
-} from "./core/cas-engine";
-import { checkSymPyStatus } from "./core/sympy-bridge";
-import { balanceChemicalEquation } from "./core/chem-engine";
-import { detectStemDomain, getNaturalSuggestions, naturalLanguageToLatex } from "./core/natural-language";
-import {
-  exportDerivationToInteractiveBlock,
-  exportDerivationToPureLatex,
-  hasRichRationales,
-  registerDerivationBlockProcessor,
-} from "./core/derivation-renderer";
-import { evaluateFormulaEntry, getAllFormulas, searchFormulaDatabase, type FormulaSortMode, type FormulaVisualShape } from "./core/formula-db";
-import { detectCompanionLatexPlugins, isCursorInMathZone } from "./core/editor-interop";
-import { mountMathLiveField, stripMathLivePlaceholders, templateToMathLivePlaceholders } from "./ui/mathlive-field";
-import { applyMathLiveKeyboardConfig } from "./ui/stem-keyboards";
-import {
-  createCalculatorState,
-  renderScientificCalculatorView,
-  ScientificCalculatorModal,
-} from "./ui/scientific-calculator-modal";
-import { normalizeChemicalFormulaInput, TAXONOMY } from "./taxonomy";
-
-function makeLineId(): string {
-  return `line_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-}
-
-type BuilderTab = "builder" | "formulas" | "calculator";
-
-class MathLiveBuilderModal extends Modal {
-  private lines: DerivationLine[] = [];
-  private activeLineIdx = 0;
-  private activeTab: BuilderTab = "builder";
-  private fieldRefs: MathfieldElement[] = [];
-  private linesContainer!: HTMLElement;
-  private varInput!: HTMLInputElement;
-  private casPreviewEl!: HTMLElement;
-  private builderPaneEl!: HTMLElement;
-  private formulaPaneEl!: HTMLElement;
-  private calcPaneEl!: HTMLElement;
-  private tabButtons = new Map<BuilderTab, HTMLButtonElement>();
-  private calcState = createCalculatorState();
-  private selectedCalcFormula: FormulaEntry | null = null;
-  private lastCasResult: { label: string; res: CASResult } | null = null;
-
-  constructor(
-    app: App,
-    private plugin: LatexToolboxPlugin,
-    private editor: Editor | null,
-    initialText = ""
-  ) {
-    super(app);
-    const initialLines = initialText
-      ? initialText.split(/\s*\\\\\s*/).filter(Boolean)
-      : [""];
-    this.lines = initialLines.map((l) => ({ id: makeLineId(), latex: l.trim() }));
-    if (this.lines.length === 0) this.lines.push({ id: makeLineId(), latex: "" });
-  }
-
-  onOpen(): void {
-    const { contentEl } = this;
-    contentEl.empty();
-    // Apply wide, non-cramped sizing directly on modalEl so nothing clips horizontally
-    this.modalEl.addClass("lt-builder-modal-shell");
-    contentEl.addClass("lt-modal");
-    applyMathLiveKeyboardConfig(this.plugin.settings);
-
-    // Prevent accidental closing when clicking outside modal unless enabled in Settings
-    if (!this.plugin.settings.closeOnBackdropClick) {
-      const bg = this.containerEl.querySelector(".modal-bg");
-      if (bg instanceof HTMLElement) {
-        const blockClose = (ev: Event) => {
-          ev.stopPropagation();
-          ev.preventDefault();
-        };
-        bg.addEventListener("click", blockClose, true);
-        bg.addEventListener("mousedown", blockClose, true);
-        bg.addEventListener("pointerdown", blockClose, true);
-      }
-    }
-
-    // Header + instant tab switcher (Builder & CAS | Formula DB | Scientific Calculator)
-    const header = contentEl.createDiv({ cls: "lt-cas-header" });
-    header.createEl("h2", { text: "STEM LaTeX builder v5.5 (MathLive + Full CAS)" });
-
-    const navTabs = header.createDiv({ cls: "lt-modal-nav-tabs" });
-    const tabDefs: Array<[BuilderTab, string]> = [
-      ["builder", "Builder & CAS"],
-      ["formulas", "Formula database (calculable)"],
-      ["calculator", "Scientific calculator"],
-    ];
-    for (const [id, label] of tabDefs) {
-      const btn = navTabs.createEl("button", { text: label });
-      btn.onclick = () => this.switchTab(id);
-      this.tabButtons.set(id, btn);
-    }
-
-    // Pane 1: Builder & CAS
-    this.builderPaneEl = contentEl.createDiv({ cls: "lt-tab-pane" });
-    this.renderNaturalLanguageBar(this.builderPaneEl);
-    this.linesContainer = this.builderPaneEl.createDiv({ cls: "lt-derivation-lines" });
-    this.renderDerivationLines();
-
-    const lineControls = this.builderPaneEl.createDiv({ cls: "lt-cas-toolbar" });
-    lineControls.createEl("button", { text: "+ Add line" }).onclick = () => {
-      this.addLineAfter(this.activeLineIdx, "");
-    };
-    const lineNumBtn = lineControls.createEl("button", {
-      text: this.plugin.settings.enableLineNumbering ? "Line numbers: ON" : "Line numbers: OFF",
-    });
-    lineNumBtn.onclick = async () => {
-      this.plugin.settings.enableLineNumbering = !this.plugin.settings.enableLineNumbering;
-      await this.plugin.saveSettings();
-      lineNumBtn.setText(this.plugin.settings.enableLineNumbering ? "Line numbers: ON" : "Line numbers: OFF");
-      this.renderDerivationLines();
-    };
-
-    if (this.plugin.settings.enableLocalCAS) {
-      this.renderCASToolbar(this.builderPaneEl);
-    }
-
-    // Pane 2: Calculable Formula Database
-    this.formulaPaneEl = contentEl.createDiv({ cls: "lt-tab-pane lt-hidden" });
-    this.renderFormulaBrowser(this.formulaPaneEl);
-
-    // Pane 3: Embedded Scientific Calculator
-    this.calcPaneEl = contentEl.createDiv({ cls: "lt-tab-pane lt-hidden" });
-    renderScientificCalculatorView(this.calcPaneEl, this.calcState, this.plugin.settings.eeImaginaryUnit, {
-      onInsertLatex: (ltx) => {
-        this.insertIntoActiveLine(ltx);
-        this.switchTab("builder");
-      },
-      onSendToBuilder: (ltx) => {
-        this.insertIntoActiveLine(ltx);
-        this.switchTab("builder");
-      },
-    });
-
-    // Footer Insert Actions
-    const actions = contentEl.createDiv({ cls: "modal-button-container" });
-    const insertLatexBtn = actions.createEl("button", { text: "Insert pure LaTeX", cls: "mod-cta" });
-    insertLatexBtn.onclick = () => {
-      const pure = exportDerivationToPureLatex(
-        this.lines.map((l) => ({ ...l, latex: stripMathLivePlaceholders(l.latex) })),
-        this.plugin.settings.enableLineNumbering && this.lines.length > 1
-      );
-      this.commitToEditor(pure, false);
-    };
-
-    const insertRichBtn = actions.createEl("button", { text: "Insert interactive derivation" });
-    insertRichBtn.onclick = () => {
-      const cleanedLines = this.lines.map((l) => ({ ...l, latex: stripMathLivePlaceholders(l.latex) }));
-      const block = exportDerivationToInteractiveBlock(cleanedLines, this.plugin.settings.enableLineNumbering);
-      this.commitToEditor(block, true);
-    };
-
-    actions.createEl("button", { text: "Cancel" }).onclick = () => this.close();
-    this.switchTab("builder");
-  }
-
-  private switchTab(tab: BuilderTab): void {
-    this.activeTab = tab;
-    this.builderPaneEl.toggleClass("lt-hidden", tab !== "builder");
-    this.formulaPaneEl.toggleClass("lt-hidden", tab !== "formulas");
-    this.calcPaneEl.toggleClass("lt-hidden", tab !== "calculator");
-    for (const [id, btn] of this.tabButtons.entries()) {
-      btn.toggleClass("lt-calc-tab-active", id === tab);
-    }
-  }
-
-  private renderNaturalLanguageBar(parent: HTMLElement): void {
-    const bar = parent.createDiv({ cls: "lt-nl-bar" });
-    const nlInput = bar.createEl("input", {
-      type: "text",
-      placeholder: "Natural typing: integrate sin(x) from 0 to pi | H2SO4 + NaOH -> Na2SO4 + H2O | [1 2; 3 4] | laplace(e^(-a*t))",
-      cls: "lt-nl-input",
-    });
-    const domainBadge = bar.createSpan({ text: "MATH", cls: "lt-nl-badge" });
-    const convertBtn = bar.createEl("button", { text: "Convert" });
-    const suggWrap = parent.createDiv({ cls: "lt-nl-suggestions" });
-
-    const refreshSuggestions = () => {
-      const dom = detectStemDomain(nlInput.value);
-      domainBadge.setText(dom.toUpperCase());
-      suggWrap.empty();
-      const items = getNaturalSuggestions(nlInput.value, 5);
-      for (const item of items) {
-        const chip = suggWrap.createEl("button", {
-          text: `${item.label} (${item.domain.toUpperCase()})`,
-          cls: "lt-nl-chip",
-        });
-        chip.title = item.description;
-        chip.onclick = () => {
-          this.insertIntoActiveLine(item.latex);
-        };
-      }
-    };
-
-    const runConvert = () => {
-      const parsed = naturalLanguageToLatex(nlInput.value, this.plugin.settings.eeImaginaryUnit);
-      if (!parsed.latex) return;
-      this.insertIntoActiveLine(parsed.latex);
-      new Notice(parsed.note);
-      nlInput.value = "";
-      refreshSuggestions();
-    };
-
-    nlInput.addEventListener("input", refreshSuggestions);
-    nlInput.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
-        ev.preventDefault();
-        runConvert();
-      }
-    });
-    convertBtn.onclick = runConvert;
-    refreshSuggestions();
-  }
-
-  private renderDerivationLines(): void {
-    this.linesContainer.empty();
-    this.fieldRefs = [];
-    const showNums = this.plugin.settings.enableLineNumbering;
-
-    this.lines.forEach((line, idx) => {
-      const row = this.linesContainer.createDiv({
-        cls: `lt-derivation-row${showNums ? "" : " lt-no-line-numbers"}${idx === this.activeLineIdx ? " lt-row-active" : ""}`,
-      });
-
-      if (showNums) {
-        row.createSpan({ text: `${idx + 1}.`, cls: "lt-line-num" });
-      }
-
-      const fieldHost = row.createDiv({ cls: "lt-mathlive-host" });
-      const mf = mountMathLiveField(fieldHost, {
-        initialLatex: line.latex,
-        enableSlotHighlighting: this.plugin.settings.enableSlotHighlighting,
-        autoResize: this.plugin.settings.autoResizeEditor,
-        settings: this.plugin.settings,
-        onChange: (clean) => {
-          line.latex = clean;
-          if (idx === this.activeLineIdx && this.varInput) {
-            this.varInput.value = detectPrimaryVariable(clean);
-          }
-        },
-        onEnter: () => this.addLineAfter(idx, ""),
-        onBackspaceEmpty: () => {
-          if (this.lines.length > 1) this.removeLine(idx);
-        },
-      });
-      mf.addEventListener("focus", () => {
-        this.activeLineIdx = idx;
-        if (this.varInput) this.varInput.value = detectPrimaryVariable(line.latex);
-      });
-      this.fieldRefs.push(mf);
-
-      // Per-line Rationale Box (text / audio / link / app)
-      const ratBox = row.createDiv({ cls: "lt-rationale-box" });
-      const ratControls = ratBox.createDiv({ cls: "lt-rationale-controls" });
-      const typeSel = ratControls.createEl("select", { cls: "dropdown lt-rationale-type" });
-      const types: Array<[RationaleType, string]> = [
-        ["text", "Text"],
-        ["audio", "Audio"],
-        ["link", "Web link"],
-        ["app", "App URI"],
-      ];
-      for (const [val, lbl] of types) {
-        typeSel.createEl("option", { value: val, text: lbl });
-      }
-      typeSel.value = line.rationale?.type ?? "text";
-
-      const valInput = ratControls.createEl("input", {
-        type: "text",
-        cls: "lt-rationale-input",
-        value: line.rationale?.value ?? "",
-        placeholder: this.getRationalePlaceholder(typeSel.value as RationaleType),
-      });
-
-      const labelInput = ratBox.createEl("input", {
-        type: "text",
-        cls: "lt-rationale-input",
-        value: line.rationale?.label ?? "",
-        placeholder: "Optional display label (for link/app/audio)",
-      });
-      labelInput.toggleClass("lt-hidden", typeSel.value === "text");
-
-      const helperBar = ratBox.createDiv({ cls: "lt-rationale-controls" });
-      const renderRationaleHelpers = () => {
-        helperBar.empty();
-        const curType = typeSel.value as RationaleType;
-        labelInput.toggleClass("lt-hidden", curType === "text");
-        valInput.placeholder = this.getRationalePlaceholder(curType);
-
-        if (curType === "app") {
-          const schemeSel = helperBar.createEl("select", { cls: "dropdown" });
-          schemeSel.createEl("option", { value: "", text: "Preset app..." });
-          for (const [appName, uri] of Object.entries(this.plugin.settings.externalAppSchemes ?? {})) {
-            schemeSel.createEl("option", { value: uri, text: appName });
-          }
-          schemeSel.onchange = () => {
-            if (!schemeSel.value) return;
-            valInput.value = schemeSel.value;
-            if (!labelInput.value) labelInput.value = schemeSel.options[schemeSel.selectedIndex]?.text ?? "";
-            syncRationale();
-          };
-        } else if (curType === "audio") {
-          const recBtn = helperBar.createEl("button", { text: "Record voice note" });
-          let recorder: MediaRecorder | null = null;
-          let chunks: BlobPart[] = [];
-          recBtn.onclick = async () => {
-            if (recorder && recorder.state === "recording") {
-              recorder.stop();
-              recBtn.setText("Record voice note");
-              return;
-            }
-            try {
-              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-              recorder = new MediaRecorder(stream);
-              chunks = [];
-              recorder.ondataavailable = (ev) => {
-                if (ev.data.size > 0) chunks.push(ev.data);
-              };
-              recorder.onstop = async () => {
-                stream.getTracks().forEach((t) => t.stop());
-                const blob = new Blob(chunks, { type: "audio/webm" });
-                const buf = await blob.arrayBuffer();
-                const folder = this.plugin.settings.audioNoteFolder || "Attachments/MathAudio";
-                if (!(await this.app.vault.adapter.exists(folder))) {
-                  await this.app.vault.adapter.mkdir(folder);
-                }
-                const path = `${folder}/rationale-${Date.now()}.webm`;
-                await this.app.vault.createBinary(path, buf);
-                valInput.value = path;
-                if (!labelInput.value) labelInput.value = `Voice note (line ${idx + 1})`;
-                syncRationale();
-                new Notice(`Saved audio rationale to ${path}`);
-              };
-              recorder.start();
-              recBtn.setText("Stop recording");
-            } catch (e) {
-              new Notice(`Microphone error: ${String(e)}`);
-            }
-          };
-        }
-      };
-
-      const syncRationale = () => {
-        const v = valInput.value.trim();
-        const t = typeSel.value as RationaleType;
-        const lbl = labelInput.value.trim();
-        line.rationale = v ? { type: t, value: v, label: lbl || (t === "text" ? v : "") } : undefined;
-      };
-
-      typeSel.onchange = () => {
-        renderRationaleHelpers();
-        syncRationale();
-      };
-      valInput.addEventListener("input", syncRationale);
-      labelInput.addEventListener("input", syncRationale);
-      renderRationaleHelpers();
-
-      const rowBtns = row.createDiv({ cls: "lt-row-actions" });
-      rowBtns.createEl("button", { text: "+" }).onclick = () => this.addLineAfter(idx, "");
-      if (this.lines.length > 1) {
-        rowBtns.createEl("button", { text: "✕" }).onclick = () => this.removeLine(idx);
-      }
-    });
-  }
-
-  private getRationalePlaceholder(type: RationaleType): string {
-    if (type === "audio") return "Vault audio path (e.g. Attachments/MathAudio/note.webm)";
-    if (type === "link") return "https://en.wikipedia.org/wiki/...";
-    if (type === "app") return "obsidian://open?file=... or matlab://...";
-    return "Rationale (e.g. By KVL, Integration by parts)";
-  }
-
-  private renderCASToolbar(parent: HTMLElement): void {
-    const sec = parent.createDiv({ cls: "lt-cas-section" });
-    const head = sec.createDiv({ cls: "lt-cas-header" });
-    head.createSpan({
-      text: `Full CAS (${this.plugin.settings.casBackend === "hybrid-python" ? "JS + Python SymPy" : "Local JS"})`,
-    });
-
-    const varWrap = head.createDiv({ cls: "lt-cas-var-wrap" });
-    varWrap.createSpan({ text: "Var:" });
-    this.varInput = varWrap.createEl("input", {
-      type: "text",
-      value: detectPrimaryVariable(this.lines[this.activeLineIdx]?.latex ?? ""),
-      cls: "lt-cas-var-input",
-    });
-    const lowerIn = varWrap.createEl("input", { type: "text", placeholder: "a=0", cls: "lt-cas-var-input" });
-    const upperIn = varWrap.createEl("input", { type: "text", placeholder: "b=1", cls: "lt-cas-var-input" });
-
-    const btnBar = sec.createDiv({ cls: "lt-cas-toolbar" });
-    const ops: Array<[string, CASOperation]> = [
-      ["Simplify", "simplify"],
-      ["Expand", "expand"],
-      ["Factor", "factor"],
-      ["Solve", "solve"],
-      ["d/dv", "diff"],
-      ["∫ dv", "integrate"],
-      ["Def ∫", "defint"],
-      ["Limit", "limit"],
-      ["PartFrac", "apart"],
-      ["Numeric", "numeric"],
-      ["Phasor ∠", "phasor"],
-      ["Units", "units"],
-      ["Det(M)", "matrix_det"],
-      ["Inv(M)", "matrix_inv"],
-      ["Laplace", "laplace"],
-      ["InvLaplace", "ilaplace"],
-      ["Fourier", "fourier"],
-      ["ODE", "dsolve"],
-      ["Series", "series"],
-    ];
-
-    for (const [label, op] of ops) {
-      btnBar.createEl("button", { text: label }).onclick = async () => {
-        const activeLatex = stripMathLivePlaceholders(this.lines[this.activeLineIdx]?.latex ?? "");
-        if (!activeLatex) return;
-        const variable = this.varInput.value.trim() || detectPrimaryVariable(activeLatex);
-        const res = await runCASOperation(op, activeLatex, {
-          variable,
-          lower: lowerIn.value.trim() || "0",
-          upper: upperIn.value.trim() || "1",
-          point: lowerIn.value.trim() || "0",
-          backend: this.plugin.settings.casBackend,
-          pythonExecutable: this.plugin.settings.pythonExecutable,
-          imagUnit: this.plugin.settings.eeImaginaryUnit,
-        });
-        this.showCasPreview(`${label} (${variable})`, res);
-      };
-    }
-
-    btnBar.createEl("button", { text: "Balance chem" }).onclick = () => {
-      const activeLatex = stripMathLivePlaceholders(this.lines[this.activeLineIdx]?.latex ?? "");
-      const bal = balanceChemicalEquation(activeLatex);
-      this.showCasPreview("Balance chemistry", {
-        ok: bal.ok,
-        latex: bal.latex,
-        engine: "Nullspace Stoichiometry",
-        error: bal.error,
-      });
-    };
-
-    this.casPreviewEl = sec.createDiv({ cls: "lt-cas-output" });
-  }
-
-  private showCasPreview(label: string, res: CASResult): void {
-    this.casPreviewEl.empty();
-    this.lastCasResult = { label, res };
-
-    if (!res.ok) {
-      this.casPreviewEl.createSpan({ text: `${label} error: ${res.error}`, cls: "lt-cas-error" });
-      return;
-    }
-
-    const box = this.casPreviewEl.createDiv({ cls: "lt-cas-preview" });
-    box.createSpan({
-      text: `${label} [${res.engine ?? "CAS"}]: ${res.latex}${res.numeric ? `  (≈ ${res.numeric})` : ""}`,
-      cls: "lt-cas-preview-expr",
-    });
-
-    const act = box.createDiv({ cls: "lt-cas-preview-actions" });
-    act.createEl("button", { text: "Replace line" }).onclick = () => {
-      this.insertIntoActiveLine(res.latex, true);
-    };
-    act.createEl("button", { text: "Append next line", cls: "mod-cta" }).onclick = () => {
-      this.addLineAfter(this.activeLineIdx, res.latex, {
-        type: "text",
-        label: label,
-        value: label,
-      });
-    };
-  }
-
-  private previewComp = new Component();
-
-  private renderFormulaBrowser(container: HTMLElement): void {
-    container.empty();
-    this.previewComp.load();
-    const filters = container.createDiv({ cls: "lt-formula-filters" });
-    const searchIn = filters.createEl("input", {
-      type: "text",
-      placeholder: "Search by Wolfram/SymPy (e.g. 1/2*m*v^2, sqrt(L*C), PV=nRT), English, or symbol...",
-      cls: "lt-nl-input",
-    });
-
-    const branchSel = filters.createEl("select", { cls: "dropdown" });
-    const branches = [
-      ["all", "All subjects"],
-      ["physics", "Physics (O/A-Level & IB)"],
-      ["chemistry", "Chemistry (O/A-Level & IB)"],
-      ["math", "Mathematics (O/A-Level & IB)"],
-      ["eee", "Electrical engineering (basics)"],
-    ];
-    for (const [val, lbl] of branches) branchSel.createEl("option", { value: val, text: lbl });
-
-    const levelSel = filters.createEl("select", { cls: "dropdown" });
-    const levels = [
-      ["all", "All levels"],
-      ["o-level", "O-Level / IGCSE"],
-      ["a-level-ib", "A-Level / IB"],
-      ["eee-basics", "EEE basics (all branches)"],
-    ];
-    for (const [val, lbl] of levels) levelSel.createEl("option", { value: val, text: lbl });
-
-    const sortSel = filters.createEl("select", { cls: "dropdown" });
-    const sortModes: Array<[FormulaSortMode, string]> = [
-      ["relevance", "Sort: Smart Wolfram/SymPy"],
-      ["syllabus", "Sort: Syllabus order"],
-      ["topic", "Sort: Topic (A–Z)"],
-      ["name", "Sort: Name (A–Z)"],
-      ["visual", "Sort: Visual structure"],
-    ];
-    for (const [val, lbl] of sortModes) sortSel.createEl("option", { value: val, text: lbl });
-
-    let activeShape: FormulaVisualShape = "all";
-    const visualBar = container.createDiv({ cls: "lt-formula-visual-bar" });
-    const shapeDefs: Array<[FormulaVisualShape, string]> = [
-      ["all", "All visuals"],
-      ["fraction", "a/b Fractions"],
-      ["sqrt", "√ Roots"],
-      ["exp-log", "eˣ / log"],
-      ["trig", "sin/cos Trig"],
-      ["greek", "λ ω θ Greek"],
-      ["integral-sum", "∫ / Σ Calculus"],
-    ];
-    const shapeBtns = new Map<FormulaVisualShape, HTMLButtonElement>();
-    for (const [id, lbl] of shapeDefs) {
-      const b = visualBar.createEl("button", {
-        text: lbl,
-        cls: id === "all" ? "lt-nl-chip lt-calc-tab-active" : "lt-nl-chip",
-      });
-      b.onclick = () => {
-        activeShape = id;
-        for (const [sid, sbtn] of shapeBtns.entries()) {
-          sbtn.toggleClass("lt-calc-tab-active", sid === id);
-        }
-        refresh();
-      };
-      shapeBtns.set(id, b);
-    }
-    const countBadge = visualBar.createSpan({ cls: "lt-formula-count" });
-
-    // Inline Formula Calculator Panel (shown when user clicks "Calculate" on any formula card)
-    const calcDrawer = container.createDiv({ cls: "lt-formula-calc-drawer lt-hidden" });
-    const renderCalcDrawer = (entry: FormulaEntry | null) => {
-      calcDrawer.empty();
-      if (!entry) {
-        calcDrawer.addClass("lt-hidden");
-        return;
-      }
-      calcDrawer.removeClass("lt-hidden");
-      const top = calcDrawer.createDiv({ cls: "lt-cas-header" });
-      top.createEl("strong", { text: `Calculate: ${entry.name}` });
-      top.createEl("button", { text: "Close" }).onclick = () => renderCalcDrawer(null);
-
-      calcDrawer.createDiv({ text: entry.definition, cls: "lt-formula-meta" });
-
-      const inputsGrid = calcDrawer.createDiv({ cls: "lt-formula-calc-grid" });
-      const varInputs = new Map<string, HTMLInputElement>();
-      for (const v of entry.variables) {
-        const cell = inputsGrid.createDiv({ cls: "lt-formula-calc-cell" });
-        cell.createEl("label", {
-          text: `${v.meaning} (${v.key})${v.unit ? ` [${v.unit}]` : ""}`,
-        });
-        const inp = cell.createEl("input", {
-          type: "number",
-          value: v.defaultValue !== undefined ? String(v.defaultValue) : "1",
-        });
-        inp.step = "any";
-        varInputs.set(v.key, inp);
-      }
-
-      const outBox = calcDrawer.createDiv({ cls: "lt-cas-preview" });
-      const outText = outBox.createSpan({ cls: "lt-cas-preview-expr", text: "Click Compute to evaluate." });
-      const outBtns = outBox.createDiv({ cls: "lt-cas-preview-actions" });
-
-      let latestLatex = entry.latex;
-      const compute = () => {
-        const vals: Record<string, number> = {};
-        for (const [k, inp] of varInputs.entries()) {
-          vals[k] = parseFloat(inp.value);
-        }
-        const res = evaluateFormulaEntry(entry, vals);
-        if (!res.ok) {
-          outText.setText(res.error ?? "Calculation failed.");
-          return;
-        }
-        latestLatex = `${stripMathLivePlaceholders(templateToMathLivePlaceholders(entry.latex))} \\implies ${res.latexResult}`;
-        outText.setText(`${entry.outputSymbol} = ${res.formatted}${entry.outputUnit ? ` ${entry.outputUnit}` : ""}`);
-      };
-
-      outBtns.createEl("button", { text: "Compute", cls: "mod-cta" }).onclick = compute;
-      outBtns.createEl("button", { text: "Insert result into builder" }).onclick = () => {
-        compute();
-        this.insertIntoActiveLine(latestLatex, true);
-        this.switchTab("builder");
-      };
-      compute();
-    };
-
-    const listEl = container.createDiv({ cls: "lt-formula-list lt-formula-list-tall" });
-    const refresh = () => {
-      listEl.empty();
-      const results = searchFormulaDatabase({
-        query: searchIn.value,
-        branch: branchSel.value,
-        level: levelSel.value,
-        visualShape: activeShape,
-        sortBy: sortSel.value as FormulaSortMode,
-      });
-      let visibleLimit = 48;
-      const renderSlice = () => {
-        listEl.empty();
-        const slice = results.slice(0, visibleLimit);
-        countBadge.setText(`Showing ${slice.length} of ${results.length} (${getAllFormulas().length} total)`);
-        for (const item of slice) {
-          const card = listEl.createDiv({ cls: "lt-formula-card" });
-          card.createDiv({ text: item.name, cls: "lt-formula-title" });
-          card.createDiv({
-            text: `${item.branch.toUpperCase()} • ${item.topic} • ${item.originalLevel || item.level}`,
-            cls: "lt-formula-meta",
-          });
-
-          // Live rendered visual MathJax picture of the formula
-          const previewEl = card.createDiv({ cls: "lt-formula-preview" });
-          const cleanMath = stripMathLivePlaceholders(templateToMathLivePlaceholders(item.latex));
-          void MarkdownRenderer.render(this.app, `$${cleanMath}$`, previewEl, "", this.previewComp);
-
-          card.createDiv({ text: item.definition, cls: "lt-formula-def" });
-
-          const cardActions = card.createDiv({ cls: "lt-cas-preview-actions" });
-          const insBtn = cardActions.createEl("button", { text: "Insert template" });
-          insBtn.onclick = (ev) => {
-            ev.stopPropagation();
-            const withSlots = templateToMathLivePlaceholders(item.latex);
-            this.insertIntoActiveLine(withSlots, true);
-            this.switchTab("builder");
-            new Notice(`Inserted: ${item.name}`);
-          };
-          if (item.variables.length > 0) {
-            const calcBtn = cardActions.createEl("button", { text: "Calculate", cls: "mod-cta" });
-            calcBtn.onclick = (ev) => {
-              ev.stopPropagation();
-              this.selectedCalcFormula = item;
-              renderCalcDrawer(item);
-            };
-          }
-        }
-        if (results.length > visibleLimit) {
-          const moreBtn = listEl.createEl("button", {
-            text: `Load more (${results.length - visibleLimit} remaining)`,
-          });
-          moreBtn.onclick = () => {
-            visibleLimit += 48;
-            renderSlice();
-          };
-        }
-      };
-      renderSlice();
-    };
-
-    searchIn.addEventListener("input", refresh);
-    branchSel.onchange = refresh;
-    levelSel.onchange = refresh;
-    sortSel.onchange = refresh;
-    refresh();
-  }
-
-  private insertIntoActiveLine(latex: string, replaceAll = false): void {
-    const line = this.lines[this.activeLineIdx];
-    const mf = this.fieldRefs[this.activeLineIdx];
-    if (!line || !mf) return;
-    if (replaceAll || !line.latex.trim()) {
-      mf.value = latex;
-      line.latex = stripMathLivePlaceholders(latex);
-    } else {
-      mf.insert(latex);
-      line.latex = stripMathLivePlaceholders(mf.value);
-    }
-    mf.focus();
-  }
-
-  private addLineAfter(idx: number, latex: string, rationale?: DerivationLine["rationale"]): void {
-    this.lines.splice(idx + 1, 0, { id: makeLineId(), latex, rationale });
-    this.activeLineIdx = idx + 1;
-    this.renderDerivationLines();
-    this.fieldRefs[this.activeLineIdx]?.focus();
-  }
-
-  private removeLine(idx: number): void {
-    if (this.lines.length <= 1) return;
-    this.lines.splice(idx, 1);
-    this.activeLineIdx = Math.max(0, idx - 1);
-    this.renderDerivationLines();
-    this.fieldRefs[this.activeLineIdx]?.focus();
-  }
-
-  private commitToEditor(output: string, isRawBlock: boolean): void {
-    if (!output.trim()) {
-      this.close();
-      return;
-    }
-    const useInteractive = isRawBlock || hasRichRationales(this.lines);
-    const finalOutput = useInteractive && !isRawBlock
-      ? exportDerivationToInteractiveBlock(
-          this.lines.map((l) => ({ ...l, latex: stripMathLivePlaceholders(l.latex) })),
-          this.plugin.settings.enableLineNumbering
-        )
-      : output;
-
-    if (this.editor) {
-      if (useInteractive) {
-        this.editor.replaceSelection(`\n${finalOutput}\n`);
-      } else {
-        const zone = isCursorInMathZone(this.editor);
-        this.editor.replaceSelection(zone.inMath ? finalOutput : wrapMath(finalOutput, this.plugin.settings.wrapStyle));
-      }
-    } else {
-      void navigator.clipboard?.writeText(finalOutput);
-      new Notice("Copied output to clipboard.");
-    }
-    this.close();
-  }
-
-  onClose(): void {
-    this.previewComp.unload();
-    this.contentEl.empty();
-  }
-}
+import { registerDerivationBlockProcessor } from "./core/derivation-renderer";
+import { detectCompanionLatexPlugins, type CompanionLatexPlugins } from "./core/editor-interop";
+import { ensureCustomSnippetsLoaded, migrateSnippetsToSidecar } from "./core/preset-store";
+import { DEFAULT_SETTINGS, getMergedLibrary, safeSaveSettings } from "./settings";
+import type { CASOperation, FormulaEntry, LaTeXSettings } from "./types";
+
+const ENGINES_CHUNK = "lt-engines.chunk.js";
+const BUILDER_CHUNK = "lt-builder.chunk.js";
+const CALCULATOR_CHUNK = "lt-calculator.chunk.js";
 
 export default class LatexToolboxPlugin extends Plugin {
   settings: LaTeXSettings = Object.assign({}, DEFAULT_SETTINGS);
   api!: Record<string, unknown>;
   private settingsReady: Promise<void> = Promise.resolve();
+  private enginesModule: LtEnginesModule | null = null;
+  private enginesPromise: Promise<LtEnginesModule> | null = null;
+  private cachedCompanions: CompanionLatexPlugins | null = null;
+  private cancelIdleTask: (() => void) | null = null;
 
   onload(): void {
     this.settings = Object.assign({}, DEFAULT_SETTINGS);
-    this.settingsReady = this.loadSettings().then(() => {
-      this.applyThemePreferences();
-    });
+    this.settingsReady = this.loadSettings();
     registerDerivationBlockProcessor(this);
 
-    const companions = detectCompanionLatexPlugins(this.app);
+    const getEnginesSync = (): LtEnginesModule => {
+      if (!this.enginesModule) {
+        const mod = loadPluginChunkSync<LtEnginesModule>(this, ENGINES_CHUNK);
+        mod.initEnginesPlugin(this);
+        this.enginesModule = mod;
+      }
+      return this.enginesModule;
+    };
+
+    const ensureEngines = (): Promise<LtEnginesModule> => this.ensureEnginesLoaded();
+
     this.api = {
       version: this.manifest.version,
       normalizeDelimiters,
-      normalizeChemicalFormulaInput,
-      balanceChemicalEquation,
-      naturalLanguageToLatex,
-      searchFormulaDatabase,
-      evaluateFormulaEntry,
-      casSimplify,
-      casExpand,
-      casFactor,
-      casSolve,
-      casDifferentiate,
-      casIntegrate,
-      runCASOperation,
-      getTaxonomy: () => TAXONOMY,
-      getMergedLibrary: () => getMergedLibrary(this.settings),
-      companions,
+      normalizeChemicalFormulaInput: (raw: string) => getEnginesSync().normalizeChemicalFormulaInput(raw),
+      balanceChemicalEquation: (input: string) => getEnginesSync().balanceChemicalEquation(input),
+      naturalLanguageToLatex: (rawInput: string, imagUnit?: "j" | "i") =>
+        getEnginesSync().naturalLanguageToLatex(rawInput, imagUnit),
+      searchFormulaDatabase: (filter?: Record<string, unknown>) => getEnginesSync().searchFormulaDatabase(filter),
+      evaluateFormulaEntry: (entry: FormulaEntry, values: Record<string, number>) =>
+        getEnginesSync().evaluateFormulaEntry(entry, values),
+      casSimplify: (latex: string) => getEnginesSync().casSimplify(latex),
+      casExpand: (latex: string) => getEnginesSync().casExpand(latex),
+      casFactor: (latex: string) => getEnginesSync().casFactor(latex),
+      casSolve: (latex: string, variable?: string) => getEnginesSync().casSolve(latex, variable),
+      casDifferentiate: (latex: string, variable?: string) => getEnginesSync().casDifferentiate(latex, variable),
+      casIntegrate: (latex: string, variable?: string, bounds?: { lower: string; upper: string }) =>
+        getEnginesSync().casIntegrate(latex, variable, bounds),
+      runCASOperation: (op: CASOperation, latex: string, opts?: Record<string, unknown>) =>
+        getEnginesSync().runCASOperation(op, latex, opts),
+      getTaxonomy: () => getEnginesSync().TAXONOMY,
+      getMergedLibrary: () => getMergedLibrary(this.settings, this),
+      get companions(): CompanionLatexPlugins {
+        return detectCompanionLatexPlugins(pluginApp);
+      },
       openBuilder: (initialText?: string) => {
-        void this.settingsReady.then(() => {
+        void (async () => {
+          await this.settingsReady;
+          const [builderMod] = await Promise.all([
+            loadPluginChunkAsync<LtBuilderChunk>(this, BUILDER_CHUNK),
+            ensureEngines(),
+            this.ensureSnippetsLoaded(),
+          ]);
           const view = this.app.workspace.getActiveViewOfType(MarkdownView);
           const editor = view ? view.editor : null;
           const text = initialText ?? (editor ? editor.getSelection() : "");
-          new MathLiveBuilderModal(this.app, this, editor, text).open();
-        });
+          builderMod.openBuilderModal(this.app, this, editor, text);
+        })();
       },
       openCalculator: () => {
-        void this.settingsReady.then(() => {
+        void (async () => {
+          await this.settingsReady;
+          const [calcMod, engines] = await Promise.all([
+            loadPluginChunkAsync<LtCalculatorChunk>(this, CALCULATOR_CHUNK),
+            ensureEngines(),
+          ]);
           const view = this.app.workspace.getActiveViewOfType(MarkdownView);
           const editor = view ? view.editor : null;
-          new ScientificCalculatorModal(
+          calcMod.openCalculatorModal(
             this.app,
             this.settings.eeImaginaryUnit,
             {
@@ -795,12 +96,33 @@ export default class LatexToolboxPlugin extends Plugin {
               },
               onSendToBuilder: (ltx) => (this.api.openBuilder as (t?: string) => void)(ltx),
             },
-            this.settings.closeOnBackdropClick
-          ).open();
-        });
+            this.settings.closeOnBackdropClick,
+            { casPhasorConvert: engines.casPhasorConvert, getMathJs: engines.getMathJs },
+            this.settings.glassmorphism !== false
+          );
+        })();
       },
     };
+    const pluginApp = this.app;
+    Object.defineProperty(this.api, "companions", {
+      enumerable: true,
+      get: () => {
+        if (!this.cachedCompanions) {
+          this.cachedCompanions = detectCompanionLatexPlugins(pluginApp);
+        }
+        return this.cachedCompanions;
+      },
+    });
     (window as unknown as Record<string, unknown>).LatexToolboxAPI = this.api;
+
+    this.cancelIdleTask = scheduleIdleTask(() => {
+      this.cachedCompanions = detectCompanionLatexPlugins(this.app);
+      void this.settingsReady.then(() =>
+        migrateSnippetsToSidecar(this, this.settings, () =>
+          safeSaveSettings(this, this.settings, { persistSidecar: false })
+        )
+      );
+    }, 1500);
 
     this.registerEvent(
       this.app.workspace.on("editor-paste", (evt, editor) => {
@@ -886,13 +208,39 @@ export default class LatexToolboxPlugin extends Plugin {
   }
 
   onunload(): void {
-    document.body.removeClass("lt-glassmorphic");
+    this.cancelIdleTask?.();
+    this.cancelIdleTask = null;
+    clearLoadedChunks(this.manifest.id);
+    this.enginesModule = null;
+    this.enginesPromise = null;
     const win = window as unknown as Record<string, unknown>;
     if (win.LatexToolboxAPI === this.api) delete win.LatexToolboxAPI;
   }
 
-  applyThemePreferences(): void {
-    document.body.toggleClass("lt-glassmorphic", this.settings.glassmorphism !== false);
+  async ensureEngines(): Promise<LtEnginesModule> {
+    return this.ensureEnginesLoaded();
+  }
+
+  private async ensureEnginesLoaded(): Promise<LtEnginesModule> {
+    if (this.enginesModule) return this.enginesModule;
+    if (!this.enginesPromise) {
+      this.enginesPromise = loadPluginChunkAsync<LtEnginesModule>(this, ENGINES_CHUNK)
+        .then(async (mod) => {
+          await mod.warmAllEngineData(this);
+          this.enginesModule = mod;
+          return mod;
+        })
+        .catch((err) => {
+          this.enginesPromise = null;
+          throw err;
+        });
+    }
+    return this.enginesPromise;
+  }
+
+  async ensureSnippetsLoaded(): Promise<void> {
+    await this.settingsReady;
+    await ensureCustomSnippetsLoaded(this, this.settings);
   }
 
   async loadSettings(): Promise<void> {
@@ -902,8 +250,16 @@ export default class LatexToolboxPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.settingsReady;
-    await safeSaveSettings(this, this.settings);
-    applyMathLiveKeyboardConfig(this.settings);
+    await safeSaveSettings(this, this.settings, { persistSidecar: true });
+    const vk = (window as unknown as { mathVirtualKeyboard?: unknown }).mathVirtualKeyboard;
+    if (vk) {
+      // Only update MathLive keyboard config if MathLive has already been loaded
+      const builderMod = loadPluginChunkAsync<LtBuilderChunk & { applyMathLiveKeyboardConfig?: (s: LaTeXSettings) => void }>(
+        this,
+        BUILDER_CHUNK
+      );
+      void builderMod.then((m) => m.applyMathLiveKeyboardConfig?.(this.settings));
+    }
   }
 }
 
@@ -1032,7 +388,8 @@ class LatexToolboxSettingTab extends PluginSettingTab {
       )
       .addButton((btn) =>
         btn.setButtonText("Test SymPy").onClick(async () => {
-          const st = await checkSymPyStatus(this.plugin.settings.pythonExecutable);
+          const engines = await this.plugin.ensureEngines();
+          const st = await engines.checkSymPyStatus(this.plugin.settings.pythonExecutable);
           if (st.available) {
             new Notice(`SymPy ${st.sympyVersion} ready (Python ${st.pythonVersion}).`);
           } else {

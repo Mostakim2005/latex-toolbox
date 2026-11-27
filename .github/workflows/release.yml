@@ -32,6 +32,11 @@ jobs:
               with:
                   subject-path: |
                       main.js
+                      lt-engines.chunk.js
+                      lt-builder.chunk.js
+                      lt-calculator.chunk.js
+                      lt-default-presets.json
+                      lt-stem-formula-db.json
                       ${{ steps.styles.outputs.exists == 'true' && 'styles.css' || '' }}
             - name: Create release
               env:
@@ -41,5 +46,5 @@ jobs:
                   gh release create "$tag" \
                     --title="$tag" \
                     --draft \
-                    main.js manifest.json ${{ steps.styles.outputs.exists == 'true' && 'styles.css' || '' }}
+                    main.js manifest.json lt-engines.chunk.js lt-builder.chunk.js lt-calculator.chunk.js lt-default-presets.json lt-stem-formula-db.json ${{ steps.styles.outputs.exists == 'true' && 'styles.css' || '' }}
 

@@ -112,6 +112,7 @@ export interface LaTeXSettings {
   customShortcuts: PresetItem[];
   customSnippets: PresetItem[];
   customTemplates: PresetItem[];
+  snippetsExternalized?: boolean;
 }
 
 export interface SolverStep {

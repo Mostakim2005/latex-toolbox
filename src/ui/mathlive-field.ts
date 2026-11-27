@@ -1,10 +1,20 @@
 import type { MathfieldElement } from "mathlive";
 import type { LaTeXSettings } from "../types";
-import { ensureMathLiveLoaded } from "../core/lazy-engines";
 import { applyMathLiveKeyboardConfig } from "./stem-keyboards";
 
+let mathLiveLoaded = false;
+
 function configureMathLiveForObsidian(): void {
-  ensureMathLiveLoaded();
+  if (mathLiveLoaded) return;
+  mathLiveLoaded = true;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Loaded inside lazy builder chunk only
+  const mod = require("mathlive") as {
+    MathfieldElement?: typeof MathfieldElement;
+  };
+  if (mod.MathfieldElement) {
+    mod.MathfieldElement.fontsDirectory = null;
+    mod.MathfieldElement.soundsDirectory = null;
+  }
 }
 
 /**

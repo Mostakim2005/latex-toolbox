@@ -15,7 +15,15 @@
   --lt-font-base: 0.86rem;
   --lt-font-sm: 0.79rem;
   --lt-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.3);
+}
 
+.lt-builder-modal-shell,
+.lt-calc-modal-shell,
+.latex-toolbox-equation-modal,
+.latex-toolbox-library-modal,
+.lt-innote-slot-modal,
+.latex-toolbox-edit-modal,
+.lt-floating-window {
   /* Hybrid Glassmorphic Design Tokens */
   --lt-glass-bg: rgba(var(--background-primary-rgb, 30, 30, 30), 0.78);
   --lt-glass-header-bg: rgba(var(--background-secondary-rgb, 24, 24, 24), 0.82);
@@ -29,7 +37,7 @@
   --lt-transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-body:not(.lt-glassmorphic) {
+.lt-no-glass {
   --lt-glass-bg: var(--background-primary);
   --lt-glass-header-bg: var(--background-secondary);
   --lt-glass-card: var(--background-secondary);

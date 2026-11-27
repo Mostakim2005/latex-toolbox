@@ -1,5 +1,10 @@
 import type { Plugin } from "obsidian";
 import type { LaTeXSettings, PresetItem } from "./types";
+import {
+  ensureCustomSnippetsLoadedSync,
+  getBundledPresetsSync,
+  saveCustomSnippetsSidecar,
+} from "./core/preset-store";
 
 export const DEFAULT_EXTERNAL_APP_SCHEMES: Record<string, string> = {
   "Obsidian Note": "obsidian://open?file=",
@@ -43,41 +48,49 @@ export const DEFAULT_SETTINGS: LaTeXSettings = {
   customShortcuts: [],
   customSnippets: [],
   customTemplates: [],
+  snippetsExternalized: false,
 };
 
-export function getBundledPresets(): {
+export function getBundledPresets(plugin: Plugin | null = null): {
   shortcuts: PresetItem[];
   snippets: PresetItem[];
   templates: PresetItem[];
 } {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Deferred preset JSON load avoids startup heap allocation
-  const defaultPresets = require("./presets/default-presets.json") as {
-    shortcuts?: PresetItem[];
-    snippets?: PresetItem[];
-    templates?: PresetItem[];
-  };
-  return {
-    shortcuts: defaultPresets.shortcuts ?? [],
-    snippets: defaultPresets.snippets ?? [],
-    templates: defaultPresets.templates ?? [],
-  };
+  return getBundledPresetsSync(plugin);
 }
 
-export function getMergedLibrary(settings: LaTeXSettings): {
+export function getMergedLibrary(
+  settings: LaTeXSettings,
+  plugin: Plugin | null = null
+): {
   shortcuts: PresetItem[];
   snippets: PresetItem[];
   templates: PresetItem[];
 } {
-  const bundled = getBundledPresets();
+  const bundled = getBundledPresetsSync(plugin);
+  const customSnippets = ensureCustomSnippetsLoadedSync(plugin, settings);
   return {
     shortcuts: [...bundled.shortcuts, ...(settings.customShortcuts ?? [])],
-    snippets: [...bundled.snippets, ...(settings.customSnippets ?? [])],
+    snippets: [...bundled.snippets, ...customSnippets],
     templates: [...bundled.templates, ...(settings.customTemplates ?? [])],
   };
 }
 
-export async function safeSaveSettings(plugin: Plugin, next: LaTeXSettings): Promise<void> {
+export async function safeSaveSettings(
+  plugin: Plugin,
+  next: LaTeXSettings,
+  options: { persistSidecar?: boolean } = {}
+): Promise<void> {
   const existing = ((await plugin.loadData()) ?? {}) as Partial<LaTeXSettings>;
   const merged = Object.assign({}, DEFAULT_SETTINGS, existing, next);
+
+  if (merged.snippetsExternalized) {
+    if (options.persistSidecar && Array.isArray(next.customSnippets)) {
+      await saveCustomSnippetsSidecar(plugin, next.customSnippets);
+    }
+    // Keep data.json compact by storing an empty snippet list once migrated to custom-snippets.json
+    merged.customSnippets = [];
+  }
+
   await plugin.saveData(merged);
 }

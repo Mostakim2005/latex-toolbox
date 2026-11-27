@@ -11,25 +11,27 @@
 > **1-Line Summary:** Interactive modal and picker to construct complex math equations without memorizing obscure LaTeX syntax.
 * **User Intention (Non-Negotiable):** Allow rapid equation authoring during lectures and research.
 * **Code Anchors (Grep Targets):**
-  * `src/main.ts` -> `openVisualLatexModal`
+  * `src/ui/builder-modal.ts :: MathLiveBuilderModal`
+  * `src/chunks/builder.ts :: openBuilderModal`
 
 ### [FEATURE: Delimiter-Fixer-And-Normalizer] | Aliases: mathjax fixer, dollar sign fixer, inline equation repair
 > **1-Line Summary:** Scans note content and repairs broken inline/display math delimiters (`$...$`, `$$...$$`).
 * **User Intention (Non-Negotiable):** Fix broken copy-pasted equations without corrupting currency symbols like `$100`.
 * **Code Anchors (Grep Targets):**
-  * `src/main.ts` -> `normalizeLatexDelimiters`
+  * `src/core/delimiters.ts :: normalizeDelimiters`
 
 ### [FEATURE: Curriculum-Formula-Presets] | Aliases: physics equations, chemistry symbols, math presets
-> **1-Line Summary:** Bundled library of 480+ KB formula definitions in `data.json` and read-only preloaded STEM curriculum database in `src/data/stem-formula-db.json` spanning high school, college, and university STEM.
+> **1-Line Summary:** Externalized on-demand library of preset definitions (`lt-default-presets.json`), user snippet sidecar (`custom-snippets.json`), and preloaded STEM curriculum database (`lt-stem-formula-db.json`) spanning high school, college, and university STEM.
 * **Code Anchors (Grep Targets):**
-  * `src/taxonomy.ts` -> `loadFormulaTaxonomy`
-  * `src/core/formula-db.ts` -> `FormulaDatabase`
+  * `src/taxonomy.ts :: TAXONOMY`
+  * `src/core/preset-store.ts :: loadBundledPresetsAsync`
+  * `src/core/formula-db.ts :: searchFormulaDatabase`
 
 ### [FEATURE: Multi-Tier-CAS-And-SymPy-Bridge] | Aliases: cas engine, compute engine, mathjs, sympy bridge
 > **1-Line Summary:** Tier 1 offline CAS (simplify, expand, factor, solve, derivative, integral, limits, partial fractions, complex phasors, SI units, matrix operations) with optional Tier 2 Python/SymPy desktop bridge.
 * **Code Anchors (Grep Targets):**
-  * `src/core/cas-engine.ts` -> `evaluateCAS`
-  * `src/core/sympy-bridge.ts` -> `runSymPyOperation`
+  * `src/core/cas-engine.ts :: runCASOperation`
+  * `src/core/sympy-bridge.ts :: runSymPyOperation`
 
 ### [FEATURE: Scientific-Calculator-And-Plotter] | Aliases: scientific calculator, eee phasor converter, 2d plotter
 > **1-Line Summary:** Multi-mode scientific & engineering calculator modal with real-time AC phasor conversions, Base-N/bitwise tools, and 2D canvas function plotting.

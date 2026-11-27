@@ -1,7 +1,12 @@
 import { App, Modal, Notice } from "obsidian";
 import type { EvalFunction } from "mathjs";
-import { casPhasorConvert } from "../core/cas-engine";
-import { getMathJs } from "../core/lazy-engines";
+import type { casPhasorConvert } from "../core/cas-engine";
+import type { getMathJs } from "../core/lazy-engines";
+
+export interface CalculatorEngineDeps {
+  casPhasorConvert: typeof casPhasorConvert;
+  getMathJs: typeof getMathJs;
+}
 
 type CalcTab = "scientific" | "eee" | "basen" | "graph";
 
@@ -37,8 +42,15 @@ export function renderScientificCalculatorView(
   state: CalculatorState,
   imagUnit: "j" | "i",
   callbacks: ScientificCalculatorCallbacks = {},
-  onAfterAction?: () => void
+  onAfterAction?: () => void,
+  deps?: CalculatorEngineDeps
 ): void {
+  const resolveDeps = (): CalculatorEngineDeps => {
+    if (!deps) {
+      throw new Error("Calculator engine dependencies were not initialized.");
+    }
+    return deps;
+  };
   const render = () => {
     container.empty();
 
@@ -92,7 +104,7 @@ export function renderScientificCalculatorView(
         if (state.angleMode === "DEG") {
           evalSrc = evalSrc.replace(/\b(sin|cos|tan)\(([^)]+)\)/g, "$1(($2) deg)");
         }
-        const math = getMathJs();
+        const math = resolveDeps().getMathJs();
         const val: unknown = math.evaluate(evalSrc);
         const formatted = math.format(val, { precision: 10 });
         state.lastAns = formatted;
@@ -167,7 +179,7 @@ export function renderScientificCalculatorView(
     });
     const phasorOut = parent.createDiv({ cls: "lt-cas-output" });
     phasorRow.createEl("button", { text: "Convert phasor", cls: "mod-cta" }).onclick = () => {
-      const res = casPhasorConvert(phasorIn.value, imagUnit);
+      const res = resolveDeps().casPhasorConvert(phasorIn.value, imagUnit);
       phasorOut.setText(res.ok ? `Result: ${res.latex}` : `Error: ${res.error}`);
     };
 
@@ -179,7 +191,7 @@ export function renderScientificCalculatorView(
       try {
         const a = z1In.value.replace(/j/g, "i");
         const b = z2In.value.replace(/j/g, "i");
-        const math = getMathJs();
+        const math = resolveDeps().getMathJs();
         const val: unknown = math.evaluate(`((${a}) * (${b})) / ((${a}) + (${b}))`);
         parOut.setText(`Z_eq = ${math.format(val, { precision: 6 })}`);
       } catch (e) {
@@ -257,7 +269,7 @@ export function renderScientificCalculatorView(
 
       let compiled: EvalFunction;
       try {
-        compiled = getMathJs().compile(fnIn.value);
+        compiled = resolveDeps().getMathJs().compile(fnIn.value);
       } catch (e) {
         new Notice(`Invalid function: ${String(e)}`);
         return;
@@ -361,7 +373,9 @@ export class ScientificCalculatorModal extends Modal {
     app: App,
     private imagUnit: "j" | "i" = "j",
     private callbacks: ScientificCalculatorCallbacks = {},
-    private closeOnBackdropClick = false
+    private closeOnBackdropClick = false,
+    private deps?: CalculatorEngineDeps,
+    private glassmorphism = true
   ) {
     super(app);
   }
@@ -370,6 +384,7 @@ export class ScientificCalculatorModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
     this.modalEl.addClass("lt-calc-modal-shell");
+    this.modalEl.toggleClass("lt-no-glass", this.glassmorphism === false);
     contentEl.addClass("lt-calc-modal");
 
     if (!this.closeOnBackdropClick) {
@@ -387,7 +402,14 @@ export class ScientificCalculatorModal extends Modal {
 
     contentEl.createEl("h2", { text: "STEM scientific & engineering calculator" });
     const host = contentEl.createDiv();
-    renderScientificCalculatorView(host, this.state, this.imagUnit, this.callbacks, () => this.close());
+    renderScientificCalculatorView(
+      host,
+      this.state,
+      this.imagUnit,
+      this.callbacks,
+      () => this.close(),
+      this.deps
+    );
   }
 
   onClose(): void {
